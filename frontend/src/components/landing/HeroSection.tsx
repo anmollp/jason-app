@@ -18,7 +18,7 @@ export function HeroSection() {
           focused workspace for API teams.
         </p>
         <div className="mt-12 flex flex-wrap gap-4">
-          <Button>Try Jason</Button>
+          <Button href="/playground">Try Jason</Button>
           <Button variant="secondary">View Docs</Button>
           <Button variant="ghost">GitHub</Button>
         </div>
