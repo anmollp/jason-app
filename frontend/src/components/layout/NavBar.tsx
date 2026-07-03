@@ -14,7 +14,7 @@ export function Navbar() {
             <a href="#workflow" className="hover:text-zinc-50">Workflow</a>
             <a href="#docs" className="hover:text-zinc-50">Docs</a>
             <a href="https://github.com/anmollp/jason" className="hover:text-zinc-50">GitHub</a>
-            <Button>Try Jason</Button>
+            <Button href="/playground">Try Jason</Button>
         </nav>
     </header>
     );
