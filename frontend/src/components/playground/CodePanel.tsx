@@ -2,6 +2,8 @@ type CodePanelProps = {
   title: string;
   meta: string;
   code: string;
+  editable?: boolean;
+  onChange?: (value: string) => void;
   tone?: "default" | "success" | "error";
 };
 
@@ -15,6 +17,8 @@ export function CodePanel({
   title,
   meta,
   code,
+  editable = false,
+  onChange,
   tone = "default",
 }: CodePanelProps) {
   return (
@@ -26,13 +30,24 @@ export function CodePanel({
         </span>
       </header>
       <div className="flex-1 bg-[#09090B] p-5">
-        <pre
-          className={`h-full overflow-auto whitespace-pre-wrap font-mono text-sm leading-6 ${
-            tone === "error" ? "text-red-400" : "text-zinc-400"
-          }`}
-        >
-          <code>{code}</code>
-        </pre>
+        {editable ? (
+          <textarea
+            aria-label={title}
+            className="h-full min-h-[330px] w-full resize-none bg-transparent font-mono text-sm leading-6 text-zinc-300 outline-none placeholder:text-zinc-600"
+            spellCheck={false}
+            value={code}
+            onChange={(event) => onChange?.(event.target.value)}
+            placeholder="Paste JSON here..."
+          />
+        ) : (
+          <pre
+            className={`h-full overflow-auto whitespace-pre-wrap font-mono text-sm leading-6 ${
+              tone === "error" ? "text-red-400" : "text-zinc-400"
+            }`}
+          >
+            <code>{code}</code>
+          </pre>
+        )}
       </div>
     </section>
   );
