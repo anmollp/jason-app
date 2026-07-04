@@ -16,8 +16,18 @@ const initialInputJson = `{
   "region": "us-east-1",
   "retry": true
 }`;
+const formatEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000"}/format`;
 
-type FormatterState = "idle" | "success" | "error";
+type FormatterState = "idle" | "thinking" | "success" | "error";
+
+type FormatJsonResponse = {
+  output: string;
+};
+
+type FormatJsonErrorResponse = {
+  detail?: string;
+  message?: string;
+};
 
 function countJsonKeys(value: unknown): number {
   if (Array.isArray(value)) {
@@ -55,8 +65,8 @@ export function PlaygroundShell() {
     setState("idle");
   }
 
-  function handleFormat() {
-    if (!inputJson.trim()) {
+  async function handleFormat() {
+    if (!inputJson.trim() || state === "thinking") {
       setOutputJson("");
       setParseError("");
       setCopyMessage("");
@@ -66,8 +76,41 @@ export function PlaygroundShell() {
     }
 
     try {
-      const parsed = JSON.parse(inputJson) as unknown;
-      setOutputJson(JSON.stringify(parsed, null, 2));
+      setState("thinking");
+      setOutputJson("");
+      setParseError("");
+      setCopyMessage("");
+
+      const response = await fetch(formatEndpoint, {
+        body: JSON.stringify({ input: inputJson }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+      const data = (await response.json()) as
+        | FormatJsonResponse
+        | FormatJsonErrorResponse;
+
+      if (!response.ok) {
+        const errorResponse = data as FormatJsonErrorResponse;
+
+        throw new Error(
+          errorResponse.detail ??
+            errorResponse.message ??
+            "Jason could not parse this JSON.",
+        );
+      }
+
+      const formattedOutput = (data as FormatJsonResponse).output;
+
+      if (typeof formattedOutput !== "string") {
+        throw new Error("Formatter returned an unexpected response.");
+      }
+
+      const parsed = JSON.parse(formattedOutput) as unknown;
+
+      setOutputJson(formattedOutput);
       setParseError("");
       setCopyMessage("");
       setKeyCount(countJsonKeys(parsed));
@@ -106,11 +149,14 @@ export function PlaygroundShell() {
   const outputCode =
     (parseError ? `Jason couldn't parse this JSON.\n\n${parseError}` : outputJson) ||
     "Formatted JSON will appear here.";
-  const canFormat = inputJson.trim().length > 0;
+  const isFormatting = state === "thinking";
+  const canFormat = inputJson.trim().length > 0 && !isFormatting;
   const canCopy = Boolean((outputJson || inputJson).trim());
   const statusDetail =
     copyMessage ||
-    (state === "error"
+    (state === "thinking"
+      ? "Sending JSON to the backend formatter endpoint."
+      : state === "error"
       ? parseError
       : state === "success"
         ? "Output is formatted and ready to copy."
@@ -119,9 +165,15 @@ export function PlaygroundShell() {
           : "Paste some JSON to wake Jason.");
   const statusTitle =
     (copyMessage ? "Copied to clipboard." : undefined) ||
-    (state === "error" ? "Jason couldn't parse this JSON." : undefined);
+    (state === "thinking"
+      ? "Jason is formatting..."
+      : state === "error"
+        ? "Jason couldn't parse this JSON."
+        : undefined);
   const footerHint =
-    state === "error"
+    state === "thinking"
+      ? "Calling POST /format on the backend."
+      : state === "error"
       ? "Fix the parse issue, then press Cmd/Ctrl + Enter to format again."
       : state === "success"
         ? "Formatted output is ready. Copy it or keep editing the input."
@@ -172,11 +224,21 @@ export function PlaygroundShell() {
             code={inputJson}
             editable
             onChange={handleInputChange}
-            onSubmit={handleFormat}
+            onSubmit={() => {
+              void handleFormat();
+            }}
           />
           <CodePanel
             title="Formatted Output"
-            meta={state === "error" ? "parse error" : outputJson ? "formatted" : "waiting"}
+            meta={
+              state === "thinking"
+                ? "formatting"
+                : state === "error"
+                  ? "parse error"
+                  : outputJson
+                    ? "formatted"
+                    : "waiting"
+            }
             code={outputCode}
             tone={state === "error" ? "error" : outputJson ? "success" : "default"}
           />
@@ -195,8 +257,13 @@ export function PlaygroundShell() {
             {footerHint}
           </p>
           <div className="flex flex-wrap gap-3">
-            <Button disabled={!canFormat} onClick={handleFormat}>
-              Format
+            <Button
+              disabled={!canFormat}
+              onClick={() => {
+                void handleFormat();
+              }}
+            >
+              {isFormatting ? "Formatting..." : "Format"}
             </Button>
             <Button disabled={!canCopy} variant="secondary" onClick={handleCopy}>
               Copy
