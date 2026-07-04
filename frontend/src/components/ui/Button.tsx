@@ -24,7 +24,7 @@ export function Button({
     ghost: "border border-zinc-800 bg-[#09090B] text-zinc-300 hover:border-zinc-700 hover:text-zinc-50",
   };
 
-  const buttonClassName = `inline-flex h-12 items-center justify-center rounded-xl px-6 font-mono text-sm font-semibold transition ${styles[variant]} ${className}`;
+  const buttonClassName = `inline-flex h-12 items-center justify-center rounded-xl px-6 font-mono text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 ${styles[variant]} ${className}`;
 
   if (href) {
     return (

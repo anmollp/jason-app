@@ -4,6 +4,7 @@ type CodePanelProps = {
   code: string;
   editable?: boolean;
   onChange?: (value: string) => void;
+  onSubmit?: () => void;
   tone?: "default" | "success" | "error";
 };
 
@@ -19,6 +20,7 @@ export function CodePanel({
   code,
   editable = false,
   onChange,
+  onSubmit,
   tone = "default",
 }: CodePanelProps) {
   return (
@@ -37,6 +39,12 @@ export function CodePanel({
             spellCheck={false}
             value={code}
             onChange={(event) => onChange?.(event.target.value)}
+            onKeyDown={(event) => {
+              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                event.preventDefault();
+                onSubmit?.();
+              }
+            }}
             placeholder="Paste JSON here..."
           />
         ) : (
