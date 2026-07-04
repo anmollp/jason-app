@@ -3,13 +3,17 @@ import { JasonMascot } from "@/components/mascot/JasonMascot";
 type JasonStatusProps = {
   detail?: string;
   title?: string;
-  tone?: "idle" | "success" | "error";
+  tone?: "idle" | "thinking" | "success" | "error";
 };
 
 const toneStyles = {
   idle: {
     border: "border-zinc-700 bg-zinc-900",
     text: "text-zinc-300",
+  },
+  thinking: {
+    border: "border-sky-500/40 bg-sky-500/10",
+    text: "text-sky-300",
   },
   success: {
     border: "border-emerald-500/40 bg-emerald-500/10",
@@ -25,6 +29,10 @@ const defaultCopy = {
   idle: {
     title: "Paste JSON to wake Jason",
     detail: "Formatter output will appear here.",
+  },
+  thinking: {
+    title: "Jason is formatting...",
+    detail: "Sending JSON to the formatter endpoint.",
   },
   success: {
     title: "Jason cleaned your JSON",
