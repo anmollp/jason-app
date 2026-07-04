@@ -42,6 +42,7 @@ export function PlaygroundShell() {
   const [inputJson, setInputJson] = useState(initialInputJson);
   const [outputJson, setOutputJson] = useState("");
   const [parseError, setParseError] = useState("");
+  const [copyMessage, setCopyMessage] = useState("");
   const [keyCount, setKeyCount] = useState(0);
   const [state, setState] = useState<FormatterState>("idle");
 
@@ -49,6 +50,7 @@ export function PlaygroundShell() {
     setInputJson(value);
     setOutputJson("");
     setParseError("");
+    setCopyMessage("");
     setKeyCount(0);
     setState("idle");
   }
@@ -57,6 +59,7 @@ export function PlaygroundShell() {
     if (!inputJson.trim()) {
       setOutputJson("");
       setParseError("");
+      setCopyMessage("");
       setKeyCount(0);
       setState("idle");
       return;
@@ -66,6 +69,7 @@ export function PlaygroundShell() {
       const parsed = JSON.parse(inputJson) as unknown;
       setOutputJson(JSON.stringify(parsed, null, 2));
       setParseError("");
+      setCopyMessage("");
       setKeyCount(countJsonKeys(parsed));
       setState("success");
     } catch (error) {
@@ -73,6 +77,7 @@ export function PlaygroundShell() {
         error instanceof Error ? error.message : "Jason could not parse this JSON.";
       setOutputJson("");
       setParseError(message);
+      setCopyMessage("");
       setKeyCount(0);
       setState("error");
     }
@@ -82,6 +87,7 @@ export function PlaygroundShell() {
     setInputJson("");
     setOutputJson("");
     setParseError("");
+    setCopyMessage("");
     setKeyCount(0);
     setState("idle");
   }
@@ -94,24 +100,32 @@ export function PlaygroundShell() {
     }
 
     void navigator.clipboard?.writeText(valueToCopy);
+    setCopyMessage(outputJson ? "Copied formatted JSON." : "Copied input JSON.");
   }
 
   const outputCode =
-    parseError || outputJson || "Formatted JSON will appear here.";
+    (parseError ? `Jason couldn't parse this JSON.\n\n${parseError}` : outputJson) ||
+    "Formatted JSON will appear here.";
+  const canFormat = inputJson.trim().length > 0;
+  const canCopy = Boolean((outputJson || inputJson).trim());
   const statusDetail =
-    state === "error"
+    copyMessage ||
+    (state === "error"
       ? parseError
       : state === "success"
         ? "Output is formatted and ready to copy."
         : inputJson.trim()
           ? "Jason is ready to format this JSON."
-          : "Paste some JSON to wake Jason.";
+          : "Paste some JSON to wake Jason.");
+  const statusTitle =
+    (copyMessage ? "Copied to clipboard." : undefined) ||
+    (state === "error" ? "Jason couldn't parse this JSON." : undefined);
   const footerHint =
     state === "error"
-      ? "Error state: Jason stays calm, shows the parse issue, and gives one next action."
+      ? "Fix the parse issue, then press Cmd/Ctrl + Enter to format again."
       : state === "success"
-        ? "Ready state: Jason confirms valid JSON, then keeps actions close to the result."
-        : "Idle state: paste JSON, then run Format to generate a clean output.";
+        ? "Formatted output is ready. Copy it or keep editing the input."
+        : "Paste JSON, then run Format or press Cmd/Ctrl + Enter.";
 
   return (
     <div className="min-h-screen bg-[#09090B] text-zinc-50">
@@ -146,7 +160,7 @@ export function PlaygroundShell() {
               Format, diff, patch, and inspect JSON.
             </h1>
           </div>
-          <JasonStatus detail={statusDetail} tone={state} />
+          <JasonStatus detail={statusDetail} title={statusTitle} tone={state} />
         </section>
 
         <ToolTabs />
@@ -158,6 +172,7 @@ export function PlaygroundShell() {
             code={inputJson}
             editable
             onChange={handleInputChange}
+            onSubmit={handleFormat}
           />
           <CodePanel
             title="Formatted Output"
@@ -166,6 +181,7 @@ export function PlaygroundShell() {
             tone={state === "error" ? "error" : outputJson ? "success" : "default"}
           />
           <InspectorPanel
+            canCopy={canCopy}
             issues={state === "error" ? 1 : 0}
             keys={keyCount}
             lines={countLines(outputJson || inputJson)}
@@ -179,8 +195,10 @@ export function PlaygroundShell() {
             {footerHint}
           </p>
           <div className="flex flex-wrap gap-3">
-            <Button onClick={handleFormat}>Format</Button>
-            <Button variant="secondary" onClick={handleCopy}>
+            <Button disabled={!canFormat} onClick={handleFormat}>
+              Format
+            </Button>
+            <Button disabled={!canCopy} variant="secondary" onClick={handleCopy}>
               Copy
             </Button>
           </div>

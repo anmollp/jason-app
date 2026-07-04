@@ -1,4 +1,5 @@
 type InspectorPanelProps = {
+  canCopy: boolean;
   issues: number;
   keys: number;
   lines: number;
@@ -7,6 +8,7 @@ type InspectorPanelProps = {
 };
 
 export function InspectorPanel({
+  canCopy,
   issues,
   keys,
   lines,
@@ -48,7 +50,8 @@ export function InspectorPanel({
         <div className="mt-4 flex flex-wrap gap-3 lg:flex-col">
           <button
             type="button"
-            className="h-11 rounded-xl bg-emerald-500 px-5 font-mono text-sm font-semibold text-zinc-950 transition hover:bg-emerald-400"
+            className="h-11 rounded-xl bg-emerald-500 px-5 font-mono text-sm font-semibold text-zinc-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-45"
+            disabled={!canCopy}
             onClick={onCopy}
           >
             Copy
