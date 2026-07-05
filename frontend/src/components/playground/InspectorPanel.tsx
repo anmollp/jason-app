@@ -1,5 +1,6 @@
 type InspectorPanelProps = {
   canCopy: boolean;
+  copyLabel?: string;
   issues: number;
   keys: number;
   lines: number;
@@ -9,6 +10,7 @@ type InspectorPanelProps = {
 
 export function InspectorPanel({
   canCopy,
+  copyLabel = "Copy",
   issues,
   keys,
   lines,
@@ -54,7 +56,7 @@ export function InspectorPanel({
             disabled={!canCopy}
             onClick={onCopy}
           >
-            Copy
+            {copyLabel}
           </button>
           <button
             type="button"

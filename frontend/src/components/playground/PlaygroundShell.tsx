@@ -48,6 +48,13 @@ function countLines(value: string) {
   return value.trim() ? value.split(/\r?\n/).length : 0;
 }
 
+function parseErrorLine(message: string) {
+  const match = message.match(/\bline\s+(\d+)\b/i);
+  const line = match ? Number(match[1]) : Number.NaN;
+
+  return Number.isInteger(line) && line > 0 ? line : undefined;
+}
+
 export function PlaygroundShell() {
   const [inputJson, setInputJson] = useState(initialInputJson);
   const [outputJson, setOutputJson] = useState("");
@@ -136,14 +143,12 @@ export function PlaygroundShell() {
   }
 
   function handleCopy() {
-    const valueToCopy = outputJson || inputJson;
-
-    if (!valueToCopy.trim()) {
+    if (!outputJson.trim()) {
       return;
     }
 
-    void navigator.clipboard?.writeText(valueToCopy);
-    setCopyMessage(outputJson ? "Copied formatted JSON." : "Copied input JSON.");
+    void navigator.clipboard?.writeText(outputJson);
+    setCopyMessage("Copied formatted JSON.");
   }
 
   const outputCode =
@@ -151,7 +156,9 @@ export function PlaygroundShell() {
     "Formatted JSON will appear here.";
   const isFormatting = state === "thinking";
   const canFormat = inputJson.trim().length > 0 && !isFormatting;
-  const canCopy = Boolean((outputJson || inputJson).trim());
+  const canCopy = Boolean(outputJson.trim());
+  const copyLabel = state === "error" ? "Fix first" : "Copy";
+  const errorLine = state === "error" ? parseErrorLine(parseError) : undefined;
   const statusDetail =
     copyMessage ||
     (state === "thinking"
@@ -220,13 +227,16 @@ export function PlaygroundShell() {
         <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_170px]">
           <CodePanel
             title="Input JSON"
-            meta="editable"
+            meta={errorLine ? `line ${errorLine}` : "editable"}
             code={inputJson}
             editable
+            errorLine={errorLine}
             onChange={handleInputChange}
             onSubmit={() => {
               void handleFormat();
             }}
+            showLineNumbers
+            tone={errorLine ? "error" : "default"}
           />
           <CodePanel
             title="Formatted Output"
@@ -244,6 +254,7 @@ export function PlaygroundShell() {
           />
           <InspectorPanel
             canCopy={canCopy}
+            copyLabel={copyLabel}
             issues={state === "error" ? 1 : 0}
             keys={keyCount}
             lines={countLines(outputJson || inputJson)}
@@ -266,7 +277,7 @@ export function PlaygroundShell() {
               {isFormatting ? "Formatting..." : "Format"}
             </Button>
             <Button disabled={!canCopy} variant="secondary" onClick={handleCopy}>
-              Copy
+              {copyLabel}
             </Button>
           </div>
         </section>
