@@ -3,14 +3,27 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { JasonCliService } from './../src/jason-cli.service';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
+  const jasonCliService = {
+    format: jest.fn((input: string) => {
+      const parsed = JSON.parse(input) as unknown;
+
+      return Promise.resolve(JSON.stringify(parsed, null, 2));
+    }),
+  };
 
   beforeEach(async () => {
+    jasonCliService.format.mockClear();
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(JasonCliService)
+      .useValue(jasonCliService)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
