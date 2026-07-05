@@ -50,7 +50,7 @@ export function CodePanel({
         ) : (
           <pre
             className={`h-full overflow-auto whitespace-pre-wrap font-mono text-sm leading-6 ${
-              tone === "error" ? "text-red-400" : "text-zinc-400"
+              tone === "error" ? "text-red-400" : "text-zinc-300"
             }`}
           >
             <code>{code}</code>
