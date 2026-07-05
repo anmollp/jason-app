@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { JasonCliService } from './jason-cli.service';
 
 export type FormatJsonRequest = {
   input: string;
@@ -10,15 +11,15 @@ export type FormatJsonResponse = {
 
 @Injectable()
 export class AppService {
+  constructor(private readonly jasonCliService: JasonCliService) {}
+
   getHello(): string {
     return 'Hello World!';
   }
 
-  formatJson(input: string): FormatJsonResponse {
-    const parsed = JSON.parse(input) as unknown;
-
+  async formatJson(input: string): Promise<FormatJsonResponse> {
     return {
-      output: JSON.stringify(parsed, null, 2),
+      output: await this.jasonCliService.format(input),
     };
   }
 }

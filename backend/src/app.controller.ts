@@ -20,7 +20,9 @@ export class AppController {
 
   @Post('format')
   @HttpCode(200)
-  formatJson(@Body() body: FormatJsonRequest): FormatJsonResponse {
+  async formatJson(
+    @Body() body: FormatJsonRequest,
+  ): Promise<FormatJsonResponse> {
     if (typeof body?.input !== 'string') {
       throw new BadRequestException({
         code: 'INVALID_REQUEST',
@@ -29,7 +31,7 @@ export class AppController {
     }
 
     try {
-      return this.appService.formatJson(body.input);
+      return await this.appService.formatJson(body.input);
     } catch (error) {
       throw new BadRequestException({
         code: 'INVALID_JSON',
