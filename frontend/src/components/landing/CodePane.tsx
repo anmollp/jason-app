@@ -1,24 +1,71 @@
 type CodePaneProps = {
   label: string;
   code: string;
-  changed?: boolean;
+  highlights?: Array<{
+    line: number;
+    marker: "+" | "-" | "~";
+    tone: "add" | "remove" | "review";
+  }>;
+  meta?: string;
 };
 
-export function CodePane({ label, code, changed = false }: CodePaneProps) {
+const highlightStyles = {
+  add: "border-emerald-500/40 bg-emerald-500/12 text-emerald-100",
+  remove: "border-red-500/40 bg-red-500/12 text-red-100",
+  review: "border-amber-500/40 bg-amber-500/12 text-amber-100",
+};
+
+const markerStyles = {
+  add: "text-emerald-400",
+  remove: "text-red-400",
+  review: "text-amber-400",
+};
+
+export function CodePane({ label, code, highlights = [], meta }: CodePaneProps) {
+  const lines = code.split("\n");
+  const highlightMap = new Map(highlights.map((highlight) => [highlight.line, highlight]));
+
   return (
-    <article className="min-h-[286px] rounded-[18px] border border-zinc-800 bg-[#09090B] p-5">
-      <div className="mb-5 font-mono text-xs font-semibold text-zinc-500">
-        {label}
+    <article className="min-h-[286px] overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-900">
+      <div className="flex h-12 items-center justify-between border-b border-zinc-800 bg-zinc-800 px-4">
+        <h3 className="font-mono text-xs font-semibold text-zinc-50">{label}</h3>
+        {meta ? (
+          <span className="font-mono text-xs font-semibold text-zinc-500">
+            {meta}
+          </span>
+        ) : null}
       </div>
-      <pre
-        className={`overflow-hidden rounded-lg font-mono text-sm leading-6 ${
-          changed
-            ? "bg-[linear-gradient(transparent_48px,rgba(16,185,129,.16)_48px,rgba(16,185,129,.16)_76px,transparent_76px,transparent_94px,rgba(56,189,248,.12)_94px,rgba(56,189,248,.12)_122px,transparent_122px,transparent_190px,rgba(124,58,237,.16)_190px,rgba(124,58,237,.16)_218px,transparent_218px)] text-zinc-50"
-            : "text-zinc-400"
-        }`}
-      >
-        <code>{code}</code>
-      </pre>
+      <div className="bg-[#09090B] p-4">
+        <div className="space-y-1 font-mono text-sm leading-6">
+          {lines.map((line, index) => {
+            const lineNumber = index + 1;
+            const highlight = highlightMap.get(lineNumber);
+
+            return (
+              <div
+                key={`${lineNumber}-${line}`}
+                className={`grid grid-cols-[2rem_1rem_minmax(0,1fr)] gap-2 rounded-md border px-2 py-0.5 ${
+                  highlight
+                    ? highlightStyles[highlight.tone]
+                    : "border-transparent text-zinc-400"
+                }`}
+              >
+                <span className="text-right text-zinc-600">
+                  {String(lineNumber).padStart(2, "0")}
+                </span>
+                <span
+                  className={highlight ? markerStyles[highlight.tone] : "text-zinc-700"}
+                >
+                  {highlight?.marker ?? " "}
+                </span>
+                <code className="min-w-0 whitespace-pre-wrap break-words">
+                  {line}
+                </code>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </article>
   );
 }
