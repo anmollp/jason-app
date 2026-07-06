@@ -24,6 +24,15 @@ export class JasonCliService {
         },
         (error, stdout, stderr) => {
           if (error) {
+            if ('code' in error && error.code === 'ENOENT') {
+              reject(
+                new Error(
+                  `Jason CLI not found at "${this.cliPath}". Set JASON_CLI_PATH to the built Rust binary, or add jason to PATH.`,
+                ),
+              );
+              return;
+            }
+
             reject(new Error(stderr.trim() || error.message));
             return;
           }
