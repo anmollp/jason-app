@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { JasonLogo } from "@/components/mascot/JasonLogo";
 import { Button } from "@/components/ui/Button";
@@ -379,15 +379,13 @@ export function PlaygroundShell() {
   const canCopy = isDiff ? Boolean(diffResult) : Boolean(outputJson.trim());
   const copyLabel = isDiff ? "Patch" : state === "error" ? "Fix first" : "Copy";
   const errorLine = state === "error" ? parseErrorLine(parseError) : undefined;
-  const beforeDiffHighlights = buildDiffHighlights(
-    diffBeforeInput,
-    diffResult?.operations,
-    "before",
+  const beforeDiffHighlights = useMemo(
+    () => buildDiffHighlights(diffBeforeInput, diffResult?.operations, "before"),
+    [diffBeforeInput, diffResult?.operations],
   );
-  const afterDiffHighlights = buildDiffHighlights(
-    diffAfterInput,
-    diffResult?.operations,
-    "after",
+  const afterDiffHighlights = useMemo(
+    () => buildDiffHighlights(diffAfterInput, diffResult?.operations, "after"),
+    [diffAfterInput, diffResult?.operations],
   );
   const currentDiffSummary = diffResult?.summary ?? {
     added: 0,
