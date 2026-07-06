@@ -21,6 +21,42 @@ const markerStyles = {
   review: "text-amber-400",
 };
 
+function renderJsonLine(line: string) {
+  const propertyMatch = line.match(/^(\s*)("[^"]+")(:\s*)(.*?)(,?)$/);
+
+  if (!propertyMatch) {
+    return <span className="text-zinc-400">{line}</span>;
+  }
+
+  const [, indent, key, separator, rawValue, comma] = propertyMatch;
+  const value = rawValue.trimEnd();
+  const leadingValueSpace = rawValue.match(/^\s*/)?.[0] ?? "";
+  const displayValue = value.trimStart();
+  const valueClassName =
+    displayValue.startsWith('"')
+      ? "text-emerald-300"
+      : displayValue === "true" || displayValue === "false"
+        ? "text-sky-300"
+        : Number.isFinite(Number(displayValue))
+          ? "text-violet-300"
+          : "text-zinc-400";
+
+  return (
+    <>
+      <span className="text-zinc-500">{indent}</span>
+      <span className="text-amber-300">{key}</span>
+      <span className="text-zinc-500">{separator}</span>
+      {displayValue ? (
+        <>
+          <span>{leadingValueSpace}</span>
+          <span className={valueClassName}>{displayValue}</span>
+        </>
+      ) : null}
+      <span className="text-zinc-500">{comma}</span>
+    </>
+  );
+}
+
 export function CodePane({ label, code, highlights = [], meta }: CodePaneProps) {
   const lines = code.split("\n");
   const highlightMap = new Map(highlights.map((highlight) => [highlight.line, highlight]));
@@ -35,8 +71,8 @@ export function CodePane({ label, code, highlights = [], meta }: CodePaneProps) 
           </span>
         ) : null}
       </div>
-      <div className="bg-[#09090B] p-4">
-        <div className="space-y-1 font-mono text-sm leading-6">
+      <div className="overflow-hidden bg-[#09090B] p-4">
+        <div className="space-y-1 font-mono text-xs leading-5">
           {lines.map((line, index) => {
             const lineNumber = index + 1;
             const highlight = highlightMap.get(lineNumber);
@@ -44,7 +80,7 @@ export function CodePane({ label, code, highlights = [], meta }: CodePaneProps) 
             return (
               <div
                 key={`${lineNumber}-${line}`}
-                className={`grid grid-cols-[2rem_1rem_minmax(0,1fr)] gap-2 rounded-md border px-2 py-0.5 ${
+                className={`grid grid-cols-[1.75rem_1rem_minmax(0,1fr)] gap-1 rounded-md border px-2 py-0.5 ${
                   highlight
                     ? highlightStyles[highlight.tone]
                     : "border-transparent text-zinc-400"
@@ -58,8 +94,8 @@ export function CodePane({ label, code, highlights = [], meta }: CodePaneProps) 
                 >
                   {highlight?.marker ?? " "}
                 </span>
-                <code className="min-w-0 whitespace-pre-wrap break-words">
-                  {line}
+                <code className="min-w-0 overflow-hidden whitespace-pre">
+                  {renderJsonLine(line)}
                 </code>
               </div>
             );
