@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { JsonCodeEditor } from "./JsonCodeEditor";
 
 type CodePanelProps = {
   title: string;
@@ -44,17 +44,7 @@ const diffMarkerStyles = {
   remove: "text-red-400",
 };
 
-const editorHighlightStyles = {
-  add: "border-l-2 border-emerald-400 bg-emerald-500/12",
-  change: "border-l-2 border-amber-400 bg-amber-500/12",
-  remove: "border-l-2 border-red-400 bg-red-500/12",
-};
-
-const lineNumberHighlightStyles = {
-  add: "font-semibold text-emerald-400",
-  change: "font-semibold text-amber-400",
-  remove: "font-semibold text-red-400",
-};
+const emptyHighlightedLines: NonNullable<CodePanelProps["highlightedLines"]> = [];
 
 export function CodePanel({
   title,
@@ -63,37 +53,12 @@ export function CodePanel({
   diffRows,
   editable = false,
   errorLine,
-  highlightedLines = [],
+  highlightedLines = emptyHighlightedLines,
   onChange,
   onSubmit,
   showLineNumbers = false,
   tone = "default",
 }: CodePanelProps) {
-  const lineNumberRef = useRef<HTMLDivElement>(null);
-  const highlightRef = useRef<HTMLDivElement>(null);
-  const lineNumbers = useMemo(
-    () =>
-      Array.from(
-        { length: Math.max(code.split(/\r?\n/).length, 1) },
-        (_, index) => index + 1,
-      ),
-    [code],
-  );
-  const highlightedLineMap = useMemo(
-    () => new Map(highlightedLines.map((line) => [line.line, line.tone])),
-    [highlightedLines],
-  );
-
-  function syncLineNumberScroll(scrollTop: number) {
-    if (lineNumberRef.current) {
-      lineNumberRef.current.style.transform = `translateY(-${scrollTop}px)`;
-    }
-
-    if (highlightRef.current) {
-      highlightRef.current.style.transform = `translateY(-${scrollTop}px)`;
-    }
-  }
-
   return (
     <section className="flex min-h-[420px] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-900">
       <header className="flex h-14 items-center justify-between border-b border-zinc-800 bg-zinc-800 px-5">
@@ -104,67 +69,15 @@ export function CodePanel({
       </header>
       <div className="flex-1 bg-[#09090B] p-5">
         {editable ? (
-          <div className="flex h-full min-h-[330px] overflow-hidden">
-            {showLineNumbers ? (
-              <div className="w-10 shrink-0 overflow-hidden border-r border-zinc-800 pr-3 text-right font-mono text-sm leading-6 text-zinc-600 select-none">
-                <div ref={lineNumberRef}>
-                  {lineNumbers.map((lineNumber) => (
-                    <div
-                      key={lineNumber}
-                      className={
-                        lineNumber === errorLine
-                          ? "font-semibold text-red-400"
-                          : highlightedLineMap.has(lineNumber)
-                            ? lineNumberHighlightStyles[
-                                highlightedLineMap.get(lineNumber) ?? "change"
-                              ]
-                            : undefined
-                      }
-                    >
-                      {lineNumber}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-            <div className="relative min-w-0 flex-1">
-              {highlightedLines.length > 0 ? (
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 overflow-hidden"
-                >
-                  <div ref={highlightRef} className="relative">
-                    {highlightedLines.map((highlight) => (
-                      <div
-                        key={`${highlight.line}-${highlight.tone}`}
-                        className={`absolute left-1 right-1 h-6 rounded-md ${editorHighlightStyles[highlight.tone]}`}
-                        style={{
-                          transform: `translateY(${(highlight.line - 1) * 24}px)`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              <textarea
-                aria-label={title}
-                className="relative z-10 h-full min-h-[330px] w-full resize-none bg-transparent pl-4 font-mono text-sm leading-6 text-zinc-300 outline-none placeholder:text-zinc-600"
-                spellCheck={false}
-                value={code}
-                onChange={(event) => onChange?.(event.target.value)}
-                onKeyDown={(event) => {
-                  if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-                    event.preventDefault();
-                    onSubmit?.();
-                  }
-                }}
-                onScroll={(event) => {
-                  syncLineNumberScroll(event.currentTarget.scrollTop);
-                }}
-                placeholder="Paste JSON here..."
-              />
-            </div>
-          </div>
+          <JsonCodeEditor
+            ariaLabel={title}
+            errorLine={errorLine}
+            highlightedLines={highlightedLines}
+            onChange={onChange}
+            onSubmit={onSubmit}
+            showLineNumbers={showLineNumbers}
+            value={code}
+          />
         ) : diffRows ? (
           <div className="space-y-1 font-mono text-sm leading-6">
             {diffRows.map((row) => {
@@ -189,13 +102,15 @@ export function CodePanel({
             })}
           </div>
         ) : (
-          <pre
-            className={`h-full overflow-auto whitespace-pre-wrap font-mono text-sm leading-6 ${
-              tone === "error" ? "text-red-400" : "text-zinc-300"
-            }`}
-          >
-            <code>{code}</code>
-          </pre>
+          <JsonCodeEditor
+            ariaLabel={title}
+            errorLine={errorLine}
+            highlightedLines={highlightedLines}
+            readOnly
+            showLineNumbers
+            tone={tone === "error" ? "error" : "default"}
+            value={code}
+          />
         )}
       </div>
     </section>
