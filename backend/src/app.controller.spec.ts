@@ -6,10 +6,11 @@ import { JasonCliService } from './jason-cli.service';
 
 describe('AppController', () => {
   let appController: AppController;
-  let jasonCliService: { format: jest.Mock };
+  let jasonCliService: { diff: jest.Mock; format: jest.Mock };
 
   beforeEach(async () => {
     jasonCliService = {
+      diff: jest.fn(),
       format: jest.fn(),
     };
 
@@ -67,6 +68,58 @@ describe('AppController', () => {
       await expect(
         appController.formatJson({
           input: '{ "service": "billing", retry: true }',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('diffJson', () => {
+    it('returns patch operations and summary through the Jason CLI service', async () => {
+      jasonCliService.diff.mockResolvedValue(
+        '[\n  {"op":"replace","path":"/a","value":2},\n  {"op":"add","path":"/b","value":true}\n]',
+      );
+
+      await expect(
+        appController.diffJson({
+          before: '{"a":1}',
+          after: '{"a":2,"b":true}',
+        }),
+      ).resolves.toEqual({
+        operations: [
+          { op: 'replace', path: '/a', value: 2 },
+          { op: 'add', path: '/b', value: true },
+        ],
+        summary: {
+          added: 1,
+          changes: 2,
+          removed: 0,
+          replaced: 1,
+        },
+      });
+      expect(jasonCliService.diff).toHaveBeenCalledWith(
+        '{"a":1}',
+        '{"a":2,"b":true}',
+      );
+    });
+
+    it('rejects requests without before and after strings', async () => {
+      await expect(
+        appController.diffJson({ before: '{"a":1}' } as unknown as {
+          before: string;
+          after: string;
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('returns a friendly error for invalid diff JSON', async () => {
+      jasonCliService.diff.mockRejectedValue(
+        new Error('after: expected value at line 1 column 1'),
+      );
+
+      await expect(
+        appController.diffJson({
+          before: '{"a":1}',
+          after: '{ a: 2 }',
         }),
       ).rejects.toThrow(BadRequestException);
     });

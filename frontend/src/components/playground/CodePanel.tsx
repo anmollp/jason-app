@@ -14,6 +14,10 @@ type CodePanelProps = {
   }>;
   editable?: boolean;
   errorLine?: number;
+  highlightedLines?: Array<{
+    line: number;
+    tone: "add" | "remove" | "change";
+  }>;
   onChange?: (value: string) => void;
   onSubmit?: () => void;
   showLineNumbers?: boolean;
@@ -40,6 +44,18 @@ const diffMarkerStyles = {
   remove: "text-red-400",
 };
 
+const editorHighlightStyles = {
+  add: "border-l-2 border-emerald-400 bg-emerald-500/12",
+  change: "border-l-2 border-amber-400 bg-amber-500/12",
+  remove: "border-l-2 border-red-400 bg-red-500/12",
+};
+
+const lineNumberHighlightStyles = {
+  add: "font-semibold text-emerald-400",
+  change: "font-semibold text-amber-400",
+  remove: "font-semibold text-red-400",
+};
+
 export function CodePanel({
   title,
   meta,
@@ -47,12 +63,14 @@ export function CodePanel({
   diffRows,
   editable = false,
   errorLine,
+  highlightedLines = [],
   onChange,
   onSubmit,
   showLineNumbers = false,
   tone = "default",
 }: CodePanelProps) {
   const lineNumberRef = useRef<HTMLDivElement>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
   const lineNumbers = useMemo(
     () =>
       Array.from(
@@ -61,13 +79,19 @@ export function CodePanel({
       ),
     [code],
   );
+  const highlightedLineMap = useMemo(
+    () => new Map(highlightedLines.map((line) => [line.line, line.tone])),
+    [highlightedLines],
+  );
 
   function syncLineNumberScroll(scrollTop: number) {
-    if (!lineNumberRef.current) {
-      return;
+    if (lineNumberRef.current) {
+      lineNumberRef.current.style.transform = `translateY(-${scrollTop}px)`;
     }
 
-    lineNumberRef.current.style.transform = `translateY(-${scrollTop}px)`;
+    if (highlightRef.current) {
+      highlightRef.current.style.transform = `translateY(-${scrollTop}px)`;
+    }
   }
 
   return (
@@ -90,7 +114,11 @@ export function CodePanel({
                       className={
                         lineNumber === errorLine
                           ? "font-semibold text-red-400"
-                          : undefined
+                          : highlightedLineMap.has(lineNumber)
+                            ? lineNumberHighlightStyles[
+                                highlightedLineMap.get(lineNumber) ?? "change"
+                              ]
+                            : undefined
                       }
                     >
                       {lineNumber}
@@ -99,23 +127,43 @@ export function CodePanel({
                 </div>
               </div>
             ) : null}
-            <textarea
-              aria-label={title}
-              className="h-full min-h-[330px] w-full resize-none bg-transparent pl-4 font-mono text-sm leading-6 text-zinc-300 outline-none placeholder:text-zinc-600"
-              spellCheck={false}
-              value={code}
-              onChange={(event) => onChange?.(event.target.value)}
-              onKeyDown={(event) => {
-                if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-                  event.preventDefault();
-                  onSubmit?.();
-                }
-              }}
-              onScroll={(event) => {
-                syncLineNumberScroll(event.currentTarget.scrollTop);
-              }}
-              placeholder="Paste JSON here..."
-            />
+            <div className="relative min-w-0 flex-1">
+              {highlightedLines.length > 0 ? (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 overflow-hidden"
+                >
+                  <div ref={highlightRef} className="relative">
+                    {highlightedLines.map((highlight) => (
+                      <div
+                        key={`${highlight.line}-${highlight.tone}`}
+                        className={`absolute left-1 right-1 h-6 rounded-md ${editorHighlightStyles[highlight.tone]}`}
+                        style={{
+                          transform: `translateY(${(highlight.line - 1) * 24}px)`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              <textarea
+                aria-label={title}
+                className="relative z-10 h-full min-h-[330px] w-full resize-none bg-transparent pl-4 font-mono text-sm leading-6 text-zinc-300 outline-none placeholder:text-zinc-600"
+                spellCheck={false}
+                value={code}
+                onChange={(event) => onChange?.(event.target.value)}
+                onKeyDown={(event) => {
+                  if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                    event.preventDefault();
+                    onSubmit?.();
+                  }
+                }}
+                onScroll={(event) => {
+                  syncLineNumberScroll(event.currentTarget.scrollTop);
+                }}
+                placeholder="Paste JSON here..."
+              />
+            </div>
           </div>
         ) : diffRows ? (
           <div className="space-y-1 font-mono text-sm leading-6">
