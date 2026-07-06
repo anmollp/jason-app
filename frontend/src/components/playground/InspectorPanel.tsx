@@ -1,19 +1,26 @@
 type InspectorPanelProps = {
   canCopy: boolean;
   copyLabel?: string;
-  issues: number;
-  keys: number;
-  lines: number;
+  stats: Array<{
+    label: string;
+    tone?: "default" | "success" | "danger" | "warning";
+    value: number | string;
+  }>;
   onClear: () => void;
   onCopy: () => void;
+};
+
+const statToneStyles = {
+  default: "text-zinc-50",
+  success: "text-emerald-400",
+  danger: "text-red-400",
+  warning: "text-amber-400",
 };
 
 export function InspectorPanel({
   canCopy,
   copyLabel = "Copy",
-  issues,
-  keys,
-  lines,
+  stats,
   onClear,
   onCopy,
 }: InspectorPanelProps) {
@@ -24,24 +31,14 @@ export function InspectorPanel({
           Stats
         </p>
         <dl className="mt-5 space-y-3 font-mono text-sm">
-          <div>
-            <dt className="text-zinc-500">Lines</dt>
-            <dd className="mt-1 text-zinc-50">{lines}</dd>
-          </div>
-          <div>
-            <dt className="text-zinc-500">Keys</dt>
-            <dd className="mt-1 text-zinc-50">{keys}</dd>
-          </div>
-          <div>
-            <dt className="text-zinc-500">Issues</dt>
-            <dd
-              className={`mt-1 ${
-                issues > 0 ? "text-red-400" : "text-emerald-400"
-              }`}
-            >
-              {issues}
-            </dd>
-          </div>
+          {stats.map((stat) => (
+            <div key={stat.label}>
+              <dt className="text-zinc-500">{stat.label}</dt>
+              <dd className={`mt-1 ${statToneStyles[stat.tone ?? "default"]}`}>
+                {stat.value}
+              </dd>
+            </div>
+          ))}
         </dl>
       </div>
 

@@ -6,6 +6,12 @@ type CodePanelProps = {
   title: string;
   meta: string;
   code: string;
+  diffRows?: Array<{
+    code: string;
+    line: number;
+    marker?: "+" | "-" | "~";
+    tone?: "neutral" | "add" | "remove" | "change";
+  }>;
   editable?: boolean;
   errorLine?: number;
   onChange?: (value: string) => void;
@@ -20,10 +26,25 @@ const toneStyles = {
   error: "text-red-400",
 };
 
+const diffRowStyles = {
+  add: "border-emerald-500/40 bg-emerald-950/70 text-emerald-200",
+  change: "border-amber-500/40 bg-amber-950/70 text-amber-200",
+  neutral: "border-transparent text-zinc-300",
+  remove: "border-red-500/40 bg-red-950/70 text-red-200",
+};
+
+const diffMarkerStyles = {
+  add: "text-emerald-400",
+  change: "text-amber-400",
+  neutral: "text-zinc-600",
+  remove: "text-red-400",
+};
+
 export function CodePanel({
   title,
   meta,
   code,
+  diffRows,
   editable = false,
   errorLine,
   onChange,
@@ -95,6 +116,29 @@ export function CodePanel({
               }}
               placeholder="Paste JSON here..."
             />
+          </div>
+        ) : diffRows ? (
+          <div className="space-y-1 font-mono text-sm leading-6">
+            {diffRows.map((row) => {
+              const tone = row.tone ?? "neutral";
+
+              return (
+                <div
+                  key={`${row.line}-${row.code}`}
+                  className={`grid grid-cols-[2rem_1rem_minmax(0,1fr)] gap-2 rounded-md border px-2 py-1 ${diffRowStyles[tone]}`}
+                >
+                  <span className="text-zinc-600">
+                    {String(row.line).padStart(2, "0")}
+                  </span>
+                  <span className={diffMarkerStyles[tone]}>
+                    {row.marker ?? " "}
+                  </span>
+                  <code className="min-w-0 whitespace-pre-wrap break-words">
+                    {row.code}
+                  </code>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <pre

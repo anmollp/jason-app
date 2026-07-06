@@ -9,16 +9,28 @@ import { Button } from "@/components/ui/Button";
 import { CodePanel } from "./CodePanel";
 import { InspectorPanel } from "./InspectorPanel";
 import { JasonStatus } from "./JasonStatus";
-import { ToolTabs } from "./ToolTabs";
+import { ToolTabs, type PlaygroundTool } from "./ToolTabs";
 
 const initialInputJson = `{
   "service": "billing",
   "region": "us-east-1",
   "retry": true
 }`;
+const diffPatchPreview = `[
+  { "op": "replace", "path": "/status", "value": "ready" },
+  { "op": "replace", "path": "/plan", "value": "pro" },
+  { "op": "replace", "path": "/user/role", "value": "admin" },
+  { "op": "add", "path": "/timeoutMs", "value": 3000 }
+]`;
 const formatEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000"}/format`;
 
 type FormatterState = "idle" | "thinking" | "success" | "error";
+type DiffRow = {
+  code: string;
+  line: number;
+  marker?: "+" | "-" | "~";
+  tone?: "neutral" | "add" | "remove" | "change";
+};
 
 type FormatJsonResponse = {
   output: string;
@@ -55,7 +67,29 @@ function parseErrorLine(message: string) {
   return Number.isInteger(line) && line > 0 ? line : undefined;
 }
 
+const originalDiffRows: DiffRow[] = [
+  { code: "{", line: 1 },
+  { code: '"status": "draft",', line: 2, marker: "-", tone: "remove" },
+  { code: '"plan": "starter",', line: 3, marker: "-", tone: "remove" },
+  { code: '"user": {', line: 4 },
+  { code: '  "role": "viewer"', line: 5, marker: "-", tone: "remove" },
+  { code: "}", line: 6 },
+  { code: "}", line: 7 },
+];
+
+const changedDiffRows: DiffRow[] = [
+  { code: "{", line: 1 },
+  { code: '"status": "ready",', line: 2, marker: "+", tone: "add" },
+  { code: '"plan": "pro",', line: 3, marker: "+", tone: "add" },
+  { code: '"user": {', line: 4 },
+  { code: '  "role": "admin"', line: 5, marker: "+", tone: "add" },
+  { code: "},", line: 6, marker: "~", tone: "change" },
+  { code: '"timeoutMs": 3000', line: 7, marker: "+", tone: "add" },
+  { code: "}", line: 8 },
+];
+
 export function PlaygroundShell() {
+  const [activeTool, setActiveTool] = useState<PlaygroundTool>("Formatter");
   const [inputJson, setInputJson] = useState(initialInputJson);
   const [outputJson, setOutputJson] = useState("");
   const [parseError, setParseError] = useState("");
@@ -70,6 +104,11 @@ export function PlaygroundShell() {
     setCopyMessage("");
     setKeyCount(0);
     setState("idle");
+  }
+
+  function handleToolChange(tool: PlaygroundTool) {
+    setActiveTool(tool);
+    setCopyMessage("");
   }
 
   async function handleFormat() {
@@ -143,6 +182,12 @@ export function PlaygroundShell() {
   }
 
   function handleCopy() {
+    if (activeTool === "Diff") {
+      void navigator.clipboard?.writeText(diffPatchPreview);
+      setCopyMessage("Copied patch preview.");
+      return;
+    }
+
     if (!outputJson.trim()) {
       return;
     }
@@ -154,14 +199,36 @@ export function PlaygroundShell() {
   const outputCode =
     (parseError ? `Jason couldn't parse this JSON.\n\n${parseError}` : outputJson) ||
     "Formatted JSON will appear here.";
+  const isDiff = activeTool === "Diff";
+  const isUnsupportedTool = activeTool === "Patch" || activeTool === "Pointer";
   const isFormatting = state === "thinking";
-  const canFormat = inputJson.trim().length > 0 && !isFormatting;
-  const canCopy = Boolean(outputJson.trim());
-  const copyLabel = state === "error" ? "Fix first" : "Copy";
+  const canRunPrimaryAction =
+    isDiff || (inputJson.trim().length > 0 && !isFormatting && !isUnsupportedTool);
+  const canCopy = isDiff || Boolean(outputJson.trim());
+  const copyLabel = isDiff ? "Patch" : state === "error" ? "Fix first" : "Copy";
   const errorLine = state === "error" ? parseErrorLine(parseError) : undefined;
+  const formatterStats = [
+    { label: "Lines", value: countLines(outputJson || inputJson) },
+    { label: "Keys", value: keyCount },
+    {
+      label: "Issues",
+      tone: state === "error" ? "danger" : "success",
+      value: state === "error" ? 1 : 0,
+    },
+  ] satisfies Parameters<typeof InspectorPanel>[0]["stats"];
+  const diffStats = [
+    { label: "Changes", value: 3 },
+    { label: "Added", tone: "success", value: "+4" },
+    { label: "Removed", tone: "danger", value: "-3" },
+    { label: "Review", tone: "warning", value: 1 },
+  ] satisfies Parameters<typeof InspectorPanel>[0]["stats"];
   const statusDetail =
     copyMessage ||
-    (state === "thinking"
+    (isDiff
+      ? "Review highlighted changes before exporting a patch."
+      : isUnsupportedTool
+        ? `${activeTool} shell is coming next.`
+        : state === "thinking"
       ? "Sending JSON to the backend formatter endpoint."
       : state === "error"
       ? parseError
@@ -172,13 +239,21 @@ export function PlaygroundShell() {
           : "Paste some JSON to wake Jason.");
   const statusTitle =
     (copyMessage ? "Copied to clipboard." : undefined) ||
-    (state === "thinking"
+    (isDiff
+      ? "Jason found 3 changes"
+      : isUnsupportedTool
+        ? `${activeTool} is not wired yet.`
+        : state === "thinking"
       ? "Jason is formatting..."
       : state === "error"
         ? "Jason couldn't parse this JSON."
         : undefined);
   const footerHint =
-    state === "thinking"
+    isDiff
+      ? "Diff shell: highlighted rows show added, removed, and structural changes to review."
+      : isUnsupportedTool
+        ? "This tool mode will reuse the same playground shell once designed."
+        : state === "thinking"
       ? "Calling POST /format on the backend."
       : state === "error"
       ? "Fix the parse issue, then press Cmd/Ctrl + Enter to format again."
@@ -216,48 +291,73 @@ export function PlaygroundShell() {
               JSON workspace
             </p>
             <h1 className="mt-3 max-w-[760px] text-4xl font-bold tracking-tight sm:text-5xl">
-              Format, diff, patch, and inspect JSON.
+              {isDiff
+                ? "Compare JSON changes before they ship."
+                : "Format, diff, patch, and inspect JSON."}
             </h1>
           </div>
-          <JasonStatus detail={statusDetail} title={statusTitle} tone={state} />
+          <JasonStatus
+            detail={statusDetail}
+            title={statusTitle}
+            tone={isDiff ? "success" : state}
+          />
         </section>
 
-        <ToolTabs />
+        <ToolTabs activeTool={activeTool} onToolChange={handleToolChange} />
 
         <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_170px]">
-          <CodePanel
-            title="Input JSON"
-            meta={errorLine ? `line ${errorLine}` : "editable"}
-            code={inputJson}
-            editable
-            errorLine={errorLine}
-            onChange={handleInputChange}
-            onSubmit={() => {
-              void handleFormat();
-            }}
-            showLineNumbers
-            tone={errorLine ? "error" : "default"}
-          />
-          <CodePanel
-            title="Formatted Output"
-            meta={
-              state === "thinking"
-                ? "formatting"
-                : state === "error"
-                  ? "parse error"
-                  : outputJson
-                    ? "formatted"
-                    : "waiting"
-            }
-            code={outputCode}
-            tone={state === "error" ? "error" : outputJson ? "success" : "default"}
-          />
+          {isDiff ? (
+            <>
+              <CodePanel
+                title="Original JSON"
+                meta="before"
+                code=""
+                diffRows={originalDiffRows}
+                tone="error"
+              />
+              <CodePanel
+                title="Changed JSON"
+                meta="after"
+                code=""
+                diffRows={changedDiffRows}
+                tone="success"
+              />
+            </>
+          ) : (
+            <>
+              <CodePanel
+                title="Input JSON"
+                meta={errorLine ? `line ${errorLine}` : "editable"}
+                code={inputJson}
+                editable
+                errorLine={errorLine}
+                onChange={handleInputChange}
+                onSubmit={() => {
+                  void handleFormat();
+                }}
+                showLineNumbers
+                tone={errorLine ? "error" : "default"}
+              />
+              <CodePanel
+                title="Formatted Output"
+                meta={
+                  state === "thinking"
+                    ? "formatting"
+                    : state === "error"
+                      ? "parse error"
+                      : outputJson
+                        ? "formatted"
+                        : "waiting"
+                }
+                code={isUnsupportedTool ? `${activeTool} shell coming soon.` : outputCode}
+                tone={state === "error" ? "error" : outputJson ? "success" : "default"}
+              />
+            </>
+          )}
           <InspectorPanel
             canCopy={canCopy}
             copyLabel={copyLabel}
-            issues={state === "error" ? 1 : 0}
-            keys={keyCount}
-            lines={countLines(outputJson || inputJson)}
+            stats={isDiff ? diffStats : formatterStats}
             onClear={handleClear}
             onCopy={handleCopy}
           />
@@ -269,12 +369,17 @@ export function PlaygroundShell() {
           </p>
           <div className="flex flex-wrap gap-3">
             <Button
-              disabled={!canFormat}
+              disabled={!canRunPrimaryAction}
               onClick={() => {
+                if (isDiff) {
+                  setCopyMessage("Diff preview is ready.");
+                  return;
+                }
+
                 void handleFormat();
               }}
             >
-              {isFormatting ? "Formatting..." : "Format"}
+              {isDiff ? "Compare" : isFormatting ? "Formatting..." : "Format"}
             </Button>
             <Button disabled={!canCopy} variant="secondary" onClick={handleCopy}>
               {copyLabel}
