@@ -16,20 +16,29 @@ const initialInputJson = `{
   "region": "us-east-1",
   "retry": true
 }`;
-const diffPatchPreview = `[
-  { "op": "replace", "path": "/status", "value": "ready" },
-  { "op": "replace", "path": "/plan", "value": "pro" },
-  { "op": "replace", "path": "/user/role", "value": "admin" },
-  { "op": "add", "path": "/timeoutMs", "value": 3000 }
-]`;
-const formatEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000"}/format`;
+const diffBeforeJson = `{
+  "status": "draft",
+  "plan": "starter",
+  "user": {
+    "role": "viewer"
+  }
+}`;
+const diffAfterJson = `{
+  "status": "ready",
+  "plan": "pro",
+  "user": {
+    "role": "admin"
+  },
+  "timeoutMs": 3000
+}`;
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
+const formatEndpoint = `${apiBaseUrl}/format`;
+const diffEndpoint = `${apiBaseUrl}/diff`;
 
 type FormatterState = "idle" | "thinking" | "success" | "error";
-type DiffRow = {
-  code: string;
+type LineHighlight = {
   line: number;
-  marker?: "+" | "-" | "~";
-  tone?: "neutral" | "add" | "remove" | "change";
+  tone: "add" | "remove" | "change";
 };
 
 type FormatJsonResponse = {
@@ -39,6 +48,23 @@ type FormatJsonResponse = {
 type FormatJsonErrorResponse = {
   detail?: string;
   message?: string;
+};
+
+type JsonPatchOperation = {
+  from?: string;
+  op: "add" | "remove" | "replace" | "move" | "copy" | "test";
+  path: string;
+  value?: unknown;
+};
+
+type DiffJsonResponse = {
+  operations: JsonPatchOperation[];
+  summary: {
+    added: number;
+    changes: number;
+    removed: number;
+    replaced: number;
+  };
 };
 
 function countJsonKeys(value: unknown): number {
@@ -67,35 +93,88 @@ function parseErrorLine(message: string) {
   return Number.isInteger(line) && line > 0 ? line : undefined;
 }
 
-const originalDiffRows: DiffRow[] = [
-  { code: "{", line: 1 },
-  { code: '"status": "draft",', line: 2, marker: "-", tone: "remove" },
-  { code: '"plan": "starter",', line: 3, marker: "-", tone: "remove" },
-  { code: '"user": {', line: 4 },
-  { code: '  "role": "viewer"', line: 5, marker: "-", tone: "remove" },
-  { code: "}", line: 6 },
-  { code: "}", line: 7 },
-];
+function decodePointerSegment(segment: string) {
+  return segment.replaceAll("~1", "/").replaceAll("~0", "~");
+}
 
-const changedDiffRows: DiffRow[] = [
-  { code: "{", line: 1 },
-  { code: '"status": "ready",', line: 2, marker: "+", tone: "add" },
-  { code: '"plan": "pro",', line: 3, marker: "+", tone: "add" },
-  { code: '"user": {', line: 4 },
-  { code: '  "role": "admin"', line: 5, marker: "+", tone: "add" },
-  { code: "},", line: 6, marker: "~", tone: "change" },
-  { code: '"timeoutMs": 3000', line: 7, marker: "+", tone: "add" },
-  { code: "}", line: 8 },
-];
+function lineForJsonPointer(input: string, path: string) {
+  if (!path) {
+    return input.trim() ? 1 : undefined;
+  }
+
+  const segments = path.split("/").slice(1).map(decodePointerSegment);
+  const target = segments.at(-1);
+
+  if (!target) {
+    return undefined;
+  }
+
+  const lines = input.split(/\r?\n/);
+  const quotedTarget = `"${target.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+  const targetIndex = lines.findIndex((line) => line.includes(quotedTarget));
+
+  if (targetIndex >= 0) {
+    return targetIndex + 1;
+  }
+
+  const arrayIndex = Number(target);
+
+  if (Number.isInteger(arrayIndex) && arrayIndex >= 0) {
+    return Math.min(arrayIndex + 2, lines.length);
+  }
+
+  return undefined;
+}
+
+function buildDiffHighlights(
+  input: string,
+  operations: JsonPatchOperation[] | undefined,
+  side: "before" | "after",
+): LineHighlight[] {
+  if (!operations) {
+    return [];
+  }
+
+  const highlights = operations.flatMap<LineHighlight>((operation) => {
+    const line = lineForJsonPointer(input, operation.path);
+
+    if (!line) {
+      return [];
+    }
+
+    if (operation.op === "replace") {
+      return [{ line, tone: "change" as const }];
+    }
+
+    if (side === "before" && operation.op === "remove") {
+      return [{ line, tone: "remove" as const }];
+    }
+
+    if (side === "after" && operation.op === "add") {
+      return [{ line, tone: "add" as const }];
+    }
+
+    return [];
+  });
+
+  return Array.from(
+    new Map(highlights.map((highlight) => [highlight.line, highlight])).values(),
+  );
+}
 
 export function PlaygroundShell() {
   const [activeTool, setActiveTool] = useState<PlaygroundTool>("Formatter");
   const [inputJson, setInputJson] = useState(initialInputJson);
+  const [diffBeforeInput, setDiffBeforeInput] = useState(diffBeforeJson);
+  const [diffAfterInput, setDiffAfterInput] = useState(diffAfterJson);
   const [outputJson, setOutputJson] = useState("");
   const [parseError, setParseError] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
   const [keyCount, setKeyCount] = useState(0);
   const [state, setState] = useState<FormatterState>("idle");
+  const [diffState, setDiffState] = useState<FormatterState>("idle");
+  const [diffError, setDiffError] = useState("");
+  const [diffResult, setDiffResult] = useState<DiffJsonResponse | null>(null);
 
   function handleInputChange(value: string) {
     setInputJson(value);
@@ -104,6 +183,19 @@ export function PlaygroundShell() {
     setCopyMessage("");
     setKeyCount(0);
     setState("idle");
+  }
+
+  function handleDiffInputChange(side: "before" | "after", value: string) {
+    if (side === "before") {
+      setDiffBeforeInput(value);
+    } else {
+      setDiffAfterInput(value);
+    }
+
+    setDiffError("");
+    setDiffResult(null);
+    setCopyMessage("");
+    setDiffState("idle");
   }
 
   function handleToolChange(tool: PlaygroundTool) {
@@ -172,6 +264,70 @@ export function PlaygroundShell() {
     }
   }
 
+  async function handleDiff() {
+    if (
+      diffState === "thinking" ||
+      !diffBeforeInput.trim() ||
+      !diffAfterInput.trim()
+    ) {
+      setDiffError("");
+      setDiffResult(null);
+      setCopyMessage("");
+      setDiffState("idle");
+      return;
+    }
+
+    try {
+      setDiffState("thinking");
+      setDiffError("");
+      setDiffResult(null);
+      setCopyMessage("");
+
+      const response = await fetch(diffEndpoint, {
+        body: JSON.stringify({
+          after: diffAfterInput,
+          before: diffBeforeInput,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+      const data = (await response.json()) as DiffJsonResponse | FormatJsonErrorResponse;
+
+      if (!response.ok) {
+        const errorResponse = data as FormatJsonErrorResponse;
+
+        throw new Error(
+          errorResponse.detail ??
+            errorResponse.message ??
+            "Jason could not compare these documents.",
+        );
+      }
+
+      const diffResponse = data as DiffJsonResponse;
+
+      if (
+        !Array.isArray(diffResponse.operations) ||
+        typeof diffResponse.summary?.changes !== "number"
+      ) {
+        throw new Error("Diff returned an unexpected response.");
+      }
+
+      setDiffResult(diffResponse);
+      setDiffState("success");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Jason could not compare these documents.";
+
+      setDiffError(message);
+      setDiffResult(null);
+      setDiffState("error");
+    }
+  }
+
   function handleClear() {
     setInputJson("");
     setOutputJson("");
@@ -179,12 +335,23 @@ export function PlaygroundShell() {
     setCopyMessage("");
     setKeyCount(0);
     setState("idle");
+    setDiffBeforeInput("");
+    setDiffAfterInput("");
+    setDiffError("");
+    setDiffResult(null);
+    setDiffState("idle");
   }
 
   function handleCopy() {
     if (activeTool === "Diff") {
-      void navigator.clipboard?.writeText(diffPatchPreview);
-      setCopyMessage("Copied patch preview.");
+      if (!diffResult) {
+        return;
+      }
+
+      void navigator.clipboard?.writeText(
+        JSON.stringify(diffResult.operations, null, 2),
+      );
+      setCopyMessage("Copied patch operations.");
       return;
     }
 
@@ -202,11 +369,32 @@ export function PlaygroundShell() {
   const isDiff = activeTool === "Diff";
   const isUnsupportedTool = activeTool === "Patch" || activeTool === "Pointer";
   const isFormatting = state === "thinking";
+  const isDiffing = diffState === "thinking";
   const canRunPrimaryAction =
-    isDiff || (inputJson.trim().length > 0 && !isFormatting && !isUnsupportedTool);
-  const canCopy = isDiff || Boolean(outputJson.trim());
+    (isDiff &&
+      !isDiffing &&
+      diffBeforeInput.trim().length > 0 &&
+      diffAfterInput.trim().length > 0) ||
+    (inputJson.trim().length > 0 && !isFormatting && !isUnsupportedTool);
+  const canCopy = isDiff ? Boolean(diffResult) : Boolean(outputJson.trim());
   const copyLabel = isDiff ? "Patch" : state === "error" ? "Fix first" : "Copy";
   const errorLine = state === "error" ? parseErrorLine(parseError) : undefined;
+  const beforeDiffHighlights = buildDiffHighlights(
+    diffBeforeInput,
+    diffResult?.operations,
+    "before",
+  );
+  const afterDiffHighlights = buildDiffHighlights(
+    diffAfterInput,
+    diffResult?.operations,
+    "after",
+  );
+  const currentDiffSummary = diffResult?.summary ?? {
+    added: 0,
+    changes: 0,
+    removed: 0,
+    replaced: 0,
+  };
   const formatterStats = [
     { label: "Lines", value: countLines(outputJson || inputJson) },
     { label: "Keys", value: keyCount },
@@ -217,15 +405,23 @@ export function PlaygroundShell() {
     },
   ] satisfies Parameters<typeof InspectorPanel>[0]["stats"];
   const diffStats = [
-    { label: "Changes", value: 3 },
-    { label: "Added", tone: "success", value: "+4" },
-    { label: "Removed", tone: "danger", value: "-3" },
-    { label: "Review", tone: "warning", value: 1 },
+    { label: "Changes", value: currentDiffSummary.changes },
+    { label: "Added", tone: "success", value: `+${currentDiffSummary.added}` },
+    { label: "Removed", tone: "danger", value: `-${currentDiffSummary.removed}` },
+    { label: "Review", tone: "warning", value: currentDiffSummary.replaced },
   ] satisfies Parameters<typeof InspectorPanel>[0]["stats"];
   const statusDetail =
     copyMessage ||
     (isDiff
-      ? "Review highlighted changes before exporting a patch."
+      ? diffState === "thinking"
+        ? "Calling POST /diff on the backend."
+        : diffState === "error"
+          ? diffError
+          : diffState === "success"
+            ? "Patch operations are ready to review and copy."
+            : diffBeforeInput.trim() && diffAfterInput.trim()
+              ? "Jason is ready to compare these documents."
+              : "Paste JSON into both sides to compare."
       : isUnsupportedTool
         ? `${activeTool} shell is coming next.`
         : state === "thinking"
@@ -240,7 +436,13 @@ export function PlaygroundShell() {
   const statusTitle =
     (copyMessage ? "Copied to clipboard." : undefined) ||
     (isDiff
-      ? "Jason found 3 changes"
+      ? diffState === "thinking"
+        ? "Jason is comparing..."
+        : diffState === "error"
+          ? "Jason couldn't compare these documents."
+          : diffState === "success"
+            ? `Jason found ${currentDiffSummary.changes} changes`
+            : "Jason is ready to compare"
       : isUnsupportedTool
         ? `${activeTool} is not wired yet.`
         : state === "thinking"
@@ -250,7 +452,13 @@ export function PlaygroundShell() {
         : undefined);
   const footerHint =
     isDiff
-      ? "Diff shell: highlighted rows show added, removed, and structural changes to review."
+      ? diffState === "thinking"
+        ? "Calling POST /diff on the backend."
+        : diffState === "error"
+          ? "Fix the diff input, then compare again."
+          : diffState === "success"
+            ? "Diff result is generated from Rust patch operations."
+            : "Paste before and after JSON, then run Compare."
       : isUnsupportedTool
         ? "This tool mode will reuse the same playground shell once designed."
         : state === "thinking"
@@ -299,7 +507,7 @@ export function PlaygroundShell() {
           <JasonStatus
             detail={statusDetail}
             title={statusTitle}
-            tone={isDiff ? "success" : state}
+            tone={isDiff ? diffState : state}
           />
         </section>
 
@@ -311,16 +519,26 @@ export function PlaygroundShell() {
               <CodePanel
                 title="Original JSON"
                 meta="before"
-                code=""
-                diffRows={originalDiffRows}
-                tone="error"
+                code={diffBeforeInput}
+                editable
+                highlightedLines={beforeDiffHighlights}
+                onChange={(value) => handleDiffInputChange("before", value)}
+                onSubmit={() => {
+                  void handleDiff();
+                }}
+                showLineNumbers
               />
               <CodePanel
                 title="Changed JSON"
                 meta="after"
-                code=""
-                diffRows={changedDiffRows}
-                tone="success"
+                code={diffAfterInput}
+                editable
+                highlightedLines={afterDiffHighlights}
+                onChange={(value) => handleDiffInputChange("after", value)}
+                onSubmit={() => {
+                  void handleDiff();
+                }}
+                showLineNumbers
               />
             </>
           ) : (
@@ -372,14 +590,14 @@ export function PlaygroundShell() {
               disabled={!canRunPrimaryAction}
               onClick={() => {
                 if (isDiff) {
-                  setCopyMessage("Diff preview is ready.");
+                  void handleDiff();
                   return;
                 }
 
                 void handleFormat();
               }}
             >
-              {isDiff ? "Compare" : isFormatting ? "Formatting..." : "Format"}
+              {isDiff ? (isDiffing ? "Comparing..." : "Compare") : isFormatting ? "Formatting..." : "Format"}
             </Button>
             <Button disabled={!canCopy} variant="secondary" onClick={handleCopy}>
               {copyLabel}

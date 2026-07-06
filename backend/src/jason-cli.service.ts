@@ -6,10 +6,18 @@ export class JasonCliService {
   private readonly cliPath = process.env.JASON_CLI_PATH ?? 'jason';
 
   format(input: string): Promise<string> {
+    return this.run(['format', '--stdin'], input);
+  }
+
+  diff(before: string, after: string): Promise<string> {
+    return this.run(['diff', '--stdin'], `${before}\0${after}`);
+  }
+
+  private run(args: string[], input: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const child = execFile(
         this.cliPath,
-        ['format', '--stdin'],
+        args,
         {
           timeout: 5_000,
           maxBuffer: 1024 * 1024,

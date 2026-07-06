@@ -7,7 +7,12 @@ import {
   Post,
 } from '@nestjs/common';
 import { AppService } from './app.service';
-import type { FormatJsonRequest, FormatJsonResponse } from './app.service';
+import type {
+  DiffJsonRequest,
+  DiffJsonResponse,
+  FormatJsonRequest,
+  FormatJsonResponse,
+} from './app.service';
 
 @Controller()
 export class AppController {
@@ -43,4 +48,43 @@ export class AppController {
       });
     }
   }
+
+  @Post('diff')
+  @HttpCode(200)
+  async diffJson(@Body() body: DiffJsonRequest): Promise<DiffJsonResponse> {
+    if (typeof body?.before !== 'string' || typeof body?.after !== 'string') {
+      throw new BadRequestException({
+        code: 'INVALID_REQUEST',
+        message: 'Request body must include before and after strings.',
+      });
+    }
+
+    try {
+      return await this.appService.diffJson(body.before, body.after);
+    } catch (error) {
+      const detail =
+        error instanceof Error
+          ? error.message
+          : 'One of the provided inputs is not valid JSON.';
+
+      throw new BadRequestException({
+        code: 'INVALID_JSON',
+        message: "Jason couldn't compare these documents.",
+        detail,
+        field: parseDiffErrorField(detail),
+      });
+    }
+  }
+}
+
+function parseDiffErrorField(message: string): 'before' | 'after' | undefined {
+  if (message.startsWith('before:')) {
+    return 'before';
+  }
+
+  if (message.startsWith('after:')) {
+    return 'after';
+  }
+
+  return undefined;
 }
