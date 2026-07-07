@@ -13,6 +13,10 @@ export class JasonCliService {
     return this.run(['diff', '--stdin'], `${before}\0${after}`);
   }
 
+  patch(document: string, patch: string): Promise<string> {
+    return this.run(['patch', '--stdin'], `${document}\0${patch}`);
+  }
+
   private run(args: string[], input: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const child = execFile(
