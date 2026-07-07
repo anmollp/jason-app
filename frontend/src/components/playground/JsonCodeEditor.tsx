@@ -38,6 +38,7 @@ type JsonCodeEditorProps = {
   onChange?: (value: string) => void;
   onSubmit?: () => void;
   readOnly?: boolean;
+  shouldWrapLines?: boolean;
   showLineNumbers?: boolean;
   tone?: "default" | "error";
   value: string;
@@ -273,6 +274,7 @@ export function JsonCodeEditor({
   onChange,
   onSubmit,
   readOnly = false,
+  shouldWrapLines = true,
   showLineNumbers = true,
   tone = "default",
   value,
@@ -321,7 +323,7 @@ export function JsonCodeEditor({
       lineDecorationPlugin(errorLine, highlightedLines),
       readOnly ? EditorView.editable.of(false) : noOpExtension,
       EditorState.readOnly.of(readOnly),
-      EditorView.lineWrapping,
+      shouldWrapLines ? EditorView.lineWrapping : noOpExtension,
       EditorView.contentAttributes.of({
         "aria-label": ariaLabel,
       }),
@@ -360,7 +362,15 @@ export function JsonCodeEditor({
       view.destroy();
       viewRef.current = null;
     };
-  }, [ariaLabel, errorLine, highlightedLines, readOnly, showLineNumbers, tone]);
+  }, [
+    ariaLabel,
+    errorLine,
+    highlightedLines,
+    readOnly,
+    shouldWrapLines,
+    showLineNumbers,
+    tone,
+  ]);
 
   useEffect(() => {
     const view = viewRef.current;

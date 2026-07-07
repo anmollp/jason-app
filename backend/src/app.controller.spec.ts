@@ -6,13 +6,19 @@ import { JasonCliService } from './jason-cli.service';
 
 describe('AppController', () => {
   let appController: AppController;
-  let jasonCliService: { diff: jest.Mock; format: jest.Mock; patch: jest.Mock };
+  let jasonCliService: {
+    diff: jest.Mock;
+    format: jest.Mock;
+    patch: jest.Mock;
+    pointer: jest.Mock;
+  };
 
   beforeEach(async () => {
     jasonCliService = {
       diff: jest.fn(),
       format: jest.fn(),
       patch: jest.fn(),
+      pointer: jest.fn(),
     };
 
     const app: TestingModule = await Test.createTestingModule({
@@ -165,6 +171,54 @@ describe('AppController', () => {
         appController.patchJson({
           document: '{"a":1}',
           patch: '{ true: 1 }',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('pointerJson', () => {
+    it('resolves a JSON pointer through the Jason CLI service', async () => {
+      jasonCliService.pointer.mockResolvedValue('"Administrator"');
+
+      await expect(
+        appController.pointerJson({
+          document: '{"user":{"role":"Administrator"}}',
+          path: '/user/role',
+        }),
+      ).resolves.toEqual({
+        output: '"Administrator"',
+        summary: {
+          depth: 2,
+          found: true,
+          issues: 0,
+          kind: 'string',
+          path: '/user/role',
+        },
+      });
+      expect(jasonCliService.pointer).toHaveBeenCalledWith(
+        '{"user":{"role":"Administrator"}}',
+        '/user/role',
+      );
+    });
+
+    it('rejects requests without document and path strings', async () => {
+      await expect(
+        appController.pointerJson({ document: '{"a":1}' } as unknown as {
+          document: string;
+          path: string;
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('returns a friendly error for unresolved pointers', async () => {
+      jasonCliService.pointer.mockRejectedValue(
+        new Error('pointer: path not found'),
+      );
+
+      await expect(
+        appController.pointerJson({
+          document: '{"a":1}',
+          path: '/missing',
         }),
       ).rejects.toThrow(BadRequestException);
     });

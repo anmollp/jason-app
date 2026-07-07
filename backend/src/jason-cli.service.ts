@@ -17,6 +17,10 @@ export class JasonCliService {
     return this.run(['patch', '--stdin'], `${document}\0${patch}`);
   }
 
+  pointer(document: string, path: string): Promise<string> {
+    return this.run(['pointer', '--stdin'], `${document}\0${path}`);
+  }
+
   private run(args: string[], input: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const child = execFile(

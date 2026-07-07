@@ -20,6 +20,7 @@ type CodePanelProps = {
   }>;
   onChange?: (value: string) => void;
   onSubmit?: () => void;
+  shouldWrapLines?: boolean;
   showLineNumbers?: boolean;
   tone?: "default" | "success" | "error";
 };
@@ -56,6 +57,7 @@ export function CodePanel({
   highlightedLines = emptyHighlightedLines,
   onChange,
   onSubmit,
+  shouldWrapLines = true,
   showLineNumbers = false,
   tone = "default",
 }: CodePanelProps) {
@@ -75,6 +77,7 @@ export function CodePanel({
             highlightedLines={highlightedLines}
             onChange={onChange}
             onSubmit={onSubmit}
+            shouldWrapLines={shouldWrapLines}
             showLineNumbers={showLineNumbers}
             value={code}
           />
@@ -107,6 +110,7 @@ export function CodePanel({
             errorLine={errorLine}
             highlightedLines={highlightedLines}
             readOnly
+            shouldWrapLines={shouldWrapLines}
             showLineNumbers
             tone={tone === "error" ? "error" : "default"}
             value={code}
