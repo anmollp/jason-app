@@ -6,12 +6,13 @@ import { JasonCliService } from './jason-cli.service';
 
 describe('AppController', () => {
   let appController: AppController;
-  let jasonCliService: { diff: jest.Mock; format: jest.Mock };
+  let jasonCliService: { diff: jest.Mock; format: jest.Mock; patch: jest.Mock };
 
   beforeEach(async () => {
     jasonCliService = {
       diff: jest.fn(),
       format: jest.fn(),
+      patch: jest.fn(),
     };
 
     const app: TestingModule = await Test.createTestingModule({
@@ -120,6 +121,50 @@ describe('AppController', () => {
         appController.diffJson({
           before: '{"a":1}',
           after: '{ a: 2 }',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('patchJson', () => {
+    it('applies patch operations through the Jason CLI service', async () => {
+      jasonCliService.patch.mockResolvedValue('{\n  "a": 2,\n  "b": true\n}');
+
+      await expect(
+        appController.patchJson({
+          document: '{"a":1}',
+          patch:
+            '[{"op":"replace","path":"/a","value":2},{"op":"add","path":"/b","value":true}]',
+        }),
+      ).resolves.toEqual({
+        output: '{\n  "a": 2,\n  "b": true\n}',
+        summary: {
+          added: 1,
+          operations: 2,
+          removed: 0,
+          replaced: 1,
+        },
+      });
+      expect(jasonCliService.patch).toHaveBeenCalledWith(
+        '{"a":1}',
+        '[{"op":"replace","path":"/a","value":2},{"op":"add","path":"/b","value":true}]',
+      );
+    });
+
+    it('rejects requests without document and patch strings', async () => {
+      await expect(
+        appController.patchJson({ document: '{"a":1}' } as unknown as {
+          document: string;
+          patch: string;
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('returns a friendly error for invalid patch JSON', async () => {
+      await expect(
+        appController.patchJson({
+          document: '{"a":1}',
+          patch: '{ true: 1 }',
         }),
       ).rejects.toThrow(BadRequestException);
     });

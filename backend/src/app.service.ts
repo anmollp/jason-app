@@ -48,6 +48,23 @@ export type DiffJsonResponse = {
   summary: DiffJsonSummary;
 };
 
+export type PatchJsonRequest = {
+  document: string;
+  patch: string;
+};
+
+export type PatchJsonSummary = {
+  operations: number;
+  added: number;
+  removed: number;
+  replaced: number;
+};
+
+export type PatchJsonResponse = {
+  output: string;
+  summary: PatchJsonSummary;
+};
+
 @Injectable()
 export class AppService {
   constructor(private readonly jasonCliService: JasonCliService) {}
@@ -71,13 +88,30 @@ export class AppService {
       summary: summarizePatchOperations(operations),
     };
   }
+
+  async patchJson(document: string, patch: string): Promise<PatchJsonResponse> {
+    const operations = parsePatchOperations(patch);
+
+    return {
+      output: await this.jasonCliService.patch(document, patch),
+      summary: summarizePatchOperationsForPatch(operations),
+    };
+  }
 }
 
 function parsePatchOperations(output: string): JsonPatchOperation[] {
-  const parsed = JSON.parse(output) as unknown;
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(output) as unknown;
+  } catch (error) {
+    throw new Error(
+      `patch: ${error instanceof Error ? error.message : 'invalid JSON'}`,
+    );
+  }
 
   if (!Array.isArray(parsed) || !parsed.every(isPatchOperation)) {
-    throw new Error('Jason CLI returned an unexpected diff response.');
+    throw new Error('patch: Expected an array of JSON Patch operations.');
   }
 
   return parsed;
@@ -103,9 +137,10 @@ function isPatchOperation(value: unknown): value is JsonPatchOperation {
   }
 
   return (
-    operation.op === 'add' ||
-    operation.op === 'replace' ||
-    operation.op === 'test'
+    (operation.op === 'add' ||
+      operation.op === 'replace' ||
+      operation.op === 'test') &&
+    'value' in operation
   );
 }
 
@@ -126,4 +161,17 @@ function summarizePatchOperations(
       replaced: 0,
     },
   );
+}
+
+function summarizePatchOperationsForPatch(
+  operations: JsonPatchOperation[],
+): PatchJsonSummary {
+  const summary = summarizePatchOperations(operations);
+
+  return {
+    operations: summary.changes,
+    added: summary.added,
+    removed: summary.removed,
+    replaced: summary.replaced,
+  };
 }

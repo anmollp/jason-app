@@ -12,6 +12,8 @@ import type {
   DiffJsonResponse,
   FormatJsonRequest,
   FormatJsonResponse,
+  PatchJsonRequest,
+  PatchJsonResponse,
 } from './app.service';
 
 @Controller()
@@ -75,6 +77,33 @@ export class AppController {
       });
     }
   }
+
+  @Post('patch')
+  @HttpCode(200)
+  async patchJson(@Body() body: PatchJsonRequest): Promise<PatchJsonResponse> {
+    if (typeof body?.document !== 'string' || typeof body?.patch !== 'string') {
+      throw new BadRequestException({
+        code: 'INVALID_REQUEST',
+        message: 'Request body must include document and patch strings.',
+      });
+    }
+
+    try {
+      return await this.appService.patchJson(body.document, body.patch);
+    } catch (error) {
+      const detail =
+        error instanceof Error
+          ? error.message
+          : 'The document or patch input is not valid JSON.';
+
+      throw new BadRequestException({
+        code: 'INVALID_JSON',
+        message: "Jason couldn't apply this patch.",
+        detail,
+        field: parsePatchErrorField(detail),
+      });
+    }
+  }
 }
 
 function parseDiffErrorField(message: string): 'before' | 'after' | undefined {
@@ -84,6 +113,24 @@ function parseDiffErrorField(message: string): 'before' | 'after' | undefined {
 
   if (message.startsWith('after:')) {
     return 'after';
+  }
+
+  return undefined;
+}
+
+function parsePatchErrorField(
+  message: string,
+): 'document' | 'patch' | undefined {
+  if (message.startsWith('document:')) {
+    return 'document';
+  }
+
+  if (
+    message.startsWith('patch:') ||
+    message.includes('JSON Patch operation') ||
+    message.includes('patch operations')
+  ) {
+    return 'patch';
   }
 
   return undefined;

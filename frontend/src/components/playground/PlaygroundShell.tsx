@@ -31,9 +31,28 @@ const diffAfterJson = `{
   },
   "timeoutMs": 3000
 }`;
+const patchDocumentJson = diffBeforeJson;
+const patchOperationsJson = `[
+  {
+    "op": "replace",
+    "path": "/status",
+    "value": "ready"
+  },
+  {
+    "op": "replace",
+    "path": "/plan",
+    "value": "pro"
+  },
+  {
+    "op": "add",
+    "path": "/timeoutMs",
+    "value": 3000
+  }
+]`;
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
 const formatEndpoint = `${apiBaseUrl}/format`;
 const diffEndpoint = `${apiBaseUrl}/diff`;
+const patchEndpoint = `${apiBaseUrl}/patch`;
 
 type FormatterState = "idle" | "thinking" | "success" | "error";
 type LineHighlight = {
@@ -62,6 +81,16 @@ type DiffJsonResponse = {
   summary: {
     added: number;
     changes: number;
+    removed: number;
+    replaced: number;
+  };
+};
+
+type PatchJsonResponse = {
+  output: string;
+  summary: {
+    added: number;
+    operations: number;
     removed: number;
     replaced: number;
   };
@@ -162,11 +191,61 @@ function buildDiffHighlights(
   );
 }
 
+function parsePatchOperations(input: string): JsonPatchOperation[] {
+  try {
+    const parsed = JSON.parse(input) as unknown;
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter((item): item is JsonPatchOperation => {
+      if (!item || typeof item !== "object") {
+        return false;
+      }
+
+      const operation = item as Record<string, unknown>;
+
+      return typeof operation.op === "string" && typeof operation.path === "string";
+    });
+  } catch {
+    return [];
+  }
+}
+
+function buildPatchOperationHighlights(input: string): LineHighlight[] {
+  return input.split(/\r?\n/).flatMap<LineHighlight>((line, index) => {
+    const match = line.match(/"op"\s*:\s*"(add|remove|replace)"/);
+
+    if (!match) {
+      return [];
+    }
+
+    const [, op] = match;
+
+    return [
+      {
+        line: index + 1,
+        tone:
+          op === "add"
+            ? "add"
+            : op === "remove"
+              ? "remove"
+              : "change",
+      },
+    ];
+  });
+}
+
 export function PlaygroundShell() {
   const [activeTool, setActiveTool] = useState<PlaygroundTool>("Formatter");
   const [inputJson, setInputJson] = useState(initialInputJson);
   const [diffBeforeInput, setDiffBeforeInput] = useState(diffBeforeJson);
   const [diffAfterInput, setDiffAfterInput] = useState(diffAfterJson);
+  const [patchDocumentInput, setPatchDocumentInput] = useState(patchDocumentJson);
+  const [patchOperationsInput, setPatchOperationsInput] =
+    useState(patchOperationsJson);
+  const [patchOutput, setPatchOutput] = useState("");
   const [outputJson, setOutputJson] = useState("");
   const [parseError, setParseError] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
@@ -175,6 +254,9 @@ export function PlaygroundShell() {
   const [diffState, setDiffState] = useState<FormatterState>("idle");
   const [diffError, setDiffError] = useState("");
   const [diffResult, setDiffResult] = useState<DiffJsonResponse | null>(null);
+  const [patchState, setPatchState] = useState<FormatterState>("idle");
+  const [patchError, setPatchError] = useState("");
+  const [patchResult, setPatchResult] = useState<PatchJsonResponse | null>(null);
 
   function handleInputChange(value: string) {
     setInputJson(value);
@@ -196,6 +278,20 @@ export function PlaygroundShell() {
     setDiffResult(null);
     setCopyMessage("");
     setDiffState("idle");
+  }
+
+  function handlePatchInputChange(side: "document" | "patch", value: string) {
+    if (side === "document") {
+      setPatchDocumentInput(value);
+    } else {
+      setPatchOperationsInput(value);
+    }
+
+    setPatchOutput("");
+    setPatchError("");
+    setPatchResult(null);
+    setCopyMessage("");
+    setPatchState("idle");
   }
 
   function handleToolChange(tool: PlaygroundTool) {
@@ -328,6 +424,74 @@ export function PlaygroundShell() {
     }
   }
 
+  async function handlePatch() {
+    if (
+      patchState === "thinking" ||
+      !patchDocumentInput.trim() ||
+      !patchOperationsInput.trim()
+    ) {
+      setPatchOutput("");
+      setPatchError("");
+      setPatchResult(null);
+      setCopyMessage("");
+      setPatchState("idle");
+      return;
+    }
+
+    try {
+      setPatchState("thinking");
+      setPatchOutput("");
+      setPatchError("");
+      setPatchResult(null);
+      setCopyMessage("");
+
+      const response = await fetch(patchEndpoint, {
+        body: JSON.stringify({
+          document: patchDocumentInput,
+          patch: patchOperationsInput,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+      const data = (await response.json()) as
+        | PatchJsonResponse
+        | FormatJsonErrorResponse;
+
+      if (!response.ok) {
+        const errorResponse = data as FormatJsonErrorResponse;
+
+        throw new Error(
+          errorResponse.detail ??
+            errorResponse.message ??
+            "Jason could not apply this patch.",
+        );
+      }
+
+      const patchResponse = data as PatchJsonResponse;
+
+      if (
+        typeof patchResponse.output !== "string" ||
+        typeof patchResponse.summary?.operations !== "number"
+      ) {
+        throw new Error("Patch returned an unexpected response.");
+      }
+
+      setPatchOutput(patchResponse.output);
+      setPatchResult(patchResponse);
+      setPatchState("success");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Jason could not apply this patch.";
+
+      setPatchOutput("");
+      setPatchError(message);
+      setPatchResult(null);
+      setPatchState("error");
+    }
+  }
+
   function handleClear() {
     setInputJson("");
     setOutputJson("");
@@ -340,6 +504,12 @@ export function PlaygroundShell() {
     setDiffError("");
     setDiffResult(null);
     setDiffState("idle");
+    setPatchDocumentInput("");
+    setPatchOperationsInput("");
+    setPatchOutput("");
+    setPatchError("");
+    setPatchResult(null);
+    setPatchState("idle");
   }
 
   function handleCopy() {
@@ -355,6 +525,16 @@ export function PlaygroundShell() {
       return;
     }
 
+    if (activeTool === "Patch") {
+      if (!patchOutput.trim()) {
+        return;
+      }
+
+      void navigator.clipboard?.writeText(patchOutput);
+      setCopyMessage("Copied patched JSON.");
+      return;
+    }
+
     if (!outputJson.trim()) {
       return;
     }
@@ -367,17 +547,39 @@ export function PlaygroundShell() {
     (parseError ? `Jason couldn't parse this JSON.\n\n${parseError}` : outputJson) ||
     "Formatted JSON will appear here.";
   const isDiff = activeTool === "Diff";
-  const isUnsupportedTool = activeTool === "Patch" || activeTool === "Pointer";
+  const isPatch = activeTool === "Patch";
+  const isUnsupportedTool = activeTool === "Pointer";
   const isFormatting = state === "thinking";
   const isDiffing = diffState === "thinking";
+  const isPatching = patchState === "thinking";
   const canRunPrimaryAction =
     (isDiff &&
       !isDiffing &&
       diffBeforeInput.trim().length > 0 &&
       diffAfterInput.trim().length > 0) ||
-    (inputJson.trim().length > 0 && !isFormatting && !isUnsupportedTool);
-  const canCopy = isDiff ? Boolean(diffResult) : Boolean(outputJson.trim());
-  const copyLabel = isDiff ? "Patch" : state === "error" ? "Fix first" : "Copy";
+    (isPatch &&
+      !isPatching &&
+      patchDocumentInput.trim().length > 0 &&
+      patchOperationsInput.trim().length > 0) ||
+    (!isDiff &&
+      !isPatch &&
+      !isUnsupportedTool &&
+      inputJson.trim().length > 0 &&
+      !isFormatting);
+  const canCopy = isDiff
+    ? Boolean(diffResult)
+    : isPatch
+      ? Boolean(patchOutput.trim())
+      : Boolean(outputJson.trim());
+  const copyLabel = isDiff
+    ? "Patch"
+    : isPatch
+      ? patchState === "error"
+        ? "Fix first"
+        : "Copy"
+      : state === "error"
+        ? "Fix first"
+        : "Copy";
   const errorLine = state === "error" ? parseErrorLine(parseError) : undefined;
   const beforeDiffHighlights = useMemo(
     () => buildDiffHighlights(diffBeforeInput, diffResult?.operations, "before"),
@@ -387,9 +589,30 @@ export function PlaygroundShell() {
     () => buildDiffHighlights(diffAfterInput, diffResult?.operations, "after"),
     [diffAfterInput, diffResult?.operations],
   );
+  const patchOperations = useMemo(
+    () => parsePatchOperations(patchOperationsInput),
+    [patchOperationsInput],
+  );
+  const patchOperationHighlights = useMemo(
+    () => buildPatchOperationHighlights(patchOperationsInput),
+    [patchOperationsInput],
+  );
+  const patchResultHighlights = useMemo(
+    () =>
+      patchState === "success"
+        ? buildDiffHighlights(patchOutput, patchOperations, "after")
+        : [],
+    [patchOperations, patchOutput, patchState],
+  );
   const currentDiffSummary = diffResult?.summary ?? {
     added: 0,
     changes: 0,
+    removed: 0,
+    replaced: 0,
+  };
+  const currentPatchSummary = patchResult?.summary ?? {
+    added: 0,
+    operations: 0,
     removed: 0,
     replaced: 0,
   };
@@ -408,6 +631,17 @@ export function PlaygroundShell() {
     { label: "Removed", tone: "danger", value: `-${currentDiffSummary.removed}` },
     { label: "Review", tone: "warning", value: currentDiffSummary.replaced },
   ] satisfies Parameters<typeof InspectorPanel>[0]["stats"];
+  const patchStats = [
+    { label: "Ops", value: currentPatchSummary.operations },
+    { label: "Added", tone: "success", value: `+${currentPatchSummary.added}` },
+    { label: "Removed", tone: "danger", value: `-${currentPatchSummary.removed}` },
+    { label: "Review", tone: "warning", value: currentPatchSummary.replaced },
+    {
+      label: "Issues",
+      tone: patchState === "error" ? "danger" : "success",
+      value: patchState === "error" ? 1 : 0,
+    },
+  ] satisfies Parameters<typeof InspectorPanel>[0]["stats"];
   const statusDetail =
     copyMessage ||
     (isDiff
@@ -420,6 +654,16 @@ export function PlaygroundShell() {
             : diffBeforeInput.trim() && diffAfterInput.trim()
               ? "Jason is ready to compare these documents."
               : "Paste JSON into both sides to compare."
+      : isPatch
+        ? patchState === "thinking"
+          ? "Calling POST /patch on the backend."
+          : patchState === "error"
+            ? patchError
+            : patchState === "success"
+              ? "Patched JSON is ready to review and copy."
+              : patchDocumentInput.trim() && patchOperationsInput.trim()
+                ? "Jason is ready to apply these operations."
+                : "Paste a document and JSON Patch operations."
       : isUnsupportedTool
         ? `${activeTool} shell is coming next.`
         : state === "thinking"
@@ -441,6 +685,14 @@ export function PlaygroundShell() {
           : diffState === "success"
             ? `Jason found ${currentDiffSummary.changes} changes`
             : "Jason is ready to compare"
+      : isPatch
+        ? patchState === "thinking"
+          ? "Jason is applying the patch..."
+          : patchState === "error"
+            ? "Jason couldn't apply this patch."
+            : patchState === "success"
+              ? "Jason applied the patch."
+              : "Jason is ready to patch"
       : isUnsupportedTool
         ? `${activeTool} is not wired yet.`
         : state === "thinking"
@@ -457,6 +709,14 @@ export function PlaygroundShell() {
           : diffState === "success"
             ? "Diff result is generated from Rust patch operations."
             : "Paste before and after JSON, then run Compare."
+      : isPatch
+        ? patchState === "thinking"
+          ? "Calling POST /patch on the backend."
+          : patchState === "error"
+            ? "Fix the document or patch operations, then apply again."
+            : patchState === "success"
+              ? "Patch result is generated by the Rust JSON Patch engine."
+              : "Paste a document and JSON Patch operations, then run Apply Patch."
       : isUnsupportedTool
         ? "This tool mode will reuse the same playground shell once designed."
         : state === "thinking"
@@ -499,19 +759,27 @@ export function PlaygroundShell() {
             <h1 className="mt-3 max-w-[760px] text-4xl font-bold tracking-tight sm:text-5xl">
               {isDiff
                 ? "Compare JSON changes before they ship."
-                : "Format, diff, patch, and inspect JSON."}
+                : isPatch
+                  ? "Apply JSON patches safely."
+                  : "Format, diff, patch, and inspect JSON."}
             </h1>
           </div>
           <JasonStatus
             detail={statusDetail}
             title={statusTitle}
-            tone={isDiff ? diffState : state}
+            tone={isDiff ? diffState : isPatch ? patchState : state}
           />
         </section>
 
         <ToolTabs activeTool={activeTool} onToolChange={handleToolChange} />
 
-        <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_170px]">
+        <section
+          className={`grid gap-5 ${
+            isPatch
+              ? "xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1fr)_170px]"
+              : "xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_170px]"
+          }`}
+        >
           {isDiff ? (
             <>
               <CodePanel
@@ -537,6 +805,57 @@ export function PlaygroundShell() {
                   void handleDiff();
                 }}
                 showLineNumbers
+              />
+            </>
+          ) : isPatch ? (
+            <>
+              <CodePanel
+                title="Document JSON"
+                meta="input"
+                code={patchDocumentInput}
+                editable
+                onChange={(value) => handlePatchInputChange("document", value)}
+                onSubmit={() => {
+                  void handlePatch();
+                }}
+                showLineNumbers
+              />
+              <CodePanel
+                title="JSON Patch"
+                meta="editable"
+                code={patchOperationsInput}
+                editable
+                highlightedLines={patchOperationHighlights}
+                onChange={(value) => handlePatchInputChange("patch", value)}
+                onSubmit={() => {
+                  void handlePatch();
+                }}
+                showLineNumbers
+              />
+              <CodePanel
+                title="Patched Result"
+                meta={
+                  patchState === "thinking"
+                    ? "applying"
+                    : patchState === "error"
+                      ? "patch error"
+                      : patchOutput
+                        ? "preview"
+                        : "waiting"
+                }
+                code={
+                  patchState === "error"
+                    ? `Jason couldn't apply this patch.\n\n${patchError}`
+                    : patchOutput || "Patched JSON will appear here."
+                }
+                highlightedLines={patchResultHighlights}
+                tone={
+                  patchState === "error"
+                    ? "error"
+                    : patchOutput
+                      ? "success"
+                      : "default"
+                }
               />
             </>
           ) : (
@@ -573,7 +892,7 @@ export function PlaygroundShell() {
           <InspectorPanel
             canCopy={canCopy}
             copyLabel={copyLabel}
-            stats={isDiff ? diffStats : formatterStats}
+            stats={isDiff ? diffStats : isPatch ? patchStats : formatterStats}
             onClear={handleClear}
             onCopy={handleCopy}
           />
@@ -592,10 +911,25 @@ export function PlaygroundShell() {
                   return;
                 }
 
+                if (isPatch) {
+                  void handlePatch();
+                  return;
+                }
+
                 void handleFormat();
               }}
             >
-              {isDiff ? (isDiffing ? "Comparing..." : "Compare") : isFormatting ? "Formatting..." : "Format"}
+              {isDiff
+                ? isDiffing
+                  ? "Comparing..."
+                  : "Compare"
+                : isPatch
+                  ? isPatching
+                    ? "Applying..."
+                    : "Apply Patch"
+                  : isFormatting
+                    ? "Formatting..."
+                    : "Format"}
             </Button>
             <Button disabled={!canCopy} variant="secondary" onClick={handleCopy}>
               {copyLabel}
