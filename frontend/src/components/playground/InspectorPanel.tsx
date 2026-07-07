@@ -34,7 +34,9 @@ export function InspectorPanel({
           {stats.map((stat) => (
             <div key={stat.label}>
               <dt className="text-zinc-500">{stat.label}</dt>
-              <dd className={`mt-1 ${statToneStyles[stat.tone ?? "default"]}`}>
+              <dd
+                className={`mt-1 break-words ${statToneStyles[stat.tone ?? "default"]}`}
+              >
                 {stat.value}
               </dd>
             </div>

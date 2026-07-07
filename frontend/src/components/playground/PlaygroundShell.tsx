@@ -32,6 +32,22 @@ const diffAfterJson = `{
   "timeoutMs": 3000
 }`;
 const patchDocumentJson = diffBeforeJson;
+const pointerDocumentJson = `{
+  "user": {
+    "id": 102483,
+    "username": "coder_dev_703",
+    "role": "Administrator"
+  },
+  "permissions": [
+    "read",
+    "write",
+    "execute"
+  ],
+  "metadata": {
+    "lastLogin": "2026-07-05T14:56:00Z"
+  }
+}`;
+const pointerPathInput = "/user/role";
 const patchOperationsJson = `[
   {
     "op": "replace",
@@ -53,6 +69,7 @@ const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:300
 const formatEndpoint = `${apiBaseUrl}/format`;
 const diffEndpoint = `${apiBaseUrl}/diff`;
 const patchEndpoint = `${apiBaseUrl}/patch`;
+const pointerEndpoint = `${apiBaseUrl}/pointer`;
 
 type FormatterState = "idle" | "thinking" | "success" | "error";
 type LineHighlight = {
@@ -93,6 +110,17 @@ type PatchJsonResponse = {
     operations: number;
     removed: number;
     replaced: number;
+  };
+};
+
+type PointerJsonResponse = {
+  output: string;
+  summary: {
+    depth: number;
+    found: boolean;
+    issues: number;
+    kind: string;
+    path: string;
   };
 };
 
@@ -237,6 +265,17 @@ function buildPatchOperationHighlights(input: string): LineHighlight[] {
   });
 }
 
+function primaryPointerPath(input: string) {
+  return input
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find(Boolean) ?? "";
+}
+
+function pointerDepth(path: string) {
+  return path ? path.split("/").slice(1).length : 0;
+}
+
 export function PlaygroundShell() {
   const [activeTool, setActiveTool] = useState<PlaygroundTool>("Formatter");
   const [inputJson, setInputJson] = useState(initialInputJson);
@@ -246,6 +285,10 @@ export function PlaygroundShell() {
   const [patchOperationsInput, setPatchOperationsInput] =
     useState(patchOperationsJson);
   const [patchOutput, setPatchOutput] = useState("");
+  const [pointerDocumentInput, setPointerDocumentInput] =
+    useState(pointerDocumentJson);
+  const [pointerPath, setPointerPath] = useState(pointerPathInput);
+  const [pointerOutput, setPointerOutput] = useState("");
   const [outputJson, setOutputJson] = useState("");
   const [parseError, setParseError] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
@@ -257,6 +300,10 @@ export function PlaygroundShell() {
   const [patchState, setPatchState] = useState<FormatterState>("idle");
   const [patchError, setPatchError] = useState("");
   const [patchResult, setPatchResult] = useState<PatchJsonResponse | null>(null);
+  const [pointerState, setPointerState] = useState<FormatterState>("idle");
+  const [pointerError, setPointerError] = useState("");
+  const [pointerResult, setPointerResult] =
+    useState<PointerJsonResponse | null>(null);
 
   function handleInputChange(value: string) {
     setInputJson(value);
@@ -292,6 +339,20 @@ export function PlaygroundShell() {
     setPatchResult(null);
     setCopyMessage("");
     setPatchState("idle");
+  }
+
+  function handlePointerInputChange(side: "document" | "path", value: string) {
+    if (side === "document") {
+      setPointerDocumentInput(value);
+    } else {
+      setPointerPath(value);
+    }
+
+    setPointerOutput("");
+    setPointerError("");
+    setPointerResult(null);
+    setCopyMessage("");
+    setPointerState("idle");
   }
 
   function handleToolChange(tool: PlaygroundTool) {
@@ -492,6 +553,78 @@ export function PlaygroundShell() {
     }
   }
 
+  async function handlePointer() {
+    const path = primaryPointerPath(pointerPath);
+
+    if (
+      pointerState === "thinking" ||
+      !pointerDocumentInput.trim() ||
+      !path
+    ) {
+      setPointerOutput("");
+      setPointerError("");
+      setPointerResult(null);
+      setCopyMessage("");
+      setPointerState("idle");
+      return;
+    }
+
+    try {
+      setPointerState("thinking");
+      setPointerOutput("");
+      setPointerError("");
+      setPointerResult(null);
+      setCopyMessage("");
+
+      const response = await fetch(pointerEndpoint, {
+        body: JSON.stringify({
+          document: pointerDocumentInput,
+          path,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+      const data = (await response.json()) as
+        | PointerJsonResponse
+        | FormatJsonErrorResponse;
+
+      if (!response.ok) {
+        const errorResponse = data as FormatJsonErrorResponse;
+
+        throw new Error(
+          errorResponse.detail ??
+            errorResponse.message ??
+            "Jason could not resolve this pointer.",
+        );
+      }
+
+      const pointerResponse = data as PointerJsonResponse;
+
+      if (
+        typeof pointerResponse.output !== "string" ||
+        typeof pointerResponse.summary?.kind !== "string"
+      ) {
+        throw new Error("Pointer returned an unexpected response.");
+      }
+
+      setPointerOutput(pointerResponse.output);
+      setPointerResult(pointerResponse);
+      setPointerState("success");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Jason could not resolve this pointer.";
+
+      setPointerOutput("");
+      setPointerError(message);
+      setPointerResult(null);
+      setPointerState("error");
+    }
+  }
+
   function handleClear() {
     setInputJson("");
     setOutputJson("");
@@ -510,6 +643,12 @@ export function PlaygroundShell() {
     setPatchError("");
     setPatchResult(null);
     setPatchState("idle");
+    setPointerDocumentInput("");
+    setPointerPath("");
+    setPointerOutput("");
+    setPointerError("");
+    setPointerResult(null);
+    setPointerState("idle");
   }
 
   function handleCopy() {
@@ -535,6 +674,16 @@ export function PlaygroundShell() {
       return;
     }
 
+    if (activeTool === "Pointer") {
+      if (!pointerOutput.trim()) {
+        return;
+      }
+
+      void navigator.clipboard?.writeText(pointerOutput);
+      setCopyMessage("Copied resolved value.");
+      return;
+    }
+
     if (!outputJson.trim()) {
       return;
     }
@@ -548,10 +697,12 @@ export function PlaygroundShell() {
     "Formatted JSON will appear here.";
   const isDiff = activeTool === "Diff";
   const isPatch = activeTool === "Patch";
-  const isUnsupportedTool = activeTool === "Pointer";
+  const isPointer = activeTool === "Pointer";
   const isFormatting = state === "thinking";
   const isDiffing = diffState === "thinking";
   const isPatching = patchState === "thinking";
+  const isResolvingPointer = pointerState === "thinking";
+  const selectedPointerPath = primaryPointerPath(pointerPath);
   const canRunPrimaryAction =
     (isDiff &&
       !isDiffing &&
@@ -561,15 +712,21 @@ export function PlaygroundShell() {
       !isPatching &&
       patchDocumentInput.trim().length > 0 &&
       patchOperationsInput.trim().length > 0) ||
+    (isPointer &&
+      !isResolvingPointer &&
+      pointerDocumentInput.trim().length > 0 &&
+      selectedPointerPath.length > 0) ||
     (!isDiff &&
       !isPatch &&
-      !isUnsupportedTool &&
+      !isPointer &&
       inputJson.trim().length > 0 &&
       !isFormatting);
   const canCopy = isDiff
     ? Boolean(diffResult)
     : isPatch
       ? Boolean(patchOutput.trim())
+      : isPointer
+        ? Boolean(pointerOutput.trim())
       : Boolean(outputJson.trim());
   const copyLabel = isDiff
     ? "Patch"
@@ -577,6 +734,10 @@ export function PlaygroundShell() {
       ? patchState === "error"
         ? "Fix first"
         : "Copy"
+      : isPointer
+        ? pointerState === "error"
+          ? "Fix first"
+          : "Copy"
       : state === "error"
         ? "Fix first"
         : "Copy";
@@ -604,6 +765,18 @@ export function PlaygroundShell() {
         : [],
     [patchOperations, patchOutput, patchState],
   );
+  const pointerSourceHighlights = useMemo(() => {
+    if (pointerState !== "success" || !pointerResult?.summary.path) {
+      return [];
+    }
+
+    const line = lineForJsonPointer(
+      pointerDocumentInput,
+      pointerResult.summary.path,
+    );
+
+    return line ? [{ line, tone: "add" as const }] : [];
+  }, [pointerDocumentInput, pointerResult, pointerState]);
   const currentDiffSummary = diffResult?.summary ?? {
     added: 0,
     changes: 0,
@@ -615,6 +788,13 @@ export function PlaygroundShell() {
     operations: 0,
     removed: 0,
     replaced: 0,
+  };
+  const currentPointerSummary = pointerResult?.summary ?? {
+    depth: selectedPointerPath ? pointerDepth(selectedPointerPath) : 0,
+    found: false,
+    issues: pointerState === "error" ? 1 : 0,
+    kind: "unknown",
+    path: selectedPointerPath || "none",
   };
   const formatterStats = [
     { label: "Lines", value: countLines(outputJson || inputJson) },
@@ -642,6 +822,21 @@ export function PlaygroundShell() {
       value: patchState === "error" ? 1 : 0,
     },
   ] satisfies Parameters<typeof InspectorPanel>[0]["stats"];
+  const pointerStats = [
+    { label: "Kind", value: currentPointerSummary.kind },
+    { label: "Path", value: currentPointerSummary.path },
+    { label: "Depth", value: currentPointerSummary.depth },
+    {
+      label: "Found",
+      tone: currentPointerSummary.found ? "success" : "default",
+      value: String(currentPointerSummary.found),
+    },
+    {
+      label: "Issues",
+      tone: pointerState === "error" ? "danger" : "success",
+      value: pointerState === "error" ? 1 : currentPointerSummary.issues,
+    },
+  ] satisfies Parameters<typeof InspectorPanel>[0]["stats"];
   const statusDetail =
     copyMessage ||
     (isDiff
@@ -664,8 +859,16 @@ export function PlaygroundShell() {
               : patchDocumentInput.trim() && patchOperationsInput.trim()
                 ? "Jason is ready to apply these operations."
                 : "Paste a document and JSON Patch operations."
-      : isUnsupportedTool
-        ? `${activeTool} shell is coming next.`
+      : isPointer
+        ? pointerState === "thinking"
+          ? "Calling POST /pointer on the backend."
+          : pointerState === "error"
+            ? pointerError
+            : pointerState === "success"
+              ? `Pointer resolved to a ${currentPointerSummary.kind} at ${currentPointerSummary.path}.`
+              : pointerDocumentInput.trim() && selectedPointerPath
+                ? "Jason is ready to resolve this pointer."
+                : "Paste JSON and a JSON Pointer path."
         : state === "thinking"
       ? "Sending JSON to the backend formatter endpoint."
       : state === "error"
@@ -691,10 +894,16 @@ export function PlaygroundShell() {
           : patchState === "error"
             ? "Jason couldn't apply this patch."
             : patchState === "success"
-              ? "Jason applied the patch."
-              : "Jason is ready to patch"
-      : isUnsupportedTool
-        ? `${activeTool} is not wired yet.`
+            ? "Jason applied the patch."
+            : "Jason is ready to patch"
+      : isPointer
+        ? pointerState === "thinking"
+          ? "Jason is finding the value..."
+          : pointerState === "error"
+            ? "Jason couldn't resolve this pointer."
+            : pointerState === "success"
+              ? "Jason found the value."
+              : "Jason is ready to inspect"
         : state === "thinking"
       ? "Jason is formatting..."
       : state === "error"
@@ -715,10 +924,16 @@ export function PlaygroundShell() {
           : patchState === "error"
             ? "Fix the document or patch operations, then apply again."
             : patchState === "success"
-              ? "Patch result is generated by the Rust JSON Patch engine."
-              : "Paste a document and JSON Patch operations, then run Apply Patch."
-      : isUnsupportedTool
-        ? "This tool mode will reuse the same playground shell once designed."
+            ? "Patch result is generated by the Rust JSON Patch engine."
+            : "Paste a document and JSON Patch operations, then run Apply Patch."
+      : isPointer
+        ? pointerState === "thinking"
+          ? "Calling POST /pointer on the backend."
+          : pointerState === "error"
+            ? "Fix the JSON document or pointer path, then find again."
+            : pointerState === "success"
+              ? "Pointer result is generated by the Rust JSON Pointer engine."
+              : "Paste JSON and a JSON Pointer path, then run Find Value."
         : state === "thinking"
       ? "Calling POST /format on the backend."
       : state === "error"
@@ -761,13 +976,23 @@ export function PlaygroundShell() {
                 ? "Compare JSON changes before they ship."
                 : isPatch
                   ? "Apply JSON patches safely."
+                  : isPointer
+                    ? "Find exact JSON paths instantly."
                   : "Format, diff, patch, and inspect JSON."}
             </h1>
           </div>
           <JasonStatus
             detail={statusDetail}
             title={statusTitle}
-            tone={isDiff ? diffState : isPatch ? patchState : state}
+            tone={
+              isDiff
+                ? diffState
+                : isPatch
+                  ? patchState
+                  : isPointer
+                    ? pointerState
+                    : state
+            }
           />
         </section>
 
@@ -777,6 +1002,8 @@ export function PlaygroundShell() {
           className={`grid gap-5 ${
             isPatch
               ? "xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1fr)_170px]"
+              : isPointer
+                ? "xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.7fr)_minmax(0,0.75fr)_170px]"
               : "xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_170px]"
           }`}
         >
@@ -858,6 +1085,62 @@ export function PlaygroundShell() {
                 }
               />
             </>
+          ) : isPointer ? (
+            <>
+              <CodePanel
+                title="Source JSON"
+                meta="editable"
+                code={pointerDocumentInput}
+                editable
+                highlightedLines={pointerSourceHighlights}
+                onChange={(value) => handlePointerInputChange("document", value)}
+                onSubmit={() => {
+                  void handlePointer();
+                }}
+                showLineNumbers
+              />
+              <CodePanel
+                title="Pointer Path"
+                meta="path"
+                code={pointerPath}
+                editable
+                onChange={(value) => handlePointerInputChange("path", value)}
+                onSubmit={() => {
+                  void handlePointer();
+                }}
+                shouldWrapLines={false}
+                showLineNumbers
+              />
+              <CodePanel
+                title="Result"
+                meta={
+                  pointerState === "thinking"
+                    ? "finding"
+                    : pointerState === "error"
+                      ? "not found"
+                      : pointerOutput
+                        ? "result"
+                        : "waiting"
+                }
+                code={
+                  pointerState === "error"
+                    ? `Jason couldn't resolve this pointer.\n\n${pointerError}`
+                    : pointerOutput || "Resolved value will appear here."
+                }
+                highlightedLines={
+                  pointerState === "success"
+                    ? [{ line: 1, tone: "add" as const }]
+                    : []
+                }
+                tone={
+                  pointerState === "error"
+                    ? "error"
+                    : pointerOutput
+                      ? "success"
+                      : "default"
+                }
+              />
+            </>
           ) : (
             <>
               <CodePanel
@@ -884,7 +1167,7 @@ export function PlaygroundShell() {
                         ? "formatted"
                         : "waiting"
                 }
-                code={isUnsupportedTool ? `${activeTool} shell coming soon.` : outputCode}
+                code={outputCode}
                 tone={state === "error" ? "error" : outputJson ? "success" : "default"}
               />
             </>
@@ -892,7 +1175,15 @@ export function PlaygroundShell() {
           <InspectorPanel
             canCopy={canCopy}
             copyLabel={copyLabel}
-            stats={isDiff ? diffStats : isPatch ? patchStats : formatterStats}
+            stats={
+              isDiff
+                ? diffStats
+                : isPatch
+                  ? patchStats
+                  : isPointer
+                    ? pointerStats
+                    : formatterStats
+            }
             onClear={handleClear}
             onCopy={handleCopy}
           />
@@ -916,6 +1207,11 @@ export function PlaygroundShell() {
                   return;
                 }
 
+                if (isPointer) {
+                  void handlePointer();
+                  return;
+                }
+
                 void handleFormat();
               }}
             >
@@ -927,6 +1223,10 @@ export function PlaygroundShell() {
                   ? isPatching
                     ? "Applying..."
                     : "Apply Patch"
+                  : isPointer
+                    ? isResolvingPointer
+                      ? "Finding..."
+                      : "Find Value"
                   : isFormatting
                     ? "Formatting..."
                     : "Format"}

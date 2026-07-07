@@ -65,6 +65,24 @@ export type PatchJsonResponse = {
   summary: PatchJsonSummary;
 };
 
+export type PointerJsonRequest = {
+  document: string;
+  path: string;
+};
+
+export type PointerJsonSummary = {
+  depth: number;
+  found: boolean;
+  issues: number;
+  kind: string;
+  path: string;
+};
+
+export type PointerJsonResponse = {
+  output: string;
+  summary: PointerJsonSummary;
+};
+
 @Injectable()
 export class AppService {
   constructor(private readonly jasonCliService: JasonCliService) {}
@@ -96,6 +114,35 @@ export class AppService {
       output: await this.jasonCliService.patch(document, patch),
       summary: summarizePatchOperationsForPatch(operations),
     };
+  }
+
+  async pointerJson(
+    document: string,
+    path: string,
+  ): Promise<PointerJsonResponse> {
+    const output = await this.jasonCliService.pointer(document, path);
+    const value = parseJsonValue(output);
+
+    return {
+      output,
+      summary: {
+        depth: pointerDepth(path),
+        found: true,
+        issues: 0,
+        kind: jsonKind(value),
+        path,
+      },
+    };
+  }
+}
+
+function parseJsonValue(output: string): unknown {
+  try {
+    return JSON.parse(output) as unknown;
+  } catch (error) {
+    throw new Error(
+      `pointer: ${error instanceof Error ? error.message : 'invalid JSON'}`,
+    );
   }
 }
 
@@ -142,6 +189,26 @@ function isPatchOperation(value: unknown): value is JsonPatchOperation {
       operation.op === 'test') &&
     'value' in operation
   );
+}
+
+function jsonKind(value: unknown): string {
+  if (value === null) {
+    return 'null';
+  }
+
+  if (Array.isArray(value)) {
+    return 'array';
+  }
+
+  return typeof value;
+}
+
+function pointerDepth(path: string): number {
+  if (!path) {
+    return 0;
+  }
+
+  return path.split('/').slice(1).length;
 }
 
 function summarizePatchOperations(

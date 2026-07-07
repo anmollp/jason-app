@@ -14,6 +14,8 @@ import type {
   FormatJsonResponse,
   PatchJsonRequest,
   PatchJsonResponse,
+  PointerJsonRequest,
+  PointerJsonResponse,
 } from './app.service';
 
 @Controller()
@@ -104,6 +106,35 @@ export class AppController {
       });
     }
   }
+
+  @Post('pointer')
+  @HttpCode(200)
+  async pointerJson(
+    @Body() body: PointerJsonRequest,
+  ): Promise<PointerJsonResponse> {
+    if (typeof body?.document !== 'string' || typeof body?.path !== 'string') {
+      throw new BadRequestException({
+        code: 'INVALID_REQUEST',
+        message: 'Request body must include document and path strings.',
+      });
+    }
+
+    try {
+      return await this.appService.pointerJson(body.document, body.path);
+    } catch (error) {
+      const detail =
+        error instanceof Error
+          ? error.message
+          : 'The document or pointer path is not valid.';
+
+      throw new BadRequestException({
+        code: 'INVALID_JSON',
+        message: "Jason couldn't resolve this pointer.",
+        detail,
+        field: parsePointerErrorField(detail),
+      });
+    }
+  }
 }
 
 function parseDiffErrorField(message: string): 'before' | 'after' | undefined {
@@ -131,6 +162,20 @@ function parsePatchErrorField(
     message.includes('patch operations')
   ) {
     return 'patch';
+  }
+
+  return undefined;
+}
+
+function parsePointerErrorField(
+  message: string,
+): 'document' | 'path' | undefined {
+  if (message.startsWith('document:')) {
+    return 'document';
+  }
+
+  if (message.startsWith('pointer:')) {
+    return 'path';
   }
 
   return undefined;
