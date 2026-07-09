@@ -10,271 +10,39 @@ import { CodePanel } from "./CodePanel";
 import { InspectorPanel } from "./InspectorPanel";
 import { JasonStatus } from "./JasonStatus";
 import { ToolTabs, type PlaygroundTool } from "./ToolTabs";
+import { diffJson, formatJson, patchJson, pointerJson } from "./api";
+import {
+  diffAfterJson,
+  diffBeforeJson,
+  initialInputJson,
+  patchDocumentJson,
+  patchOperationsJson,
+  pointerDocumentJson,
+  pointerPathInput,
+} from "./constants";
+import type {
+  DiffJsonResponse,
+  FormatterState,
+  PatchJsonResponse,
+  PlaygroundErrorField,
+  PointerJsonResponse,
+} from "./types";
+import {
+  buildDiffHighlights,
+  buildPatchOperationHighlights,
+  countJsonKeys,
+  countLines,
+  lineForJsonPointer,
+  parseErrorLine,
+  parsePatchOperations,
+  pointerDepth,
+  primaryPointerPath,
+} from "./playground-utils";
 
-const initialInputJson = `{
-  "service": "billing",
-  "region": "us-east-1",
-  "retry": true
-}`;
-const diffBeforeJson = `{
-  "status": "draft",
-  "plan": "starter",
-  "user": {
-    "role": "viewer"
-  }
-}`;
-const diffAfterJson = `{
-  "status": "ready",
-  "plan": "pro",
-  "user": {
-    "role": "admin"
-  },
-  "timeoutMs": 3000
-}`;
-const patchDocumentJson = diffBeforeJson;
-const pointerDocumentJson = `{
-  "user": {
-    "id": 102483,
-    "username": "coder_dev_703",
-    "role": "Administrator"
-  },
-  "permissions": [
-    "read",
-    "write",
-    "execute"
-  ],
-  "metadata": {
-    "lastLogin": "2026-07-05T14:56:00Z"
-  }
-}`;
-const pointerPathInput = "/user/role";
-const patchOperationsJson = `[
-  {
-    "op": "replace",
-    "path": "/status",
-    "value": "ready"
-  },
-  {
-    "op": "replace",
-    "path": "/plan",
-    "value": "pro"
-  },
-  {
-    "op": "add",
-    "path": "/timeoutMs",
-    "value": 3000
-  }
-]`;
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
-const formatEndpoint = `${apiBaseUrl}/format`;
-const diffEndpoint = `${apiBaseUrl}/diff`;
-const patchEndpoint = `${apiBaseUrl}/patch`;
-const pointerEndpoint = `${apiBaseUrl}/pointer`;
-
-type FormatterState = "idle" | "thinking" | "success" | "error";
-type LineHighlight = {
-  line: number;
-  tone: "add" | "remove" | "change";
-};
-
-type FormatJsonResponse = {
-  output: string;
-};
-
-type FormatJsonErrorResponse = {
-  detail?: string;
-  field?: "after" | "before" | "document" | "patch" | "path";
-  message?: string;
-};
-
-type JsonPatchOperation = {
-  from?: string;
-  op: "add" | "remove" | "replace" | "move" | "copy" | "test";
-  path: string;
-  value?: unknown;
-};
-
-type DiffJsonResponse = {
-  operations: JsonPatchOperation[];
-  summary: {
-    added: number;
-    changes: number;
-    removed: number;
-    replaced: number;
-  };
-};
-
-type PatchJsonResponse = {
-  output: string;
-  summary: {
-    added: number;
-    operations: number;
-    removed: number;
-    replaced: number;
-  };
-};
-
-type PointerJsonResponse = {
-  output: string;
-  summary: {
-    depth: number;
-    found: boolean;
-    issues: number;
-    kind: string;
-    path: string;
-  };
-};
-
-function countJsonKeys(value: unknown): number {
-  if (Array.isArray(value)) {
-    return value.reduce((count, item) => count + countJsonKeys(item), 0);
-  }
-
-  if (value && typeof value === "object") {
-    return Object.entries(value).reduce(
-      (count, [, child]) => count + 1 + countJsonKeys(child),
-      0,
-    );
-  }
-
-  return 0;
-}
-
-function countLines(value: string) {
-  return value.trim() ? value.split(/\r?\n/).length : 0;
-}
-
-function parseErrorLine(message: string) {
-  const match = message.match(/\bline\s+(\d+)\b/i);
-  const line = match ? Number(match[1]) : Number.NaN;
-
-  return Number.isInteger(line) && line > 0 ? line : undefined;
-}
-
-function decodePointerSegment(segment: string) {
-  return segment.replaceAll("~1", "/").replaceAll("~0", "~");
-}
-
-function lineForJsonPointer(input: string, path: string) {
-  if (!path) {
-    return input.trim() ? 1 : undefined;
-  }
-
-  const segments = path.split("/").slice(1).map(decodePointerSegment);
-  const target = segments.at(-1);
-
-  if (!target) {
-    return undefined;
-  }
-
-  const lines = input.split(/\r?\n/);
-  const quotedTarget = `"${target.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
-  const targetIndex = lines.findIndex((line) => line.includes(quotedTarget));
-
-  if (targetIndex >= 0) {
-    return targetIndex + 1;
-  }
-
-  const arrayIndex = Number(target);
-
-  if (Number.isInteger(arrayIndex) && arrayIndex >= 0) {
-    return Math.min(arrayIndex + 2, lines.length);
-  }
-
-  return undefined;
-}
-
-function buildDiffHighlights(
-  input: string,
-  operations: JsonPatchOperation[] | undefined,
-  side: "before" | "after",
-): LineHighlight[] {
-  if (!operations) {
-    return [];
-  }
-
-  const highlights = operations.flatMap<LineHighlight>((operation) => {
-    const line = lineForJsonPointer(input, operation.path);
-
-    if (!line) {
-      return [];
-    }
-
-    if (operation.op === "replace") {
-      return [{ line, tone: "change" as const }];
-    }
-
-    if (side === "before" && operation.op === "remove") {
-      return [{ line, tone: "remove" as const }];
-    }
-
-    if (side === "after" && operation.op === "add") {
-      return [{ line, tone: "add" as const }];
-    }
-
-    return [];
-  });
-
-  return Array.from(
-    new Map(highlights.map((highlight) => [highlight.line, highlight])).values(),
-  );
-}
-
-function parsePatchOperations(input: string): JsonPatchOperation[] {
-  try {
-    const parsed = JSON.parse(input) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter((item): item is JsonPatchOperation => {
-      if (!item || typeof item !== "object") {
-        return false;
-      }
-
-      const operation = item as Record<string, unknown>;
-
-      return typeof operation.op === "string" && typeof operation.path === "string";
-    });
-  } catch {
-    return [];
-  }
-}
-
-function buildPatchOperationHighlights(input: string): LineHighlight[] {
-  return input.split(/\r?\n/).flatMap<LineHighlight>((line, index) => {
-    const match = line.match(/"op"\s*:\s*"(add|remove|replace)"/);
-
-    if (!match) {
-      return [];
-    }
-
-    const [, op] = match;
-
-    return [
-      {
-        line: index + 1,
-        tone:
-          op === "add"
-            ? "add"
-            : op === "remove"
-              ? "remove"
-              : "change",
-      },
-    ];
-  });
-}
-
-function primaryPointerPath(input: string) {
-  return input
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .find(Boolean) ?? "";
-}
-
-function pointerDepth(path: string) {
-  return path ? path.split("/").slice(1).length : 0;
+function errorField(error: unknown) {
+  return error instanceof Error && "field" in error
+    ? (error.field as PlaygroundErrorField | undefined)
+    : undefined;
 }
 
 export function PlaygroundShell() {
@@ -389,28 +157,7 @@ export function PlaygroundShell() {
       setParseError("");
       setCopyMessage("");
 
-      const response = await fetch(formatEndpoint, {
-        body: JSON.stringify({ input: inputJson }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-      });
-      const data = (await response.json()) as
-        | FormatJsonResponse
-        | FormatJsonErrorResponse;
-
-      if (!response.ok) {
-        const errorResponse = data as FormatJsonErrorResponse;
-
-        throw new Error(
-          errorResponse.detail ??
-            errorResponse.message ??
-            "Jason could not parse this JSON.",
-        );
-      }
-
-      const formattedOutput = (data as FormatJsonResponse).output;
+      const { output: formattedOutput } = await formatJson(inputJson);
 
       if (typeof formattedOutput !== "string") {
         throw new Error("Formatter returned an unexpected response.");
@@ -454,34 +201,7 @@ export function PlaygroundShell() {
       setDiffResult(null);
       setCopyMessage("");
 
-      const response = await fetch(diffEndpoint, {
-        body: JSON.stringify({
-          after: diffAfterInput,
-          before: diffBeforeInput,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-      });
-      const data = (await response.json()) as DiffJsonResponse | FormatJsonErrorResponse;
-
-      if (!response.ok) {
-        const errorResponse = data as FormatJsonErrorResponse;
-
-        setDiffErrorField(
-          errorResponse.field === "before" || errorResponse.field === "after"
-            ? errorResponse.field
-            : undefined,
-        );
-        throw new Error(
-          errorResponse.detail ??
-            errorResponse.message ??
-            "Jason could not compare these documents.",
-        );
-      }
-
-      const diffResponse = data as DiffJsonResponse;
+      const diffResponse = await diffJson(diffBeforeInput, diffAfterInput);
 
       if (
         !Array.isArray(diffResponse.operations) ||
@@ -498,7 +218,11 @@ export function PlaygroundShell() {
         error instanceof Error
           ? error.message
           : "Jason could not compare these documents.";
+      const field = errorField(error);
 
+      setDiffErrorField(
+        field === "before" || field === "after" ? field : undefined,
+      );
       setDiffError(message);
       setDiffResult(null);
       setDiffState("error");
@@ -527,36 +251,10 @@ export function PlaygroundShell() {
       setPatchResult(null);
       setCopyMessage("");
 
-      const response = await fetch(patchEndpoint, {
-        body: JSON.stringify({
-          document: patchDocumentInput,
-          patch: patchOperationsInput,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-      });
-      const data = (await response.json()) as
-        | PatchJsonResponse
-        | FormatJsonErrorResponse;
-
-      if (!response.ok) {
-        const errorResponse = data as FormatJsonErrorResponse;
-
-        setPatchErrorField(
-          errorResponse.field === "document" || errorResponse.field === "patch"
-            ? errorResponse.field
-            : undefined,
-        );
-        throw new Error(
-          errorResponse.detail ??
-            errorResponse.message ??
-            "Jason could not apply this patch.",
-        );
-      }
-
-      const patchResponse = data as PatchJsonResponse;
+      const patchResponse = await patchJson(
+        patchDocumentInput,
+        patchOperationsInput,
+      );
 
       if (
         typeof patchResponse.output !== "string" ||
@@ -572,7 +270,11 @@ export function PlaygroundShell() {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Jason could not apply this patch.";
+      const field = errorField(error);
 
+      setPatchErrorField(
+        field === "document" || field === "patch" ? field : undefined,
+      );
       setPatchOutput("");
       setPatchError(message);
       setPatchResult(null);
@@ -604,36 +306,7 @@ export function PlaygroundShell() {
       setPointerResult(null);
       setCopyMessage("");
 
-      const response = await fetch(pointerEndpoint, {
-        body: JSON.stringify({
-          document: pointerDocumentInput,
-          path,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-      });
-      const data = (await response.json()) as
-        | PointerJsonResponse
-        | FormatJsonErrorResponse;
-
-      if (!response.ok) {
-        const errorResponse = data as FormatJsonErrorResponse;
-
-        setPointerErrorField(
-          errorResponse.field === "document" || errorResponse.field === "path"
-            ? errorResponse.field
-            : undefined,
-        );
-        throw new Error(
-          errorResponse.detail ??
-            errorResponse.message ??
-            "Jason could not resolve this pointer.",
-        );
-      }
-
-      const pointerResponse = data as PointerJsonResponse;
+      const pointerResponse = await pointerJson(pointerDocumentInput, path);
 
       if (
         typeof pointerResponse.output !== "string" ||
@@ -651,7 +324,11 @@ export function PlaygroundShell() {
         error instanceof Error
           ? error.message
           : "Jason could not resolve this pointer.";
+      const field = errorField(error);
 
+      setPointerErrorField(
+        field === "document" || field === "path" ? field : undefined,
+      );
       setPointerOutput("");
       setPointerError(message);
       setPointerResult(null);
