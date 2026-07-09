@@ -83,6 +83,7 @@ type FormatJsonResponse = {
 
 type FormatJsonErrorResponse = {
   detail?: string;
+  field?: "after" | "before" | "document" | "patch" | "path";
   message?: string;
 };
 
@@ -296,12 +297,21 @@ export function PlaygroundShell() {
   const [state, setState] = useState<FormatterState>("idle");
   const [diffState, setDiffState] = useState<FormatterState>("idle");
   const [diffError, setDiffError] = useState("");
+  const [diffErrorField, setDiffErrorField] = useState<
+    "after" | "before" | undefined
+  >();
   const [diffResult, setDiffResult] = useState<DiffJsonResponse | null>(null);
   const [patchState, setPatchState] = useState<FormatterState>("idle");
   const [patchError, setPatchError] = useState("");
+  const [patchErrorField, setPatchErrorField] = useState<
+    "document" | "patch" | undefined
+  >();
   const [patchResult, setPatchResult] = useState<PatchJsonResponse | null>(null);
   const [pointerState, setPointerState] = useState<FormatterState>("idle");
   const [pointerError, setPointerError] = useState("");
+  const [pointerErrorField, setPointerErrorField] = useState<
+    "document" | "path" | undefined
+  >();
   const [pointerResult, setPointerResult] =
     useState<PointerJsonResponse | null>(null);
 
@@ -322,6 +332,7 @@ export function PlaygroundShell() {
     }
 
     setDiffError("");
+    setDiffErrorField(undefined);
     setDiffResult(null);
     setCopyMessage("");
     setDiffState("idle");
@@ -336,6 +347,7 @@ export function PlaygroundShell() {
 
     setPatchOutput("");
     setPatchError("");
+    setPatchErrorField(undefined);
     setPatchResult(null);
     setCopyMessage("");
     setPatchState("idle");
@@ -350,6 +362,7 @@ export function PlaygroundShell() {
 
     setPointerOutput("");
     setPointerError("");
+    setPointerErrorField(undefined);
     setPointerResult(null);
     setCopyMessage("");
     setPointerState("idle");
@@ -437,6 +450,7 @@ export function PlaygroundShell() {
     try {
       setDiffState("thinking");
       setDiffError("");
+      setDiffErrorField(undefined);
       setDiffResult(null);
       setCopyMessage("");
 
@@ -455,6 +469,11 @@ export function PlaygroundShell() {
       if (!response.ok) {
         const errorResponse = data as FormatJsonErrorResponse;
 
+        setDiffErrorField(
+          errorResponse.field === "before" || errorResponse.field === "after"
+            ? errorResponse.field
+            : undefined,
+        );
         throw new Error(
           errorResponse.detail ??
             errorResponse.message ??
@@ -472,6 +491,7 @@ export function PlaygroundShell() {
       }
 
       setDiffResult(diffResponse);
+      setDiffErrorField(undefined);
       setDiffState("success");
     } catch (error) {
       const message =
@@ -503,6 +523,7 @@ export function PlaygroundShell() {
       setPatchState("thinking");
       setPatchOutput("");
       setPatchError("");
+      setPatchErrorField(undefined);
       setPatchResult(null);
       setCopyMessage("");
 
@@ -523,6 +544,11 @@ export function PlaygroundShell() {
       if (!response.ok) {
         const errorResponse = data as FormatJsonErrorResponse;
 
+        setPatchErrorField(
+          errorResponse.field === "document" || errorResponse.field === "patch"
+            ? errorResponse.field
+            : undefined,
+        );
         throw new Error(
           errorResponse.detail ??
             errorResponse.message ??
@@ -541,6 +567,7 @@ export function PlaygroundShell() {
 
       setPatchOutput(patchResponse.output);
       setPatchResult(patchResponse);
+      setPatchErrorField(undefined);
       setPatchState("success");
     } catch (error) {
       const message =
@@ -573,6 +600,7 @@ export function PlaygroundShell() {
       setPointerState("thinking");
       setPointerOutput("");
       setPointerError("");
+      setPointerErrorField(undefined);
       setPointerResult(null);
       setCopyMessage("");
 
@@ -593,6 +621,11 @@ export function PlaygroundShell() {
       if (!response.ok) {
         const errorResponse = data as FormatJsonErrorResponse;
 
+        setPointerErrorField(
+          errorResponse.field === "document" || errorResponse.field === "path"
+            ? errorResponse.field
+            : undefined,
+        );
         throw new Error(
           errorResponse.detail ??
             errorResponse.message ??
@@ -611,6 +644,7 @@ export function PlaygroundShell() {
 
       setPointerOutput(pointerResponse.output);
       setPointerResult(pointerResponse);
+      setPointerErrorField(undefined);
       setPointerState("success");
     } catch (error) {
       const message =
@@ -626,29 +660,45 @@ export function PlaygroundShell() {
   }
 
   function handleClear() {
+    setCopyMessage("");
+
+    if (activeTool === "Diff") {
+      setDiffBeforeInput("");
+      setDiffAfterInput("");
+      setDiffError("");
+      setDiffErrorField(undefined);
+      setDiffResult(null);
+      setDiffState("idle");
+      return;
+    }
+
+    if (activeTool === "Patch") {
+      setPatchDocumentInput("");
+      setPatchOperationsInput("");
+      setPatchOutput("");
+      setPatchError("");
+      setPatchErrorField(undefined);
+      setPatchResult(null);
+      setPatchState("idle");
+      return;
+    }
+
+    if (activeTool === "Pointer") {
+      setPointerDocumentInput("");
+      setPointerPath("");
+      setPointerOutput("");
+      setPointerError("");
+      setPointerErrorField(undefined);
+      setPointerResult(null);
+      setPointerState("idle");
+      return;
+    }
+
     setInputJson("");
     setOutputJson("");
     setParseError("");
-    setCopyMessage("");
     setKeyCount(0);
     setState("idle");
-    setDiffBeforeInput("");
-    setDiffAfterInput("");
-    setDiffError("");
-    setDiffResult(null);
-    setDiffState("idle");
-    setPatchDocumentInput("");
-    setPatchOperationsInput("");
-    setPatchOutput("");
-    setPatchError("");
-    setPatchResult(null);
-    setPatchState("idle");
-    setPointerDocumentInput("");
-    setPointerPath("");
-    setPointerOutput("");
-    setPointerError("");
-    setPointerResult(null);
-    setPointerState("idle");
   }
 
   function handleCopy() {
@@ -742,6 +792,23 @@ export function PlaygroundShell() {
         ? "Fix first"
         : "Copy";
   const errorLine = state === "error" ? parseErrorLine(parseError) : undefined;
+  const diffErrorLine = diffState === "error" ? parseErrorLine(diffError) : undefined;
+  const patchErrorLine =
+    patchState === "error" ? parseErrorLine(patchError) : undefined;
+  const pointerErrorLine =
+    pointerState === "error" ? parseErrorLine(pointerError) : undefined;
+  const beforeDiffErrorLine =
+    diffErrorField === "before" ? diffErrorLine ?? 1 : undefined;
+  const afterDiffErrorLine =
+    diffErrorField === "after" ? diffErrorLine ?? 1 : undefined;
+  const patchDocumentErrorLine =
+    patchErrorField === "document" ? patchErrorLine ?? 1 : undefined;
+  const patchOperationsErrorLine =
+    patchErrorField === "patch" ? patchErrorLine ?? 1 : undefined;
+  const pointerDocumentErrorLine =
+    pointerErrorField === "document" ? pointerErrorLine ?? 1 : undefined;
+  const pointerPathErrorLine =
+    pointerErrorField === "path" && pointerPath.trim() ? 1 : undefined;
   const beforeDiffHighlights = useMemo(
     () => buildDiffHighlights(diffBeforeInput, diffResult?.operations, "before"),
     [diffBeforeInput, diffResult?.operations],
@@ -810,6 +877,11 @@ export function PlaygroundShell() {
     { label: "Added", tone: "success", value: `+${currentDiffSummary.added}` },
     { label: "Removed", tone: "danger", value: `-${currentDiffSummary.removed}` },
     { label: "Review", tone: "warning", value: currentDiffSummary.replaced },
+    {
+      label: "Issues",
+      tone: diffState === "error" ? "danger" : "success",
+      value: diffState === "error" ? 1 : 0,
+    },
   ] satisfies Parameters<typeof InspectorPanel>[0]["stats"];
   const patchStats = [
     { label: "Ops", value: currentPatchSummary.operations },
@@ -1011,53 +1083,69 @@ export function PlaygroundShell() {
             <>
               <CodePanel
                 title="Original JSON"
-                meta="before"
+                meta={beforeDiffErrorLine ? `line ${beforeDiffErrorLine}` : "before"}
                 code={diffBeforeInput}
                 editable
+                errorLine={beforeDiffErrorLine}
                 highlightedLines={beforeDiffHighlights}
                 onChange={(value) => handleDiffInputChange("before", value)}
                 onSubmit={() => {
                   void handleDiff();
                 }}
                 showLineNumbers
+                tone={beforeDiffErrorLine ? "error" : "default"}
               />
               <CodePanel
                 title="Changed JSON"
-                meta="after"
+                meta={afterDiffErrorLine ? `line ${afterDiffErrorLine}` : "after"}
                 code={diffAfterInput}
                 editable
+                errorLine={afterDiffErrorLine}
                 highlightedLines={afterDiffHighlights}
                 onChange={(value) => handleDiffInputChange("after", value)}
                 onSubmit={() => {
                   void handleDiff();
                 }}
                 showLineNumbers
+                tone={afterDiffErrorLine ? "error" : "default"}
               />
             </>
           ) : isPatch ? (
             <>
               <CodePanel
                 title="Document JSON"
-                meta="input"
+                meta={
+                  patchDocumentErrorLine
+                    ? `line ${patchDocumentErrorLine}`
+                    : "input"
+                }
                 code={patchDocumentInput}
                 editable
+                errorLine={patchDocumentErrorLine}
                 onChange={(value) => handlePatchInputChange("document", value)}
                 onSubmit={() => {
                   void handlePatch();
                 }}
                 showLineNumbers
+                tone={patchDocumentErrorLine ? "error" : "default"}
               />
               <CodePanel
                 title="JSON Patch"
-                meta="editable"
+                meta={
+                  patchOperationsErrorLine
+                    ? `line ${patchOperationsErrorLine}`
+                    : "editable"
+                }
                 code={patchOperationsInput}
                 editable
+                errorLine={patchOperationsErrorLine}
                 highlightedLines={patchOperationHighlights}
                 onChange={(value) => handlePatchInputChange("patch", value)}
                 onSubmit={() => {
                   void handlePatch();
                 }}
                 showLineNumbers
+                tone={patchOperationsErrorLine ? "error" : "default"}
               />
               <CodePanel
                 title="Patched Result"
@@ -1089,27 +1177,35 @@ export function PlaygroundShell() {
             <>
               <CodePanel
                 title="Source JSON"
-                meta="editable"
+                meta={
+                  pointerDocumentErrorLine
+                    ? `line ${pointerDocumentErrorLine}`
+                    : "editable"
+                }
                 code={pointerDocumentInput}
                 editable
+                errorLine={pointerDocumentErrorLine}
                 highlightedLines={pointerSourceHighlights}
                 onChange={(value) => handlePointerInputChange("document", value)}
                 onSubmit={() => {
                   void handlePointer();
                 }}
                 showLineNumbers
+                tone={pointerDocumentErrorLine ? "error" : "default"}
               />
               <CodePanel
                 title="Pointer Path"
-                meta="path"
+                meta={pointerPathErrorLine ? "check path" : "path"}
                 code={pointerPath}
                 editable
+                errorLine={pointerPathErrorLine}
                 onChange={(value) => handlePointerInputChange("path", value)}
                 onSubmit={() => {
                   void handlePointer();
                 }}
                 shouldWrapLines={false}
                 showLineNumbers
+                tone={pointerPathErrorLine ? "error" : "default"}
               />
               <CodePanel
                 title="Result"
