@@ -79,6 +79,7 @@ export function CodePanel({
             onSubmit={onSubmit}
             shouldWrapLines={shouldWrapLines}
             showLineNumbers={showLineNumbers}
+            tone={tone === "error" ? "error" : "default"}
             value={code}
           />
         ) : diffRows ? (
