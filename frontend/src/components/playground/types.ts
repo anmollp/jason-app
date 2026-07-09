@@ -5,6 +5,12 @@ export type LineHighlight = {
   tone: "add" | "remove" | "change";
 };
 
+export type InspectorStat = {
+  label: string;
+  tone?: "default" | "success" | "danger" | "warning";
+  value: number | string;
+};
+
 export type FormatJsonResponse = {
   output: string;
 };

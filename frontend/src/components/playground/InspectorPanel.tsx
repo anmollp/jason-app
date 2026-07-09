@@ -1,11 +1,9 @@
+import type { InspectorStat } from "./types";
+
 type InspectorPanelProps = {
   canCopy: boolean;
   copyLabel?: string;
-  stats: Array<{
-    label: string;
-    tone?: "default" | "success" | "danger" | "warning";
-    value: number | string;
-  }>;
+  stats: InspectorStat[];
   onClear: () => void;
   onCopy: () => void;
 };
