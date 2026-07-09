@@ -6,7 +6,6 @@ import { useState } from "react";
 import { JasonLogo } from "@/components/mascot/JasonLogo";
 import { Button } from "@/components/ui/Button";
 
-import { CodePanel } from "./CodePanel";
 import { InspectorPanel } from "./InspectorPanel";
 import { JasonStatus } from "./JasonStatus";
 import { ToolTabs, type PlaygroundTool } from "./ToolTabs";
@@ -16,6 +15,7 @@ import {
   usePatchTool,
   usePointerTool,
 } from "./hooks";
+import { DiffView, FormatterView, PatchView, PointerView } from "./views";
 
 export function PlaygroundShell() {
   const [activeTool, setActiveTool] = useState<PlaygroundTool>("Formatter");
@@ -26,21 +26,14 @@ export function PlaygroundShell() {
   const patch = usePatchTool(resetCopyMessage);
   const pointer = usePointerTool(resetCopyMessage);
   const {
-    errorLine,
     handleFormat,
-    handleInputChange,
     inputJson,
     isThinking: isFormatting,
-    outputCode,
     outputJson,
     parseError,
     state,
   } = formatter;
   const {
-    afterDiffErrorLine,
-    afterDiffHighlights,
-    beforeDiffErrorLine,
-    beforeDiffHighlights,
     currentDiffSummary,
     diffAfterInput,
     diffBeforeInput,
@@ -48,35 +41,24 @@ export function PlaygroundShell() {
     diffResult,
     diffState,
     handleDiff,
-    handleDiffInputChange,
     isThinking: isDiffing,
   } = diff;
   const {
     handlePatch,
-    handlePatchInputChange,
     isThinking: isPatching,
-    patchDocumentErrorLine,
     patchDocumentInput,
     patchError,
-    patchOperationHighlights,
-    patchOperationsErrorLine,
     patchOperationsInput,
     patchOutput,
-    patchResultHighlights,
     patchState,
   } = patch;
   const {
     currentPointerSummary,
     handlePointer,
-    handlePointerInputChange,
     isThinking: isResolvingPointer,
-    pointerDocumentErrorLine,
     pointerDocumentInput,
     pointerError,
     pointerOutput,
-    pointerPath,
-    pointerPathErrorLine,
-    pointerSourceHighlights,
     pointerState,
     selectedPointerPath,
   } = pointer;
@@ -354,193 +336,13 @@ export function PlaygroundShell() {
           }`}
         >
           {isDiff ? (
-            <>
-              <CodePanel
-                title="Original JSON"
-                meta={beforeDiffErrorLine ? `line ${beforeDiffErrorLine}` : "before"}
-                code={diffBeforeInput}
-                editable
-                errorLine={beforeDiffErrorLine}
-                highlightedLines={beforeDiffHighlights}
-                onChange={(value) => handleDiffInputChange("before", value)}
-                onSubmit={() => {
-                  void handleDiff();
-                }}
-                showLineNumbers
-                tone={beforeDiffErrorLine ? "error" : "default"}
-              />
-              <CodePanel
-                title="Changed JSON"
-                meta={afterDiffErrorLine ? `line ${afterDiffErrorLine}` : "after"}
-                code={diffAfterInput}
-                editable
-                errorLine={afterDiffErrorLine}
-                highlightedLines={afterDiffHighlights}
-                onChange={(value) => handleDiffInputChange("after", value)}
-                onSubmit={() => {
-                  void handleDiff();
-                }}
-                showLineNumbers
-                tone={afterDiffErrorLine ? "error" : "default"}
-              />
-            </>
+            <DiffView tool={diff} />
           ) : isPatch ? (
-            <>
-              <CodePanel
-                title="Document JSON"
-                meta={
-                  patchDocumentErrorLine
-                    ? `line ${patchDocumentErrorLine}`
-                    : "input"
-                }
-                code={patchDocumentInput}
-                editable
-                errorLine={patchDocumentErrorLine}
-                onChange={(value) => handlePatchInputChange("document", value)}
-                onSubmit={() => {
-                  void handlePatch();
-                }}
-                showLineNumbers
-                tone={patchDocumentErrorLine ? "error" : "default"}
-              />
-              <CodePanel
-                title="JSON Patch"
-                meta={
-                  patchOperationsErrorLine
-                    ? `line ${patchOperationsErrorLine}`
-                    : "editable"
-                }
-                code={patchOperationsInput}
-                editable
-                errorLine={patchOperationsErrorLine}
-                highlightedLines={patchOperationHighlights}
-                onChange={(value) => handlePatchInputChange("patch", value)}
-                onSubmit={() => {
-                  void handlePatch();
-                }}
-                showLineNumbers
-                tone={patchOperationsErrorLine ? "error" : "default"}
-              />
-              <CodePanel
-                title="Patched Result"
-                meta={
-                  patchState === "thinking"
-                    ? "applying"
-                    : patchState === "error"
-                      ? "patch error"
-                      : patchOutput
-                        ? "preview"
-                        : "waiting"
-                }
-                code={
-                  patchState === "error"
-                    ? `Jason couldn't apply this patch.\n\n${patchError}`
-                    : patchOutput || "Patched JSON will appear here."
-                }
-                highlightedLines={patchResultHighlights}
-                tone={
-                  patchState === "error"
-                    ? "error"
-                    : patchOutput
-                      ? "success"
-                      : "default"
-                }
-              />
-            </>
+            <PatchView tool={patch} />
           ) : isPointer ? (
-            <>
-              <CodePanel
-                title="Source JSON"
-                meta={
-                  pointerDocumentErrorLine
-                    ? `line ${pointerDocumentErrorLine}`
-                    : "editable"
-                }
-                code={pointerDocumentInput}
-                editable
-                errorLine={pointerDocumentErrorLine}
-                highlightedLines={pointerSourceHighlights}
-                onChange={(value) => handlePointerInputChange("document", value)}
-                onSubmit={() => {
-                  void handlePointer();
-                }}
-                showLineNumbers
-                tone={pointerDocumentErrorLine ? "error" : "default"}
-              />
-              <CodePanel
-                title="Pointer Path"
-                meta={pointerPathErrorLine ? "check path" : "path"}
-                code={pointerPath}
-                editable
-                errorLine={pointerPathErrorLine}
-                onChange={(value) => handlePointerInputChange("path", value)}
-                onSubmit={() => {
-                  void handlePointer();
-                }}
-                shouldWrapLines={false}
-                showLineNumbers
-                tone={pointerPathErrorLine ? "error" : "default"}
-              />
-              <CodePanel
-                title="Result"
-                meta={
-                  pointerState === "thinking"
-                    ? "finding"
-                    : pointerState === "error"
-                      ? "not found"
-                      : pointerOutput
-                        ? "result"
-                        : "waiting"
-                }
-                code={
-                  pointerState === "error"
-                    ? `Jason couldn't resolve this pointer.\n\n${pointerError}`
-                    : pointerOutput || "Resolved value will appear here."
-                }
-                highlightedLines={
-                  pointerState === "success"
-                    ? [{ line: 1, tone: "add" as const }]
-                    : []
-                }
-                tone={
-                  pointerState === "error"
-                    ? "error"
-                    : pointerOutput
-                      ? "success"
-                      : "default"
-                }
-              />
-            </>
+            <PointerView tool={pointer} />
           ) : (
-            <>
-              <CodePanel
-                title="Input JSON"
-                meta={errorLine ? `line ${errorLine}` : "editable"}
-                code={inputJson}
-                editable
-                errorLine={errorLine}
-                onChange={handleInputChange}
-                onSubmit={() => {
-                  void handleFormat();
-                }}
-                showLineNumbers
-                tone={errorLine ? "error" : "default"}
-              />
-              <CodePanel
-                title="Formatted Output"
-                meta={
-                  state === "thinking"
-                    ? "formatting"
-                    : state === "error"
-                      ? "parse error"
-                      : outputJson
-                        ? "formatted"
-                        : "waiting"
-                }
-                code={outputCode}
-                tone={state === "error" ? "error" : outputJson ? "success" : "default"}
-              />
-            </>
+            <FormatterView tool={formatter} />
           )}
           <InspectorPanel
             canCopy={canCopy}
