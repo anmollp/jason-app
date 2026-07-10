@@ -1,7 +1,7 @@
 const workflowSteps = [
-  ["Paste", "Drop in a response or config."],
-  ["Compare", "Separate structure from noise."],
-  ["Share", "Copy pointer or patch."],
+  ["Paste", "Drop in an API response, config file, or webhook body."],
+  ["Inspect", "Format, compare, patch, or resolve the exact nested path."],
+  ["Copy", "Take the formatted JSON, JSON Patch, or resolved value with you."],
 ];
 
 export function WorkflowBand() {
@@ -13,7 +13,7 @@ export function WorkflowBand() {
       <div>
         <p className="mb-4 font-mono text-sm text-zinc-500">Workflow</p>
         <h2 className="max-w-xl text-3xl font-bold leading-tight md:text-4xl">
-          Paste JSON. Compare changes. Share the exact path.
+          One focused loop for understanding structured data.
         </h2>
       </div>
       <div className="grid gap-6 md:grid-cols-3">

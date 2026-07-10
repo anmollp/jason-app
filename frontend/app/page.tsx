@@ -7,9 +7,6 @@ import { WorkflowBand } from "@/components/landing/WorkflowBand";
 export default function Home() {
   return (
     <div className="min-h-screen overflow-hidden bg-[#09090B] text-zinc-50">
-      <div className="pointer-events-none absolute right-20 top-0 size-[520px] rounded-full bg-emerald-500/15 blur-sm" />
-      <div className="pointer-events-none absolute right-24 top-[430px] size-[380px] rounded-full bg-cyan-400/10 blur-sm" />
-
       <div className="relative mx-auto w-full max-w-[1440px] px-6 py-9 lg:px-10 xl:px-[72px] 2xl:px-[110px]">
         <Navbar />
 
