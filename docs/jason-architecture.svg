@@ -3,8 +3,17 @@
   <desc id="desc">System design diagram showing browser, Next.js frontend, NestJS backend, Jason Rust CLI, request flow, and deployment configuration.</desc>
   <defs>
     <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-      <path d="M2,2 L10,6 L2,10 Z" fill="#22c55e" />
+      <path d="M2,2 L10,6 L2,10 Z" fill="#10b981" />
     </marker>
+    <symbol id="jasonMark" viewBox="0 0 120 120">
+      <path d="M60 18V10" stroke="#10b981" stroke-width="5" stroke-linecap="round" />
+      <circle cx="60" cy="8" r="4" fill="#10b981" />
+      <rect x="18" y="18" width="84" height="84" rx="26" fill="#18181b" stroke="#3f3f46" />
+      <rect x="27" y="27" width="66" height="66" rx="20" fill="#09090b" opacity="0.58" />
+      <circle cx="47" cy="50" r="7" fill="#10b981" />
+      <circle cx="73" cy="50" r="7" fill="#10b981" />
+      <text x="60" y="79" text-anchor="middle" font-size="25" font-weight="700" fill="#fafafa">{}</text>
+    </symbol>
     <style>
       .bg { fill: #09090b; }
       .section { fill: #18181b; stroke: #3f3f46; stroke-width: 2; rx: 18; }
@@ -13,92 +22,115 @@
       .backend { fill: #172554; stroke: #60a5fa; }
       .cli { fill: #3b2f12; stroke: #fbbf24; }
       .deploy { fill: #2e1065; stroke: #a78bfa; }
+      .labelPill { fill: #09090b; stroke: #52525b; stroke-width: 1.5; rx: 13; }
       .title { fill: #fafafa; font: 700 34px Arial, sans-serif; }
       .sectionTitle { fill: #fafafa; font: 700 24px Arial, sans-serif; }
       .label { fill: #fafafa; font: 700 20px Arial, sans-serif; }
       .small { fill: #d4d4d8; font: 15px Arial, sans-serif; }
       .mono { fill: #d4d4d8; font: 14px Menlo, Consolas, monospace; }
+      .pillText { fill: #d4d4d8; font: 700 12px Menlo, Consolas, monospace; }
       .muted { fill: #a1a1aa; font: 14px Arial, sans-serif; }
-      .arrow { stroke: #22c55e; stroke-width: 3; fill: none; marker-end: url(#arrow); }
-      .softArrow { stroke: #38bdf8; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .arrow { stroke: #10b981; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .returnArrow { stroke: #38bdf8; stroke-width: 3; fill: none; marker-end: url(#arrow); }
     </style>
   </defs>
 
   <rect class="bg" width="1280" height="1260" />
-  <text class="title" x="64" y="70">Jason System Design</text>
-  <text class="muted" x="64" y="100">Visual map of the product runtime, JSON request flow, and production deployment contract.</text>
+  <use href="#jasonMark" x="64" y="28" width="72" height="72" />
+  <text class="title" x="152" y="64">Jason System Design</text>
+  <text class="muted" x="152" y="94">Runtime architecture, JSON request flow, and production deployment contract.</text>
 
   <rect class="section" x="48" y="135" width="1184" height="330" />
   <text class="sectionTitle" x="80" y="178">1. Runtime Architecture</text>
+  <use href="#jasonMark" x="1142" y="154" width="44" height="44" opacity="0.82" />
 
-  <rect class="box" x="86" y="230" width="210" height="120" />
-  <text class="label" x="126" y="272">Browser</text>
-  <text class="small" x="118" y="304">User pastes JSON</text>
-  <text class="small" x="118" y="328">Runs a tool</text>
+  <rect class="box" x="86" y="235" width="190" height="116" />
+  <text class="label" x="128" y="276">Browser</text>
+  <text class="small" x="116" y="308">User pastes JSON</text>
+  <text class="small" x="116" y="332">Runs a tool</text>
 
-  <rect class="box frontend" x="380" y="210" width="250" height="160" />
-  <text class="label" x="435" y="250">Next.js Frontend</text>
-  <text class="small" x="420" y="285">Landing page</text>
-  <text class="small" x="420" y="310">Playground shell</text>
-  <text class="small" x="420" y="335">CodeMirror editors</text>
+  <rect class="box frontend" x="390" y="215" width="230" height="156" />
+  <text class="label" x="430" y="255">Next.js Frontend</text>
+  <text class="small" x="424" y="290">Landing page</text>
+  <text class="small" x="424" y="315">Playground shell</text>
+  <text class="small" x="424" y="340">CodeMirror editors</text>
 
-  <rect class="box backend" x="718" y="210" width="250" height="160" />
-  <text class="label" x="772" y="250">NestJS Backend</text>
-  <text class="small" x="758" y="285">Validation</text>
-  <text class="small" x="758" y="310">Error mapping</text>
-  <text class="small" x="758" y="335">Response summaries</text>
+  <rect class="box backend" x="732" y="215" width="230" height="156" />
+  <text class="label" x="774" y="255">NestJS Backend</text>
+  <text class="small" x="766" y="290">Validation</text>
+  <text class="small" x="766" y="315">Error mapping</text>
+  <text class="small" x="766" y="340">Response summaries</text>
 
-  <rect class="box cli" x="1030" y="230" width="160" height="120" />
-  <text class="label" x="1067" y="272">Rust CLI</text>
-  <text class="small" x="1053" y="304">JSON engine</text>
-  <text class="small" x="1053" y="328">Reusable core</text>
+  <rect class="box cli" x="1070" y="235" width="136" height="116" />
+  <text class="label" x="1095" y="276">Rust CLI</text>
+  <text class="small" x="1093" y="308">JSON engine</text>
+  <text class="small" x="1093" y="332">Reusable core</text>
 
-  <path class="arrow" d="M296 290 H370" />
-  <text class="mono" x="310" y="274">open /playground</text>
-  <path class="arrow" d="M630 290 H708" />
-  <text class="mono" x="642" y="274">fetch API</text>
-  <path class="arrow" d="M968 290 H1020" />
-  <text class="mono" x="972" y="274">execFile</text>
+  <path class="arrow" d="M276 293 H378" />
+  <rect class="labelPill" x="295" y="260" width="64" height="26" />
+  <text class="pillText" x="327" y="278" text-anchor="middle">OPEN</text>
+
+  <path class="arrow" d="M620 293 H720" />
+  <rect class="labelPill" x="640" y="260" width="60" height="26" />
+  <text class="pillText" x="670" y="278" text-anchor="middle">FETCH</text>
+
+  <path class="arrow" d="M962 293 H1058" />
+  <rect class="labelPill" x="984" y="260" width="52" height="26" />
+  <text class="pillText" x="1010" y="278" text-anchor="middle">EXEC</text>
 
   <rect class="section" x="48" y="505" width="1184" height="330" />
   <text class="sectionTitle" x="80" y="548">2. JSON Operation Request Flow</text>
+  <use href="#jasonMark" x="1142" y="524" width="44" height="44" opacity="0.82" />
 
-  <rect class="box frontend" x="86" y="600" width="210" height="120" />
-  <text class="label" x="132" y="642">Tool Hook</text>
-  <text class="small" x="115" y="674">input, output, state</text>
-  <text class="small" x="115" y="698">sample + copy actions</text>
+  <rect class="box frontend" x="86" y="604" width="200" height="118" />
+  <text class="label" x="128" y="645">Tool Hook</text>
+  <text class="small" x="116" y="677">Input, output, state</text>
+  <text class="small" x="116" y="701">Sample + copy actions</text>
 
-  <rect class="box" x="370" y="585" width="230" height="150" />
-  <text class="label" x="420" y="625">API Request</text>
-  <text class="mono" x="405" y="658">POST /format</text>
-  <text class="mono" x="405" y="682">POST /diff</text>
-  <text class="mono" x="405" y="706">POST /patch</text>
+  <rect class="box" x="390" y="585" width="220" height="156" />
+  <text class="label" x="442" y="625">API Request</text>
+  <text class="mono" x="430" y="658">POST /format</text>
+  <text class="mono" x="430" y="682">POST /diff</text>
+  <text class="mono" x="430" y="706">POST /patch</text>
+  <text class="mono" x="430" y="730">POST /pointer</text>
 
-  <rect class="box backend" x="675" y="585" width="230" height="150" />
-  <text class="label" x="723" y="625">Controller</text>
-  <text class="small" x="710" y="658">validate body</text>
-  <text class="small" x="710" y="682">call service</text>
-  <text class="small" x="710" y="706">map errors</text>
+  <rect class="box backend" x="725" y="585" width="220" height="156" />
+  <text class="label" x="778" y="625">Controller</text>
+  <text class="small" x="762" y="658">Validate body</text>
+  <text class="small" x="762" y="682">Call service</text>
+  <text class="small" x="762" y="706">Map errors</text>
 
-  <rect class="box cli" x="980" y="585" width="210" height="150" />
-  <text class="label" x="1029" y="625">CLI Command</text>
-  <text class="mono" x="1016" y="658">format --stdin</text>
-  <text class="mono" x="1016" y="682">diff --stdin</text>
-  <text class="mono" x="1016" y="706">pointer --stdin</text>
+  <rect class="box cli" x="1050" y="585" width="160" height="156" />
+  <text class="label" x="1076" y="625">CLI Command</text>
+  <text class="mono" x="1070" y="658">format</text>
+  <text class="mono" x="1070" y="682">diff</text>
+  <text class="mono" x="1070" y="706">patch</text>
+  <text class="mono" x="1070" y="730">pointer</text>
 
-  <path class="arrow" d="M296 660 H360" />
-  <path class="arrow" d="M600 660 H665" />
-  <path class="arrow" d="M905 660 H970" />
-  <path class="softArrow" d="M980 730 C830 800 520 800 296 720" />
-  <text class="mono" x="468" y="792">stable JSON response returns to UI</text>
+  <path class="arrow" d="M286 663 H378" />
+  <rect class="labelPill" x="306" y="630" width="52" height="26" />
+  <text class="pillText" x="332" y="648" text-anchor="middle">RUN</text>
+
+  <path class="arrow" d="M610 663 H713" />
+  <rect class="labelPill" x="636" y="630" width="50" height="26" />
+  <text class="pillText" x="661" y="648" text-anchor="middle">POST</text>
+
+  <path class="arrow" d="M945 663 H1038" />
+  <rect class="labelPill" x="962" y="630" width="58" height="26" />
+  <text class="pillText" x="991" y="648" text-anchor="middle">STDIN</text>
+
+  <path class="returnArrow" d="M1050 770 C855 812 518 812 286 738" />
+  <rect class="labelPill" x="522" y="780" width="218" height="26" />
+  <text class="pillText" x="631" y="798" text-anchor="middle">STABLE JSON RESPONSE</text>
 
   <rect class="section" x="48" y="875" width="1184" height="310" />
   <text class="sectionTitle" x="80" y="918">3. Deployment Shape</text>
+  <use href="#jasonMark" x="1142" y="894" width="44" height="44" opacity="0.82" />
 
   <rect class="box deploy" x="92" y="980" width="250" height="120" />
   <text class="label" x="142" y="1022">Frontend Host</text>
   <text class="mono" x="122" y="1056">NEXT_PUBLIC_API_BASE_URL</text>
-  <text class="small" x="122" y="1082">serves Next.js app</text>
+  <text class="small" x="122" y="1082">Serves Next.js app</text>
 
   <rect class="box backend" x="505" y="980" width="250" height="120" />
   <text class="label" x="560" y="1022">Backend Host</text>
@@ -108,12 +140,15 @@
   <rect class="box cli" x="900" y="980" width="250" height="120" />
   <text class="label" x="956" y="1022">Runtime Binary</text>
   <text class="mono" x="930" y="1056">JASON_CLI_PATH</text>
-  <text class="small" x="930" y="1082">must be executable</text>
+  <text class="small" x="930" y="1082">Must be executable</text>
 
-  <path class="arrow" d="M342 1040 H495" />
-  <text class="mono" x="365" y="1024">browser API calls</text>
-  <path class="arrow" d="M755 1040 H890" />
-  <text class="mono" x="780" y="1024">execFile</text>
+  <path class="arrow" d="M342 1040 H493" />
+  <rect class="labelPill" x="370" y="1007" width="96" height="26" />
+  <text class="pillText" x="418" y="1025" text-anchor="middle">API CALLS</text>
 
-  <text class="muted" x="80" y="1160">Critical production dependency: the Node backend can build successfully while JSON tools still fail if the Rust CLI is missing.</text>
+  <path class="arrow" d="M755 1040 H888" />
+  <rect class="labelPill" x="792" y="1007" width="52" height="26" />
+  <text class="pillText" x="818" y="1025" text-anchor="middle">EXEC</text>
+
+  <text class="muted" x="80" y="1160">Critical production dependency: Node can build successfully while JSON tools fail if the Rust CLI is missing.</text>
 </svg>
