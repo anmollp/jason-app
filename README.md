@@ -102,6 +102,11 @@ All endpoints return structured responses designed for the playground UI.
 See [docs/deployment.md](docs/deployment.md) for the production runbook,
 environment checklist, health-check contract, and smoke-test steps.
 
+## Architecture
+
+See [docs/architecture.md](docs/architecture.md) for the product problem,
+system design, CLI boundary, tradeoffs, and future improvements.
+
 ## Launch roadmap
 
 This repo is being prepared in small, reviewable PRs:
