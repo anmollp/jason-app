@@ -37,13 +37,14 @@ JASON_CLI_PATH=/absolute/path/to/jason
 ## Environment variables
 
 - `PORT`: API server port. Defaults to `3000`.
-- `FRONTEND_ORIGIN`: allowed CORS origin. Defaults to
+- `FRONTEND_ORIGIN`: comma-separated allowed CORS origin list. Defaults to
   `http://localhost:3001`.
 - `JASON_CLI_PATH`: Jason CLI executable path. Defaults to `jason`.
 
 ## Endpoints
 
-- `GET /`: health-style hello response.
+- `GET /`: API health metadata.
+- `GET /health`: API health metadata for deployment probes.
 - `POST /format`: format a JSON string.
 - `POST /diff`: compare two JSON strings and return JSON Patch operations.
 - `POST /patch`: apply JSON Patch operations to a JSON document.

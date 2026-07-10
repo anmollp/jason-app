@@ -17,8 +17,21 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:3001',
+    origin: parseCorsOrigins(process.env.FRONTEND_ORIGIN),
   });
   await app.listen(process.env.PORT ?? 3000);
 }
 void bootstrap();
+
+function parseCorsOrigins(originConfig?: string): string | string[] {
+  const origins = (originConfig ?? 'http://localhost:3001')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  if (origins.length === 0) {
+    return 'http://localhost:3001';
+  }
+
+  return origins.length === 1 ? origins[0] : origins;
+}

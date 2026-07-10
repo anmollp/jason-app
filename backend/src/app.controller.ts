@@ -12,6 +12,7 @@ import type {
   DiffJsonResponse,
   FormatJsonRequest,
   FormatJsonResponse,
+  HealthResponse,
   PatchJsonRequest,
   PatchJsonResponse,
   PointerJsonRequest,
@@ -23,8 +24,13 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  getRoot(): HealthResponse {
+    return this.appService.getHealth();
+  }
+
+  @Get('health')
+  getHealth(): HealthResponse {
+    return this.appService.getHealth();
   }
 
   @Post('format')

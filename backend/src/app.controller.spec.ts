@@ -35,9 +35,21 @@ describe('AppController', () => {
     appController = app.get<AppController>(AppController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+  describe('health', () => {
+    it('returns API health metadata from root', () => {
+      expect(appController.getRoot()).toEqual({
+        name: 'jason-api',
+        status: 'ok',
+        version: '0.0.1',
+      });
+    });
+
+    it('returns API health metadata from /health', () => {
+      expect(appController.getHealth()).toEqual({
+        name: 'jason-api',
+        status: 'ok',
+        version: '0.0.1',
+      });
     });
   });
 
