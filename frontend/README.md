@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Jason Frontend
 
-## Getting Started
+The frontend contains the public Jason product site and the interactive JSON
+playground. It is built with Next.js, React, TypeScript, Tailwind CSS, and
+CodeMirror.
 
-First, run the development server:
+## Main routes
+
+- `/`: landing page for the product story.
+- `/playground`: interactive Formatter, Diff, Patch, and Pointer workspace.
+
+## Local development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
+pnpm install
+pnpm run dev -- -p 3001
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3001`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The frontend expects the backend API to be reachable at
+`NEXT_PUBLIC_API_BASE_URL`, which defaults to `http://localhost:3000`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Useful scripts
 
-## Learn More
+- `pnpm run dev`: start the development server.
+- `pnpm run build`: create a production build.
+- `pnpm run start`: serve the production build.
+- `pnpm run lint`: run ESLint.
 
-To learn more about Next.js, take a look at the following resources:
+## Deployment note
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The frontend can be deployed separately from the API. Set
+`NEXT_PUBLIC_API_BASE_URL` to the production backend URL so playground requests
+do not point at localhost.
