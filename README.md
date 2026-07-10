@@ -76,7 +76,7 @@ Open `http://localhost:3001` and use `/playground` for the interactive tools.
 Backend:
 
 - `PORT`: API server port. Defaults to `3000`.
-- `FRONTEND_ORIGIN`: origin allowed by CORS. Defaults to
+- `FRONTEND_ORIGIN`: comma-separated origins allowed by CORS. Defaults to
   `http://localhost:3001`.
 - `JASON_CLI_PATH`: path to the Jason CLI binary. Defaults to `jason`.
 
@@ -89,12 +89,18 @@ Frontend:
 
 The backend exposes four JSON endpoints:
 
+- `GET /health` for deployment health checks.
 - `POST /format` with `{ "input": "..." }`
 - `POST /diff` with `{ "before": "...", "after": "..." }`
 - `POST /patch` with `{ "document": "...", "patch": "..." }`
 - `POST /pointer` with `{ "document": "...", "path": "..." }`
 
 All endpoints return structured responses designed for the playground UI.
+
+## Deployment
+
+See [docs/deployment.md](docs/deployment.md) for the production runbook,
+environment checklist, health-check contract, and smoke-test steps.
 
 ## Launch roadmap
 
