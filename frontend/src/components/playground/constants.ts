@@ -1,14 +1,24 @@
 export const initialInputJson = `{
-  "service": "billing",
+  "service": "checkout-api",
   "region": "us-east-1",
-  "retry": true
+  "retry": true,
+  "timeoutMs": 2500,
+  "owners": [
+    "platform",
+    "payments"
+  ]
 }`;
 
 export const diffBeforeJson = `{
   "status": "draft",
   "plan": "starter",
   "user": {
-    "role": "viewer"
+    "role": "viewer",
+    "seats": 3
+  },
+  "features": {
+    "auditLog": false,
+    "webhooks": false
   }
 }`;
 
@@ -16,7 +26,12 @@ export const diffAfterJson = `{
   "status": "ready",
   "plan": "pro",
   "user": {
-    "role": "admin"
+    "role": "admin",
+    "seats": 10
+  },
+  "features": {
+    "auditLog": true,
+    "webhooks": true
   },
   "timeoutMs": 3000
 }`;
@@ -51,6 +66,21 @@ export const patchOperationsJson = `[
     "op": "replace",
     "path": "/plan",
     "value": "pro"
+  },
+  {
+    "op": "replace",
+    "path": "/user/seats",
+    "value": 10
+  },
+  {
+    "op": "replace",
+    "path": "/features/auditLog",
+    "value": true
+  },
+  {
+    "op": "replace",
+    "path": "/features/webhooks",
+    "value": true
   },
   {
     "op": "add",

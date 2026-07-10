@@ -102,6 +102,17 @@ export function usePatchTool(resetCopyMessage: () => void) {
     setPatchState("idle");
   }
 
+  function loadSample() {
+    setPatchDocumentInput(patchDocumentJson);
+    setPatchOperationsInput(patchOperationsJson);
+    setPatchOutput("");
+    setPatchError("");
+    setPatchErrorField(undefined);
+    setPatchResult(null);
+    resetCopyMessage();
+    setPatchState("idle");
+  }
+
   const patchErrorLine =
     patchState === "error" ? parseErrorLine(patchError) : undefined;
   const patchDocumentErrorLine =
@@ -152,6 +163,7 @@ export function usePatchTool(resetCopyMessage: () => void) {
     handlePatch,
     handlePatchInputChange,
     isThinking: patchState === "thinking",
+    loadSample,
     patchDocumentErrorLine,
     patchDocumentInput,
     patchError,

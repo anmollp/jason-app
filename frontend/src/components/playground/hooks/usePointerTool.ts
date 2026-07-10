@@ -104,6 +104,17 @@ export function usePointerTool(resetCopyMessage: () => void) {
     setPointerState("idle");
   }
 
+  function loadSample() {
+    setPointerDocumentInput(pointerDocumentJson);
+    setPointerPath(pointerPathInput);
+    setPointerOutput("");
+    setPointerError("");
+    setPointerErrorField(undefined);
+    setPointerResult(null);
+    resetCopyMessage();
+    setPointerState("idle");
+  }
+
   const selectedPointerPath = primaryPointerPath(pointerPath);
   const pointerErrorLine =
     pointerState === "error" ? parseErrorLine(pointerError) : undefined;
@@ -157,6 +168,7 @@ export function usePointerTool(resetCopyMessage: () => void) {
     handlePointer,
     handlePointerInputChange,
     isThinking: pointerState === "thinking",
+    loadSample,
     pointerDocumentErrorLine,
     pointerDocumentInput,
     pointerError,
