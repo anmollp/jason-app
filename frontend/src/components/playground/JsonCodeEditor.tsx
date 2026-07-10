@@ -183,7 +183,7 @@ const jasonEditorTheme = EditorView.theme({
     backgroundColor: "transparent",
     color: "#D4D4D8",
     fontFamily:
-      "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "var(--font-jason-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
     fontSize: "14px",
     height: "100%",
   },
