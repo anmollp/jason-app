@@ -70,6 +70,15 @@ export function useFormatterTool(resetCopyMessage: () => void) {
     setState("idle");
   }
 
+  function loadSample() {
+    setInputJson(initialInputJson);
+    setOutputJson("");
+    setParseError("");
+    resetCopyMessage();
+    setKeyCount(0);
+    setState("idle");
+  }
+
   const outputCode =
     (parseError ? `Jason couldn't parse this JSON.\n\n${parseError}` : outputJson) ||
     "Formatted JSON will appear here.";
@@ -94,6 +103,7 @@ export function useFormatterTool(resetCopyMessage: () => void) {
     inputJson,
     isThinking: state === "thinking",
     keyCount,
+    loadSample,
     outputCode,
     outputJson,
     parseError,

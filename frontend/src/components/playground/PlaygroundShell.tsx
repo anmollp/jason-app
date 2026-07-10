@@ -89,6 +89,27 @@ export function PlaygroundShell() {
     formatter.clear();
   }
 
+  function handleLoadSample() {
+    setCopyMessage("");
+
+    if (activeTool === "Diff") {
+      diff.loadSample();
+      return;
+    }
+
+    if (activeTool === "Patch") {
+      patch.loadSample();
+      return;
+    }
+
+    if (activeTool === "Pointer") {
+      pointer.loadSample();
+      return;
+    }
+
+    formatter.loadSample();
+  }
+
   function handleCopy() {
     if (activeTool === "Diff") {
       if (!diffResult) {
@@ -269,6 +290,13 @@ export function PlaygroundShell() {
       : state === "success"
         ? "Formatted output is ready. Copy it or keep editing the input."
         : "Paste JSON, then run Format or press Cmd/Ctrl + Enter.";
+  const sampleLabel = isDiff
+    ? "Load Diff sample"
+    : isPatch
+      ? "Load Patch sample"
+      : isPointer
+        ? "Load Pointer sample"
+        : "Load Formatter sample";
 
   return (
     <div className="min-h-screen bg-[#09090B] text-zinc-50">
@@ -358,6 +386,9 @@ export function PlaygroundShell() {
             {footerHint}
           </p>
           <div className="flex flex-wrap gap-3">
+            <Button variant="secondary" onClick={handleLoadSample}>
+              {sampleLabel}
+            </Button>
             <Button
               disabled={!canRunPrimaryAction}
               onClick={() => {

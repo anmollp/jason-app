@@ -91,6 +91,16 @@ export function useDiffTool(resetCopyMessage: () => void) {
     setDiffState("idle");
   }
 
+  function loadSample() {
+    setDiffBeforeInput(diffBeforeJson);
+    setDiffAfterInput(diffAfterJson);
+    setDiffError("");
+    setDiffErrorField(undefined);
+    setDiffResult(null);
+    resetCopyMessage();
+    setDiffState("idle");
+  }
+
   const diffErrorLine =
     diffState === "error" ? parseErrorLine(diffError) : undefined;
   const beforeDiffErrorLine =
@@ -143,6 +153,7 @@ export function useDiffTool(resetCopyMessage: () => void) {
     handleDiff,
     handleDiffInputChange,
     isThinking: diffState === "thinking",
+    loadSample,
     stats,
   };
 }
