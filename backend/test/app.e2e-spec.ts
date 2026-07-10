@@ -30,10 +30,19 @@ describe('AppController (e2e)', () => {
   });
 
   it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+    return request(app.getHttpServer()).get('/').expect(200).expect({
+      name: 'jason-api',
+      status: 'ok',
+      version: '0.0.1',
+    });
+  });
+
+  it('/health (GET)', () => {
+    return request(app.getHttpServer()).get('/health').expect(200).expect({
+      name: 'jason-api',
+      status: 'ok',
+      version: '0.0.1',
+    });
   });
 
   it('/format (POST) formats valid JSON', () => {

@@ -83,12 +83,22 @@ export type PointerJsonResponse = {
   summary: PointerJsonSummary;
 };
 
+export type HealthResponse = {
+  name: string;
+  status: 'ok';
+  version: string;
+};
+
 @Injectable()
 export class AppService {
   constructor(private readonly jasonCliService: JasonCliService) {}
 
-  getHello(): string {
-    return 'Hello World!';
+  getHealth(): HealthResponse {
+    return {
+      name: 'jason-api',
+      status: 'ok',
+      version: process.env.npm_package_version ?? '0.0.1',
+    };
   }
 
   async formatJson(input: string): Promise<FormatJsonResponse> {
