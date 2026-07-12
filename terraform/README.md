@@ -36,6 +36,7 @@ terraform/
 |-- providers.tf
 |-- apis.tf
 |-- artifact_registry.tf
+|-- budget.tf
 |-- service_accounts.tf
 |-- github_actions_identity.tf
 |-- cloud_run.tf
@@ -79,6 +80,8 @@ The dev module creates the first production-shaped resource set:
 - a private Cloud Run backend service invoked by the frontend service account.
 - cost-control defaults with `min_instance_count = 0` and
   `max_instance_count = 1`.
+- an optional project-scoped monthly billing budget when `billing_account_id` is
+  set.
 
 The browser calls relative frontend API routes. The Next.js server then calls
 the backend using `JASON_API_BASE_URL` and a Cloud Run identity token. This keeps
@@ -104,8 +107,26 @@ The first deployment keeps permissions intentionally narrow:
 ## Planned Resource PRs
 
 1. Add Terraform apply workflow and deploy identity permissions.
-2. Add budget alert and IAM tightening.
-3. Add custom domain and DNS after the basic deployment is stable.
+2. Add destroy-plan workflow.
+3. Add IAM tightening.
+4. Add custom domain and DNS after the basic deployment is stable.
+
+## Budget Alerts
+
+Budget alerts are optional so local validation can run without billing account
+details. Set `billing_account_id` to create a monthly project-scoped budget.
+
+Defaults:
+
+- `budget_amount_usd = 10`
+- alert at 50% current spend.
+- alert at 80% current spend.
+- alert at 100% current spend.
+- alert at 100% forecasted spend.
+
+The budget uses Google Cloud's default billing IAM recipients for threshold
+notifications. This is meant to be an early warning system, not a hard spending
+cap.
 
 ## Terraform Plan Workflow
 

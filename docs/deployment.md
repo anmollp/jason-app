@@ -128,6 +128,12 @@ The initial GitHub Actions service account is scoped for image publishing. If
 the cloud plan needs broader read or management permissions, add a separate
 deploy identity before enabling apply.
 
+## Budget alerts
+
+Set `billing_account_id` in `terraform/environments/dev/terraform.tfvars` to
+create the optional monthly budget alert. The default budget is `$10` and sends
+alerts at 50%, 80%, 100%, and 100% forecasted spend.
+
 ## Smoke test
 
 After deploy, verify:

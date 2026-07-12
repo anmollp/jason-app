@@ -4,6 +4,7 @@ locals {
   artifact_registry_repository_id  = "${local.name_prefix}-containers"
   github_actions_service_account   = "${local.name_prefix}-gha-publisher"
   github_workload_identity_pool_id = "${local.name_prefix}-github"
+  create_budget_alert              = var.billing_account_id != ""
 
   common_labels = {
     app         = var.service_name
@@ -13,6 +14,7 @@ locals {
 
   required_services = toset([
     "artifactregistry.googleapis.com",
+    "billingbudgets.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
     "run.googleapis.com",

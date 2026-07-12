@@ -32,3 +32,8 @@ output "github_actions_workload_identity_provider" {
   description = "Workload Identity provider resource name for GitHub Actions."
   value       = module.jason.github_actions_workload_identity_provider
 }
+
+output "budget_name" {
+  description = "Monthly billing budget resource name, when billing_account_id is set."
+  value       = module.jason.budget_name
+}
