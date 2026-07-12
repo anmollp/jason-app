@@ -128,6 +128,13 @@ Configure `GCP_TERRAFORM_SERVICE_ACCOUNT` from the Terraform
 `github_actions_deploy_service_account_email` output for Terraform plan,
 destroy-plan, and future apply workflows.
 
+## Terraform apply
+
+Use the manual `Terraform Apply` GitHub Actions workflow only after reviewing a
+successful plan. Pass the same image values as workflow inputs and type
+`apply-dev` in the confirmation field. The workflow creates a plan file and
+applies that exact plan.
+
 ## Terraform destroy plan
 
 Use the manual `Terraform Destroy Plan` workflow before any planned teardown.

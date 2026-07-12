@@ -130,6 +130,9 @@ after image URIs are available.
 Destroy plans can be reviewed through the manual `Terraform Destroy Plan`
 workflow before any teardown is considered.
 
+Terraform applies are manual through the `Terraform Apply` workflow and require
+an explicit `apply-dev` confirmation.
+
 ## Architecture
 
 See [docs/architecture.md](docs/architecture.md) for the product problem,

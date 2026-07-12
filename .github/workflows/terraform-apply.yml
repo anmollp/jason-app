@@ -1,0 +1,104 @@
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Terraform environment to apply."
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+      frontend_image:
+        description: "Frontend container image URI to deploy."
+        required: true
+      backend_image:
+        description: "Backend container image URI to deploy."
+        required: true
+      confirmation:
+        description: "Type apply-dev to confirm this apply."
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TF_WORKING_DIR: terraform/environments/${{ inputs.environment }}
+
+jobs:
+  apply:
+    name: Terraform apply
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Validate confirmation
+        run: |
+          if [ "${{ inputs.confirmation }}" != "apply-${{ inputs.environment }}" ]; then
+            echo "::error::Type apply-${{ inputs.environment }} in the confirmation input."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate workflow configuration
+        run: |
+          if [ -z "${{ vars.GCP_PROJECT_ID }}" ]; then
+            echo "::error::Set the GCP_PROJECT_ID repository variable."
+            exit 1
+          fi
+          if [ -z "${{ vars.GCP_REGION }}" ]; then
+            echo "::error::Set the GCP_REGION repository variable."
+            exit 1
+          fi
+          if [ -z "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" ]; then
+            echo "::error::Set the GCP_WORKLOAD_IDENTITY_PROVIDER repository secret."
+            exit 1
+          fi
+          if [ -z "${{ secrets.GCP_TERRAFORM_SERVICE_ACCOUNT }}" ]; then
+            echo "::error::Set the GCP_TERRAFORM_SERVICE_ACCOUNT repository secret."
+            exit 1
+          fi
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_TERRAFORM_SERVICE_ACCOUNT }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+
+      - name: Terraform fmt check
+        run: terraform fmt -check -recursive terraform
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init
+
+      - name: Terraform validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate
+
+      - name: Terraform plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform plan \
+            -var="project_id=${{ vars.GCP_PROJECT_ID }}" \
+            -var="region=${{ vars.GCP_REGION }}" \
+            -var="frontend_image=${{ inputs.frontend_image }}" \
+            -var="backend_image=${{ inputs.backend_image }}" \
+            -var="github_repository=${{ github.repository }}" \
+            -var="github_ref=refs/heads/${{ github.ref_name }}" \
+            -out=tfplan
+
+      - name: Terraform apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -auto-approve tfplan

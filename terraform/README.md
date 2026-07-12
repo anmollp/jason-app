@@ -111,9 +111,8 @@ The first deployment keeps permissions intentionally narrow:
 
 ## Planned Resource PRs
 
-1. Add Terraform apply workflow.
-2. Add IAM tightening.
-3. Add custom domain and DNS after the basic deployment is stable.
+1. Add IAM tightening.
+2. Add custom domain and DNS after the basic deployment is stable.
 
 ## Budget Alerts
 
@@ -147,6 +146,19 @@ the exact image URIs published by the image workflow.
 Terraform plan and destroy-plan workflows use `GCP_TERRAFORM_SERVICE_ACCOUNT`,
 which should be set from the `github_actions_deploy_service_account_email`
 output. This identity is separate from the image publisher identity.
+
+## Terraform Apply Workflow
+
+The `Terraform Apply` workflow is manual. It runs the same validation steps as
+the normal plan workflow, writes a plan file, then applies that exact plan file:
+
+```bash
+terraform apply -auto-approve tfplan
+```
+
+It requires the `confirmation` input to be exactly `apply-dev` for the dev
+environment. Run the plan workflow first, inspect the proposed changes, then run
+apply only when the plan is expected.
 
 ## Terraform Destroy Plan Workflow
 
