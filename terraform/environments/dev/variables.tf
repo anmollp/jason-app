@@ -85,6 +85,18 @@ variable "frontend_allow_unauthenticated" {
   default     = true
 }
 
+variable "github_repository" {
+  description = "GitHub repository allowed to publish images through Workload Identity Federation."
+  type        = string
+  default     = "anmollp/jason-app"
+}
+
+variable "github_ref" {
+  description = "Git ref allowed to publish images through Workload Identity Federation."
+  type        = string
+  default     = "refs/heads/master"
+}
+
 variable "budget_amount_usd" {
   description = "Monthly budget threshold in USD for alerting."
   type        = number

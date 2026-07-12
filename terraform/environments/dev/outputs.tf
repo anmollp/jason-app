@@ -22,3 +22,13 @@ output "backend_service_account_email" {
   description = "Backend Cloud Run runtime service account email."
   value       = module.jason.backend_service_account_email
 }
+
+output "github_actions_service_account_email" {
+  description = "GitHub Actions image publisher service account email."
+  value       = module.jason.github_actions_service_account_email
+}
+
+output "github_actions_workload_identity_provider" {
+  description = "Workload Identity provider resource name for GitHub Actions."
+  value       = module.jason.github_actions_workload_identity_provider
+}

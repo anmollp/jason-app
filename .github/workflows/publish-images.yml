@@ -80,3 +80,5 @@ jobs:
         run: |
           echo "frontend_image = \"${FRONTEND_IMAGE}\""
           echo "backend_image  = \"${BACKEND_IMAGE}\""
+          echo
+          echo "Copy these values into terraform/environments/dev/terraform.tfvars."

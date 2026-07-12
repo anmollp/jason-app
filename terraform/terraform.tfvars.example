@@ -21,6 +21,8 @@ backend_memory  = "512Mi"
 
 jason_cli_path                   = "/usr/local/bin/jason"
 frontend_allow_unauthenticated  = true
+github_repository                = "anmollp/jason-app"
+github_ref                       = "refs/heads/master"
 
 # Budget alert resources will be added in a follow-up PR.
 budget_amount_usd = 10

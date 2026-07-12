@@ -37,6 +37,7 @@ terraform/
 |-- apis.tf
 |-- artifact_registry.tf
 |-- service_accounts.tf
+|-- github_actions_identity.tf
 |-- cloud_run.tf
 |-- variables.tf
 |-- locals.tf
@@ -95,15 +96,16 @@ The first deployment keeps permissions intentionally narrow:
   backend service, so only frontend server-side code can call the backend.
 - the backend runtime service account has no project-level roles in this PR
   because it only executes the packaged Jason CLI.
-- Artifact Registry writer permissions for CI belong to the GitHub Actions
-  publishing identity.
+- the GitHub Actions publisher service account receives Artifact Registry writer
+  access only on the Jason container repository.
+- GitHub Actions can impersonate that publisher service account only through the
+  Workload Identity provider restricted to `github_repository` and `github_ref`.
 
 ## Planned Resource PRs
 
-1. Add Terraform-managed GitHub Actions deploy identity.
-2. Add Terraform apply workflow.
-3. Add budget alert and IAM tightening.
-4. Add custom domain and DNS after the basic deployment is stable.
+1. Add Terraform apply workflow.
+2. Add budget alert and IAM tightening.
+3. Add custom domain and DNS after the basic deployment is stable.
 
 ## Publishing Images
 
@@ -120,16 +122,14 @@ Required GitHub repository variables:
 
 Required GitHub repository secrets:
 
-- `GCP_WORKLOAD_IDENTITY_PROVIDER`: Workload Identity provider resource name.
-- `GCP_SERVICE_ACCOUNT`: service account email used by GitHub Actions.
+- `GCP_WORKLOAD_IDENTITY_PROVIDER`: value from the Terraform
+  `github_actions_workload_identity_provider` output.
+- `GCP_SERVICE_ACCOUNT`: value from the Terraform
+  `github_actions_service_account_email` output.
 
-The GitHub Actions service account needs Artifact Registry write access:
-
-```bash
-gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-  --member="serviceAccount:YOUR_GITHUB_ACTIONS_SERVICE_ACCOUNT" \
-  --role="roles/artifactregistry.writer"
-```
+Terraform creates the GitHub Actions publisher service account, grants it
+Artifact Registry writer access on the Jason repository, and allows GitHub OIDC
+tokens from `github_repository` and `github_ref` to impersonate it.
 
 After the workflow finishes, copy its printed image URIs into
 `terraform/environments/dev/terraform.tfvars`:
