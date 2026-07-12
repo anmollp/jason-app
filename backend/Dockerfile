@@ -2,7 +2,7 @@
 
 ARG NODE_VERSION=22-bookworm-slim
 ARG RUST_VERSION=1-bookworm
-ARG JASON_CLI_REF=v1.6.0
+ARG JASON_CLI_REF=v1.7.0
 
 FROM rust:${RUST_VERSION} AS jason-cli
 
