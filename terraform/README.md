@@ -206,6 +206,7 @@ backend_image  = "us-central1-docker.pkg.dev/YOUR_PROJECT_ID/jason-dev-container
 
 Terraform plan, destroy-plan, and future apply workflows use:
 
+- `GCS_STATE_BUCKET`: GCS bucket used for Terraform state.
 - `GCP_WORKLOAD_IDENTITY_PROVIDER`: value from the Terraform
   `github_actions_workload_identity_provider` output.
 - `GCP_TERRAFORM_SERVICE_ACCOUNT`: value from the Terraform
@@ -217,10 +218,9 @@ before it exists.
 
 ## State
 
-Use local state only while learning and before the first real apply. Before any
-shared or production apply, move state to a GCS backend.
+Use GCS remote state before the first real apply from GitHub Actions.
 
-Suggested setup:
+Create the bucket once:
 
 ```bash
 gcloud storage buckets create gs://YOUR_PROJECT_ID-jason-terraform-state \
@@ -232,7 +232,13 @@ gcloud storage buckets update gs://YOUR_PROJECT_ID-jason-terraform-state \
   --versioning
 ```
 
-Then copy `terraform/environments/dev/backend.tf.example` to
+Then set the GitHub repository variable:
+
+```text
+GCS_STATE_BUCKET=YOUR_PROJECT_ID-jason-terraform-state
+```
+
+For local Terraform, copy `terraform/environments/dev/backend.tf.example` to
 `terraform/environments/dev/backend.tf`, update the bucket name, and run:
 
 ```bash
