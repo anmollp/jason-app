@@ -134,8 +134,9 @@ workflows in GitHub Actions.
 ## Terraform deploy
 
 Use the manual `Terraform Deploy` GitHub Actions workflow after publishing
-images. It creates a plan, opens a GitHub approval issue, waits for an approval
-comment, and applies that exact plan.
+images. Its graph is `Plan -> Approval -> Apply`: it creates a plan, opens a
+GitHub approval issue, waits for an approval comment, and applies that exact
+plan.
 
 Approve with `yes`, `lgtm`, `done`, `approve`, or `approved`. Deny with `no`,
 `stop`, `deny`, `denied`, or `cancel`.
