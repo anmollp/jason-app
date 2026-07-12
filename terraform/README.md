@@ -103,9 +103,26 @@ The first deployment keeps permissions intentionally narrow:
 
 ## Planned Resource PRs
 
-1. Add Terraform apply workflow.
+1. Add Terraform apply workflow and deploy identity permissions.
 2. Add budget alert and IAM tightening.
 3. Add custom domain and DNS after the basic deployment is stable.
+
+## Terraform Plan Workflow
+
+The `Terraform Plan` workflow is manual and review-only. It runs:
+
+- `terraform fmt -check -recursive terraform`
+- `terraform init`
+- `terraform validate`
+- `terraform plan`
+
+It requires `frontend_image` and `backend_image` workflow inputs so plans use
+the exact image URIs published by the image workflow.
+
+The current GitHub Actions service account is intentionally scoped for image
+publishing. A successful cloud plan against a real project may require a
+separate deploy service account or additional read/manage roles. Add those with
+the Terraform apply workflow instead of expanding publisher permissions here.
 
 ## Publishing Images
 
