@@ -128,6 +128,13 @@ The initial GitHub Actions service account is scoped for image publishing. If
 the cloud plan needs broader read or management permissions, add a separate
 deploy identity before enabling apply.
 
+## Terraform destroy plan
+
+Use the manual `Terraform Destroy Plan` workflow before any planned teardown.
+It requires the same image inputs as the normal plan workflow plus a
+`confirmation` value of `destroy-plan`. The workflow runs `terraform plan
+-destroy` only; it does not apply or destroy resources.
+
 ## Budget alerts
 
 Set `billing_account_id` in `terraform/environments/dev/terraform.tfvars` to
