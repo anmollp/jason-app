@@ -33,8 +33,10 @@ Jason Rust CLI
 ## Backend checklist
 
 1. Deploy the `backend/` NestJS app with Node.js support.
-2. Ensure the Jason CLI binary is present in the runtime image or server.
-3. Set `JASON_CLI_PATH` to the CLI executable path, or put `jason` on `PATH`.
+2. Build the backend container image so it compiles the Jason CLI from
+   `anmollp/jason` and copies it into the runtime image.
+3. Set `JASON_CLI_PATH` to the CLI executable path, or keep the container
+   default of `/usr/local/bin/jason`.
 4. Set `FRONTEND_ORIGIN` to the deployed frontend origin.
 5. If using preview deployments, set `FRONTEND_ORIGIN` to a comma-separated
    list, for example:

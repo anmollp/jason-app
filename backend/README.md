@@ -34,6 +34,33 @@ path:
 JASON_CLI_PATH=/absolute/path/to/jason
 ```
 
+## Container image
+
+The backend Docker image builds the Jason Rust CLI from
+`https://github.com/anmollp/jason` and copies the compiled binary into the
+runtime image at `/usr/local/bin/jason`.
+
+By default the image pins the CLI build to `v1.7.0`:
+
+```bash
+docker build -t jason-backend ./backend
+```
+
+To test another CLI tag or commit:
+
+```bash
+docker build \
+  --build-arg JASON_CLI_REF=v1.7.0 \
+  -t jason-backend \
+  ./backend
+```
+
+The runtime image sets:
+
+```bash
+JASON_CLI_PATH=/usr/local/bin/jason
+```
+
 ## Environment variables
 
 - `PORT`: API server port. Defaults to `3000`.
