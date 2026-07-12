@@ -120,6 +120,10 @@ The first IaC target is GCP Cloud Run managed with Terraform. See
 [docs/decisions/0001-gcp-cloud-run-terraform.md](docs/decisions/0001-gcp-cloud-run-terraform.md)
 for the hosting decision, cost controls, alternatives, and rollout plan.
 
+Container images are published manually through the `Publish Container Images`
+GitHub Actions workflow once GCP Workload Identity and Artifact Registry writer
+access are configured.
+
 ## Architecture
 
 See [docs/architecture.md](docs/architecture.md) for the product problem,
