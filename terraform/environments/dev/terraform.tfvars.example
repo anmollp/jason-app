@@ -1,0 +1,17 @@
+project_id = "your-gcp-project-id"
+region     = "us-central1"
+
+service_name = "jason"
+
+# Filled in after image build/push is added.
+frontend_image = ""
+backend_image  = ""
+
+# Cost-control defaults for individual hosting.
+frontend_min_instances = 0
+frontend_max_instances = 1
+backend_min_instances  = 0
+backend_max_instances  = 1
+
+budget_amount_usd = 10
+billing_account_id = ""

@@ -1,0 +1,19 @@
+project_id  = "your-gcp-project-id"
+region      = "us-central1"
+environment = "dev"
+
+service_name = "jason"
+
+# These are filled in after container image build/push is added.
+frontend_image = ""
+backend_image  = ""
+
+# Keep these at 0/1 for low-cost individual hosting.
+frontend_min_instances = 0
+frontend_max_instances = 1
+backend_min_instances  = 0
+backend_max_instances  = 1
+
+# Budget alert resources will be added in a follow-up PR.
+budget_amount_usd = 10
+billing_account_id = ""

@@ -112,6 +112,12 @@ All endpoints return structured responses designed for the playground UI.
 See [docs/deployment.md](docs/deployment.md) for the production runbook,
 environment checklist, health-check contract, and smoke-test steps.
 
+## Infrastructure
+
+The first IaC target is GCP Cloud Run managed with Terraform. See
+[docs/decisions/0001-gcp-cloud-run-terraform.md](docs/decisions/0001-gcp-cloud-run-terraform.md)
+for the hosting decision, cost controls, alternatives, and rollout plan.
+
 ## Architecture
 
 See [docs/architecture.md](docs/architecture.md) for the product problem,
