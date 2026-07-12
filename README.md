@@ -124,6 +124,9 @@ Container images are published manually through the `Publish Container Images`
 GitHub Actions workflow once GCP Workload Identity and Artifact Registry writer
 access are configured.
 
+Terraform plans can be reviewed through the manual `Terraform Plan` workflow
+after image URIs are available.
+
 ## Architecture
 
 See [docs/architecture.md](docs/architecture.md) for the product problem,
