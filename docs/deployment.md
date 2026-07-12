@@ -128,6 +128,9 @@ Configure `GCP_TERRAFORM_SERVICE_ACCOUNT` from the Terraform
 `github_actions_deploy_service_account_email` output for Terraform plan,
 destroy-plan, and future apply workflows.
 
+Set `GCS_STATE_BUCKET` to the Terraform state bucket before running Terraform
+workflows in GitHub Actions.
+
 ## Terraform apply
 
 Use the manual `Terraform Apply` GitHub Actions workflow only after reviewing a

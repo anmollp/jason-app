@@ -45,6 +45,10 @@ jobs:
             echo "::error::Set the GCP_REGION repository variable."
             exit 1
           fi
+          if [ -z "${{ vars.GCS_STATE_BUCKET }}" ]; then
+            echo "::error::Set the GCS_STATE_BUCKET repository variable."
+            exit 1
+          fi
           if [ -z "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" ]; then
             echo "::error::Set the GCP_WORKLOAD_IDENTITY_PROVIDER repository secret."
             exit 1
@@ -67,6 +71,11 @@ jobs:
 
       - name: Terraform fmt check
         run: terraform fmt -check -recursive terraform
+
+      - name: Configure Terraform backend
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          printf 'terraform {\n  backend "gcs" {\n    bucket = "%s"\n    prefix = "jason/%s"\n  }\n}\n' "${{ vars.GCS_STATE_BUCKET }}" "${{ inputs.environment }}" > backend.tf
 
       - name: Terraform init
         working-directory: ${{ env.TF_WORKING_DIR }}

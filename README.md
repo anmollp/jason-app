@@ -133,6 +133,8 @@ workflow before any teardown is considered.
 Terraform applies are manual through the `Terraform Apply` workflow and require
 an explicit `apply-dev` confirmation.
 
+Use a GCS bucket for Terraform state before the first real GitHub Actions apply.
+
 ## Architecture
 
 See [docs/architecture.md](docs/architecture.md) for the product problem,
