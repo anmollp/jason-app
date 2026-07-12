@@ -81,4 +81,4 @@ jobs:
           echo "frontend_image = \"${FRONTEND_IMAGE}\""
           echo "backend_image  = \"${BACKEND_IMAGE}\""
           echo
-          echo "Use image_tag=${{ inputs.image_tag }} with the Terraform Plan and Apply workflows."
+          echo "Use image_tag=${{ inputs.image_tag }} with the Terraform Plan and Deploy workflows."

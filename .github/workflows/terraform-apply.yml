@@ -1,10 +1,10 @@
-name: Terraform Apply
+name: Terraform Deploy
 
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Terraform environment to apply."
+        description: "Terraform environment to deploy."
         required: true
         default: "dev"
         type: choice
@@ -14,13 +14,11 @@ on:
         description: "Container image tag to deploy."
         required: true
         default: "latest"
-      confirmation:
-        description: "Type apply-dev to confirm this apply."
-        required: true
 
 permissions:
   contents: read
   id-token: write
+  issues: write
 
 env:
   GAR_REPOSITORY: ${{ vars.GAR_REPOSITORY || 'jason-dev-containers' }}
@@ -30,19 +28,12 @@ env:
   TF_WORKING_DIR: terraform/environments/${{ inputs.environment }}
 
 jobs:
-  apply:
-    name: Terraform apply
+  deploy:
+    name: Terraform deploy
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
 
     steps:
-      - name: Validate confirmation
-        run: |
-          if [ "${{ inputs.confirmation }}" != "apply-${{ inputs.environment }}" ]; then
-            echo "::error::Type apply-${{ inputs.environment }} in the confirmation input."
-            exit 1
-          fi
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -122,6 +113,75 @@ jobs:
             -var="billing_account_id=${{ vars.BILLING_ACCOUNT_ID }}" \
             -out=tfplan
 
+      - name: Request deployment approval
+        id: approval_issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > approval-body.md <<'EOF'
+          Terraform plan completed for `${{ inputs.environment }}` using image tag `${{ inputs.image_tag }}`.
+
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          Branch: `${{ github.ref_name }}`
+
+          Comment `yes`, `lgtm`, `done`, `approve`, or `approved` to apply this plan.
+          Comment `no`, `stop`, `deny`, `denied`, or `cancel` to stop this run.
+          EOF
+
+          issue_url=$(gh issue create \
+            --repo "${{ github.repository }}" \
+            --title "Approve Terraform deploy to ${{ inputs.environment }}: ${{ inputs.image_tag }}" \
+            --body-file approval-body.md)
+          issue_number="${issue_url##*/}"
+          echo "issue_number=${issue_number}" >> "$GITHUB_OUTPUT"
+          echo "issue_url=${issue_url}" >> "$GITHUB_OUTPUT"
+          echo "Created approval issue: ${issue_url}"
+
+      - name: Wait for deployment approval
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.approval_issue.outputs.issue_number }}
+        run: |
+          approve_pattern='^(yes|y|lgtm|done|approve|approved)$'
+          deny_pattern='^(no|n|stop|deny|denied|cancel)$'
+
+          for attempt in $(seq 1 60); do
+            comments=$(gh api "repos/${{ github.repository }}/issues/${ISSUE_NUMBER}/comments" --jq '.[].body')
+            decision=$(printf '%s\n' "$comments" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | awk -v approve="$approve_pattern" -v deny="$deny_pattern" '
+              {
+                token=$1
+                gsub(/[^a-z]/, "", token)
+              }
+              token ~ approve { decision="approved" }
+              token ~ deny { decision="denied" }
+              END { print decision }
+            ')
+
+            if [ "$decision" = "approved" ]; then
+              echo "Terraform deploy approved."
+              exit 0
+            fi
+            if [ "$decision" = "denied" ]; then
+              echo "::error::Terraform deploy denied in approval issue."
+              exit 1
+            fi
+
+            echo "Waiting for approval comment on issue #${ISSUE_NUMBER} (${attempt}/60)."
+            sleep 60
+          done
+
+          echo "::error::Timed out waiting for Terraform deploy approval."
+          exit 1
+
       - name: Terraform apply
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform apply -auto-approve tfplan
+
+      - name: Close approval issue
+        if: always() && steps.approval_issue.outputs.issue_number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue close "${{ steps.approval_issue.outputs.issue_number }}" \
+            --repo "${{ github.repository }}" \
+            --comment "Terraform deploy workflow finished with status: ${{ job.status }}."

@@ -147,18 +147,18 @@ Terraform plan and destroy-plan workflows use `GCP_TERRAFORM_SERVICE_ACCOUNT`,
 which should be set from the `github_actions_deploy_service_account_email`
 output. This identity is separate from the image publisher identity.
 
-## Terraform Apply Workflow
+## Terraform Deploy Workflow
 
-The `Terraform Apply` workflow is manual. It runs the same validation steps as
-the normal plan workflow, writes a plan file, then applies that exact plan file:
+The `Terraform Deploy` workflow is manual. It runs the same validation steps as
+the normal plan workflow, writes a plan file, opens a GitHub approval issue, and
+then applies that exact plan file after approval:
 
 ```bash
 terraform apply -auto-approve tfplan
 ```
 
-It requires the `confirmation` input to be exactly `apply-dev` for the dev
-environment. Run the plan workflow first, inspect the proposed changes, then run
-apply only when the plan is expected.
+Approve by commenting `yes`, `lgtm`, `done`, `approve`, or `approved` on the
+issue. Deny by commenting `no`, `stop`, `deny`, `denied`, or `cancel`.
 
 ## Terraform Destroy Plan Workflow
 

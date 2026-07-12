@@ -131,12 +131,14 @@ destroy-plan, and future apply workflows.
 Set `GCS_STATE_BUCKET` to the Terraform state bucket before running Terraform
 workflows in GitHub Actions.
 
-## Terraform apply
+## Terraform deploy
 
-Use the manual `Terraform Apply` GitHub Actions workflow only after reviewing a
-successful plan. Pass the same image values as workflow inputs and type
-`apply-dev` in the confirmation field. The workflow creates a plan file and
-applies that exact plan.
+Use the manual `Terraform Deploy` GitHub Actions workflow after publishing
+images. It creates a plan, opens a GitHub approval issue, waits for an approval
+comment, and applies that exact plan.
+
+Approve with `yes`, `lgtm`, `done`, `approve`, or `approved`. Deny with `no`,
+`stop`, `deny`, `denied`, or `cancel`.
 
 ## Terraform destroy plan
 

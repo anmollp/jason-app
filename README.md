@@ -125,13 +125,14 @@ GitHub Actions workflow once GCP Workload Identity and Artifact Registry writer
 access are configured.
 
 Terraform plans can be reviewed through the manual `Terraform Plan` workflow
-after image URIs are available.
+after an image tag is published.
 
 Destroy plans can be reviewed through the manual `Terraform Destroy Plan`
 workflow before any teardown is considered.
 
-Terraform applies are manual through the `Terraform Apply` workflow and require
-an explicit `apply-dev` confirmation.
+Terraform deploys are manual through the `Terraform Deploy` workflow. It plans,
+opens an approval issue, then applies the exact plan only after an approval
+comment such as `yes`, `lgtm`, or `done`.
 
 Use a GCS bucket for Terraform state before the first real GitHub Actions apply.
 
