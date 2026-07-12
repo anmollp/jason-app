@@ -149,9 +149,16 @@ output. This identity is separate from the image publisher identity.
 
 ## Terraform Deploy Workflow
 
-The `Terraform Deploy` workflow is manual. It runs the same validation steps as
-the normal plan workflow, writes a plan file, opens a GitHub approval issue, and
-then applies that exact plan file after approval:
+The `Terraform Deploy` workflow is manual and runs as three jobs:
+
+```text
+Plan -> Approval -> Apply
+```
+
+The plan job runs the same validation steps as the normal plan workflow, writes
+a plan file, and uploads it as a short-lived workflow artifact. The approval job
+opens a GitHub approval issue. The apply job downloads and applies that exact
+plan after approval:
 
 ```bash
 terraform apply -auto-approve tfplan

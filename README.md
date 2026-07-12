@@ -130,9 +130,9 @@ after an image tag is published.
 Destroy plans can be reviewed through the manual `Terraform Destroy Plan`
 workflow before any teardown is considered.
 
-Terraform deploys are manual through the `Terraform Deploy` workflow. It plans,
-opens an approval issue, then applies the exact plan only after an approval
-comment such as `yes`, `lgtm`, or `done`.
+Terraform deploys are manual through the `Terraform Deploy` workflow. Its graph
+is `Plan -> Approval -> Apply`, and the apply job uses the exact saved plan only
+after an approval comment such as `yes`, `lgtm`, or `done`.
 
 Use a GCS bucket for Terraform state before the first real GitHub Actions apply.
 
