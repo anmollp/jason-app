@@ -34,6 +34,10 @@ Jason Rust CLI inside backend container
 terraform/
 |-- versions.tf
 |-- providers.tf
+|-- apis.tf
+|-- artifact_registry.tf
+|-- service_accounts.tf
+|-- cloud_run.tf
 |-- variables.tf
 |-- locals.tf
 |-- outputs.tf
@@ -63,24 +67,29 @@ cp terraform.tfvars.example terraform.tfvars
 
 Then edit `terraform.tfvars`.
 
-## Current Scaffold
+## Current Resources
 
-This PR intentionally does not create cloud resources yet. It establishes:
+The dev module creates the first production-shaped resource set:
 
-- the provider/version structure.
-- the dev environment entry point.
-- naming and label conventions.
-- cost-control variables.
-- budget-alert variables for the next resource PR.
+- required GCP APIs for Artifact Registry, IAM, and Cloud Run.
+- an Artifact Registry Docker repository.
+- separate Cloud Run runtime service accounts for frontend and backend.
+- public Cloud Run services for the frontend and backend.
+- cost-control defaults with `min_instance_count = 0` and
+  `max_instance_count = 1`.
+
+The frontend image must be built with the production backend URL in
+`NEXT_PUBLIC_API_BASE_URL`. The Terraform runtime environment cannot rewrite
+that browser bundle after the image is built. The backend service receives the
+frontend Cloud Run URL as `FRONTEND_ORIGIN` for CORS.
 
 ## Planned Resource PRs
 
-1. Enable GCP APIs and create service accounts.
-2. Create Artifact Registry repository.
-3. Add backend Cloud Run service.
-4. Add frontend Cloud Run service.
-5. Add budget alert and IAM tightening.
-6. Add GitHub Actions image build/deploy workflow.
+1. Add GitHub Actions image build/push workflow.
+2. Add Terraform apply workflow.
+3. Add runtime frontend API config or a frontend API proxy.
+4. Add budget alert and IAM tightening.
+5. Add custom domain and DNS after the basic deployment is stable.
 
 ## State
 

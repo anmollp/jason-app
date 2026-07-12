@@ -30,6 +30,10 @@ Jason Rust CLI
 4. Open the browser network panel and verify playground requests go to the
    deployed backend, not `localhost`.
 
+For the current Next.js client bundle, `NEXT_PUBLIC_API_BASE_URL` must be set
+when the frontend image is built. Setting it only as a Cloud Run runtime
+environment variable will not update already-built browser JavaScript.
+
 ## Backend checklist
 
 1. Deploy the `backend/` NestJS app with Node.js support.
@@ -94,6 +98,12 @@ pnpm run build
 cd frontend
 pnpm run lint
 pnpm run build
+```
+
+```bash
+cd terraform/environments/dev
+terraform fmt -recursive
+terraform validate
 ```
 
 ## Smoke test

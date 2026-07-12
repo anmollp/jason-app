@@ -14,6 +14,12 @@ module "jason" {
   frontend_max_instances = var.frontend_max_instances
   backend_min_instances  = var.backend_min_instances
   backend_max_instances  = var.backend_max_instances
+  frontend_cpu           = var.frontend_cpu
+  frontend_memory        = var.frontend_memory
+  backend_cpu            = var.backend_cpu
+  backend_memory         = var.backend_memory
+  jason_cli_path         = var.jason_cli_path
+  allow_unauthenticated  = var.allow_unauthenticated
 
   budget_amount_usd  = var.budget_amount_usd
   billing_account_id = var.billing_account_id
