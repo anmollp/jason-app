@@ -27,6 +27,16 @@ one interface:
   summaries.
 - CLI boundary: keeps the Rust implementation reusable outside the web app.
 
+## Visual Tour
+
+### Landing Page
+
+![Jason landing page](docs/assets/landing.png)
+
+### Playground
+
+![Jason playground](docs/assets/playground.png)
+
 ## Tech stack
 
 - Frontend: Next.js, React, TypeScript, Tailwind CSS, CodeMirror.
