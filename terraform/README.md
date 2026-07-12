@@ -184,6 +184,7 @@ Required GitHub repository variables:
 - `GCP_REGION`: Artifact Registry region, for example `us-central1`.
 - `GAR_REPOSITORY`: Artifact Registry repository ID, for example
   `jason-dev-containers`.
+- `BILLING_ACCOUNT_ID`: Billing account ID used by Terraform budget resources.
 
 Required GitHub repository secrets:
 
@@ -196,13 +197,8 @@ Terraform creates the GitHub Actions publisher service account, grants it
 Artifact Registry writer access on the Jason repository, and allows GitHub OIDC
 tokens from `github_repository` and `github_ref` to impersonate it.
 
-After the workflow finishes, copy its printed image URIs into
-`terraform/environments/dev/terraform.tfvars`:
-
-```hcl
-frontend_image = "us-central1-docker.pkg.dev/YOUR_PROJECT_ID/jason-dev-containers/frontend:latest"
-backend_image  = "us-central1-docker.pkg.dev/YOUR_PROJECT_ID/jason-dev-containers/backend:latest"
-```
+After the workflow finishes, use the same image tag with the Terraform plan and
+apply workflows.
 
 Terraform plan, destroy-plan, and future apply workflows use:
 
