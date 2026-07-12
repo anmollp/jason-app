@@ -10,12 +10,10 @@ on:
         type: choice
         options:
           - dev
-      frontend_image:
-        description: "Frontend container image URI to deploy."
+      image_tag:
+        description: "Container image tag to deploy."
         required: true
-      backend_image:
-        description: "Backend container image URI to deploy."
-        required: true
+        default: "latest"
       confirmation:
         description: "Type apply-dev to confirm this apply."
         required: true
@@ -25,6 +23,7 @@ permissions:
   id-token: write
 
 env:
+  GAR_REPOSITORY: ${{ vars.GAR_REPOSITORY || 'jason-dev-containers' }}
   GOOGLE_CLOUD_QUOTA_PROJECT: ${{ vars.GCP_PROJECT_ID }}
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
@@ -61,6 +60,10 @@ jobs:
             echo "::error::Set the GCS_STATE_BUCKET repository variable."
             exit 1
           fi
+          if [ -z "${{ vars.GAR_REPOSITORY }}" ]; then
+            echo "::error::Set the GAR_REPOSITORY repository variable."
+            exit 1
+          fi
           if [ -z "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" ]; then
             echo "::error::Set the GCP_WORKLOAD_IDENTITY_PROVIDER repository secret."
             exit 1
@@ -75,6 +78,11 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_TERRAFORM_SERVICE_ACCOUNT }}
+
+      - name: Set Terraform image variables
+        run: |
+          echo "FRONTEND_IMAGE=${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${GAR_REPOSITORY}/frontend:${{ inputs.image_tag }}" >> "$GITHUB_ENV"
+          echo "BACKEND_IMAGE=${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${GAR_REPOSITORY}/backend:${{ inputs.image_tag }}" >> "$GITHUB_ENV"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -103,8 +111,8 @@ jobs:
           terraform plan \
             -var="project_id=${{ vars.GCP_PROJECT_ID }}" \
             -var="region=${{ vars.GCP_REGION }}" \
-            -var="frontend_image=${{ inputs.frontend_image }}" \
-            -var="backend_image=${{ inputs.backend_image }}" \
+            -var="frontend_image=${FRONTEND_IMAGE}" \
+            -var="backend_image=${BACKEND_IMAGE}" \
             -var="github_repository=${{ github.repository }}" \
             -var="github_ref=refs/heads/${{ github.ref_name }}" \
             -out=tfplan

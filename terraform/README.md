@@ -140,8 +140,8 @@ The `Terraform Plan` workflow is manual and review-only. It runs:
 - `terraform validate`
 - `terraform plan`
 
-It requires `frontend_image` and `backend_image` workflow inputs so plans use
-the exact image URIs published by the image workflow.
+It requires the published `image_tag` workflow input and derives the frontend
+and backend image URIs from the configured GCP repository variables.
 
 Terraform plan and destroy-plan workflows use `GCP_TERRAFORM_SERVICE_ACCOUNT`,
 which should be set from the `github_actions_deploy_service_account_email`

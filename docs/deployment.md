@@ -106,9 +106,8 @@ terraform validate
 ## Image publish
 
 Use the manual `Publish Container Images` GitHub Actions workflow to build and
-push both containers to Artifact Registry. The workflow prints the
-`frontend_image` and `backend_image` values to copy into
-`terraform/environments/dev/terraform.tfvars`.
+push both containers to Artifact Registry. Use the same `image_tag` value when
+running the Terraform plan and apply workflows.
 
 Configure the workflow with:
 
@@ -121,8 +120,8 @@ Configure the workflow with:
 ## Terraform plan
 
 Use the manual `Terraform Plan` GitHub Actions workflow after publishing images.
-Pass the printed `frontend_image` and `backend_image` values as workflow inputs.
-The workflow validates Terraform and produces a cloud plan without applying it.
+Pass the published `image_tag` as the workflow input. The workflow validates
+Terraform and produces a cloud plan without applying it.
 
 Configure `GCP_TERRAFORM_SERVICE_ACCOUNT` from the Terraform
 `github_actions_deploy_service_account_email` output for Terraform plan,
