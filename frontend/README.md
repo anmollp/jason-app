@@ -19,8 +19,8 @@ pnpm run dev -- -p 3001
 
 Open `http://localhost:3001`.
 
-The frontend expects the backend API to be reachable at
-`NEXT_PUBLIC_API_BASE_URL`, which defaults to `http://localhost:3000`.
+The frontend server proxy expects the backend API to be reachable at
+`JASON_API_BASE_URL`, which defaults to `http://localhost:3000`.
 
 ## Useful scripts
 
@@ -31,9 +31,9 @@ The frontend expects the backend API to be reachable at
 
 ## Deployment note
 
-The frontend can be deployed separately from the API. Set
-`NEXT_PUBLIC_API_BASE_URL` to the production backend URL so playground requests
-do not point at localhost.
+The frontend can be deployed separately from the API. Set `JASON_API_BASE_URL`
+to the backend service URL so playground requests go through the frontend
+server proxy instead of calling the backend directly from the browser.
 
 ## Container image
 

@@ -92,8 +92,10 @@ Backend:
 
 Frontend:
 
-- `NEXT_PUBLIC_API_BASE_URL`: backend API base URL. Defaults to
-  `http://localhost:3000`.
+- `JASON_API_BASE_URL`: backend API base URL used by the frontend server proxy.
+  Defaults to `http://localhost:3000`.
+- `JASON_API_AUDIENCE`: optional Cloud Run identity-token audience for private
+  backend calls. Defaults to `JASON_API_BASE_URL`.
 
 ## API overview
 

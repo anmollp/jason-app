@@ -16,15 +16,13 @@ variable "service_name" {
 }
 
 variable "frontend_image" {
-  description = "Frontend container image URI. Used once Cloud Run resources are added."
+  description = "Frontend container image URI to deploy to Cloud Run."
   type        = string
-  default     = ""
 }
 
 variable "backend_image" {
-  description = "Backend container image URI. Used once Cloud Run resources are added."
+  description = "Backend container image URI to deploy to Cloud Run."
   type        = string
-  default     = ""
 }
 
 variable "frontend_min_instances" {
@@ -49,6 +47,42 @@ variable "backend_max_instances" {
   description = "Maximum backend Cloud Run instances for dev."
   type        = number
   default     = 1
+}
+
+variable "frontend_cpu" {
+  description = "Frontend Cloud Run CPU limit."
+  type        = string
+  default     = "1"
+}
+
+variable "frontend_memory" {
+  description = "Frontend Cloud Run memory limit."
+  type        = string
+  default     = "512Mi"
+}
+
+variable "backend_cpu" {
+  description = "Backend Cloud Run CPU limit."
+  type        = string
+  default     = "1"
+}
+
+variable "backend_memory" {
+  description = "Backend Cloud Run memory limit."
+  type        = string
+  default     = "512Mi"
+}
+
+variable "jason_cli_path" {
+  description = "Path to the Jason CLI binary inside the backend container."
+  type        = string
+  default     = "/usr/local/bin/jason"
+}
+
+variable "frontend_allow_unauthenticated" {
+  description = "Whether the frontend Cloud Run service should be publicly invokable."
+  type        = bool
+  default     = true
 }
 
 variable "budget_amount_usd" {

@@ -11,11 +11,11 @@ Browser
   |
   | opens the Next.js app
   v
-Frontend host
+Cloud Run frontend
   |
-  | POST /format, /diff, /patch, /pointer
+  | server-side proxy with Cloud Run identity token
   v
-Backend host
+private Cloud Run backend
   |
   | execs JASON_CLI_PATH
   v
@@ -25,10 +25,10 @@ Jason Rust CLI
 ## Frontend checklist
 
 1. Build and deploy the `frontend/` container image with a Node-compatible container host.
-2. Set `NEXT_PUBLIC_API_BASE_URL` to the public backend URL.
+2. Set `JASON_API_BASE_URL` to the private backend Cloud Run service URL.
 3. Confirm the production site loads `/` and `/playground`.
 4. Open the browser network panel and verify playground requests go to the
-   deployed backend, not `localhost`.
+   frontend `/api/*` proxy routes, not directly to the backend.
 
 ## Backend checklist
 
@@ -37,9 +37,10 @@ Jason Rust CLI
    `anmollp/jason` and copies it into the runtime image.
 3. Set `JASON_CLI_PATH` to the CLI executable path, or keep the container
    default of `/usr/local/bin/jason`.
-4. Set `FRONTEND_ORIGIN` to the deployed frontend origin.
-5. If using preview deployments, set `FRONTEND_ORIGIN` to a comma-separated
-   list, for example:
+4. Keep `FRONTEND_ORIGIN` unset for the private Cloud Run backend unless a
+   separate browser-facing backend deployment is intentionally created.
+5. If using a browser-facing preview backend, set `FRONTEND_ORIGIN` to a
+   comma-separated list, for example:
 
    ```text
    https://jason.example.com,https://jason-preview.example.com
@@ -52,7 +53,8 @@ Jason Rust CLI
 Frontend:
 
 ```text
-NEXT_PUBLIC_API_BASE_URL=https://your-backend.example.com
+JASON_API_BASE_URL=https://your-backend.example.com
+JASON_API_AUDIENCE=https://your-backend.example.com
 ```
 
 Backend:
@@ -94,6 +96,12 @@ pnpm run build
 cd frontend
 pnpm run lint
 pnpm run build
+```
+
+```bash
+cd terraform/environments/dev
+terraform fmt -recursive
+terraform validate
 ```
 
 ## Smoke test

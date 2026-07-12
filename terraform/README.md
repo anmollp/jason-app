@@ -12,9 +12,9 @@ Artifact Registry
   | stores container images
   v
 Cloud Run frontend
-  | NEXT_PUBLIC_API_BASE_URL
+  | JASON_API_BASE_URL + identity token
   v
-Cloud Run backend
+private Cloud Run backend
   | JASON_CLI_PATH
   v
 Jason Rust CLI inside backend container
@@ -34,6 +34,10 @@ Jason Rust CLI inside backend container
 terraform/
 |-- versions.tf
 |-- providers.tf
+|-- apis.tf
+|-- artifact_registry.tf
+|-- service_accounts.tf
+|-- cloud_run.tf
 |-- variables.tf
 |-- locals.tf
 |-- outputs.tf
@@ -63,27 +67,66 @@ cp terraform.tfvars.example terraform.tfvars
 
 Then edit `terraform.tfvars`.
 
-## Current Scaffold
+## Current Resources
 
-This PR intentionally does not create cloud resources yet. It establishes:
+The dev module creates the first production-shaped resource set:
 
-- the provider/version structure.
-- the dev environment entry point.
-- naming and label conventions.
-- cost-control variables.
-- budget-alert variables for the next resource PR.
+- required GCP APIs for Artifact Registry, IAM, and Cloud Run.
+- an Artifact Registry Docker repository.
+- separate Cloud Run runtime service accounts for frontend and backend.
+- a public Cloud Run frontend service.
+- a private Cloud Run backend service invoked by the frontend service account.
+- cost-control defaults with `min_instance_count = 0` and
+  `max_instance_count = 1`.
+
+The browser calls relative frontend API routes. The Next.js server then calls
+the backend using `JASON_API_BASE_URL` and a Cloud Run identity token. This keeps
+the backend URL out of the browser path, avoids granting `allUsers` invoke
+access to the backend, and removes the need for browser CORS on the deployed
+backend.
+
+## IAM Model
+
+The first deployment keeps permissions intentionally narrow:
+
+- `allUsers` receives `roles/run.invoker` only on the frontend service, so the
+  portfolio site is public.
+- the frontend runtime service account receives `roles/run.invoker` on the
+  backend service, so only frontend server-side code can call the backend.
+- the backend runtime service account has no project-level roles in this PR
+  because it only executes the packaged Jason CLI.
+- Artifact Registry writer permissions for CI are intentionally left for the
+  GitHub Actions image build PR, where the deploy identity will be defined.
 
 ## Planned Resource PRs
 
-1. Enable GCP APIs and create service accounts.
-2. Create Artifact Registry repository.
-3. Add backend Cloud Run service.
-4. Add frontend Cloud Run service.
-5. Add budget alert and IAM tightening.
-6. Add GitHub Actions image build/deploy workflow.
+1. Add GitHub Actions image build/push workflow.
+2. Add Terraform apply workflow.
+3. Add runtime frontend API config or a frontend API proxy.
+4. Add budget alert and IAM tightening.
+5. Add custom domain and DNS after the basic deployment is stable.
 
 ## State
 
-Use local state while learning. Before applying shared or production
-infrastructure, move state to a remote backend such as GCS with state locking
-strategy documented in a follow-up PR.
+Use local state only while learning and before the first real apply. Before any
+shared or production apply, move state to a GCS backend.
+
+Suggested setup:
+
+```bash
+gcloud storage buckets create gs://YOUR_PROJECT_ID-jason-terraform-state \
+  --project YOUR_PROJECT_ID \
+  --location us-central1 \
+  --uniform-bucket-level-access
+
+gcloud storage buckets update gs://YOUR_PROJECT_ID-jason-terraform-state \
+  --versioning
+```
+
+Then copy `terraform/environments/dev/backend.tf.example` to
+`terraform/environments/dev/backend.tf`, update the bucket name, and run:
+
+```bash
+cd terraform/environments/dev
+terraform init -migrate-state
+```
