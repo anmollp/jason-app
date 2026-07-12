@@ -27,3 +27,13 @@ resource "google_service_account" "github_actions_publisher" {
     google_project_service.required["iam.googleapis.com"],
   ]
 }
+
+resource "google_service_account" "github_actions_deployer" {
+  project      = var.project_id
+  account_id   = local.github_actions_deploy_account
+  display_name = "Jason ${var.environment} GitHub Actions Terraform deployer"
+
+  depends_on = [
+    google_project_service.required["iam.googleapis.com"],
+  ]
+}

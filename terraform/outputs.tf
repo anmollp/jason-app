@@ -43,6 +43,11 @@ output "github_actions_service_account_email" {
   value       = google_service_account.github_actions_publisher.email
 }
 
+output "github_actions_deploy_service_account_email" {
+  description = "GitHub Actions Terraform deployer service account email."
+  value       = google_service_account.github_actions_deployer.email
+}
+
 output "github_actions_workload_identity_provider" {
   description = "Workload Identity provider resource name for GitHub Actions."
   value       = google_iam_workload_identity_pool_provider.github_actions.name

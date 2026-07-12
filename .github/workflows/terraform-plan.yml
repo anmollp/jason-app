@@ -49,8 +49,8 @@ jobs:
             echo "::error::Set the GCP_WORKLOAD_IDENTITY_PROVIDER repository secret."
             exit 1
           fi
-          if [ -z "${{ secrets.GCP_SERVICE_ACCOUNT }}" ]; then
-            echo "::error::Set the GCP_SERVICE_ACCOUNT repository secret."
+          if [ -z "${{ secrets.GCP_TERRAFORM_SERVICE_ACCOUNT }}" ]; then
+            echo "::error::Set the GCP_TERRAFORM_SERVICE_ACCOUNT repository secret."
             exit 1
           fi
 
@@ -58,7 +58,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          service_account: ${{ secrets.GCP_TERRAFORM_SERVICE_ACCOUNT }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
