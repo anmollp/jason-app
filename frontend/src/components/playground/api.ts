@@ -6,11 +6,10 @@ import type {
   PointerJsonResponse,
 } from "./types";
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
-const formatEndpoint = `${apiBaseUrl}/format`;
-const diffEndpoint = `${apiBaseUrl}/diff`;
-const patchEndpoint = `${apiBaseUrl}/patch`;
-const pointerEndpoint = `${apiBaseUrl}/pointer`;
+const formatEndpoint = "/api/format";
+const diffEndpoint = "/api/diff";
+const patchEndpoint = "/api/patch";
+const pointerEndpoint = "/api/pointer";
 
 async function readJsonResponse<TSuccess>(
   response: Response,

@@ -1,0 +1,8 @@
+# Copy this file to backend.tf after creating the GCS bucket that should hold
+# Terraform state. Keep the bucket name globally unique.
+terraform {
+  backend "gcs" {
+    bucket = "your-gcp-project-id-jason-terraform-state"
+    prefix = "jason/dev"
+  }
+}

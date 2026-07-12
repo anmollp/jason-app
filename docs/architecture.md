@@ -20,7 +20,14 @@ The app has three main runtime pieces:
 
 ## Request Flow
 
-The playground sends JSON operation requests to the backend:
+The playground sends JSON operation requests to frontend API proxy routes:
+
+- `POST /api/format`
+- `POST /api/diff`
+- `POST /api/patch`
+- `POST /api/pointer`
+
+The frontend server forwards those requests to the backend:
 
 - `POST /format`
 - `POST /diff`
@@ -34,7 +41,9 @@ or wrapped into a stable API response before returning to the frontend.
 
 The frontend and backend can deploy as separate services. Production needs:
 
-- `NEXT_PUBLIC_API_BASE_URL` on the frontend.
+- `JASON_API_BASE_URL` on the frontend server.
+- `JASON_API_AUDIENCE` on the frontend server when calling a private Cloud Run
+  backend.
 - `FRONTEND_ORIGIN` on the backend for CORS.
 - `JASON_CLI_PATH` on the backend so Node can execute the Rust binary.
 - `GET /health` configured as the backend health probe.

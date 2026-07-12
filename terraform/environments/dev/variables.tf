@@ -79,8 +79,8 @@ variable "jason_cli_path" {
   default     = "/usr/local/bin/jason"
 }
 
-variable "allow_unauthenticated" {
-  description = "Whether Cloud Run services should be publicly invokable."
+variable "frontend_allow_unauthenticated" {
+  description = "Whether the frontend Cloud Run service should be publicly invokable."
   type        = bool
   default     = true
 }

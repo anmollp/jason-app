@@ -21,6 +21,16 @@ resource "google_cloud_run_v2_service" "frontend" {
         container_port = 3000
       }
 
+      env {
+        name  = "JASON_API_BASE_URL"
+        value = google_cloud_run_v2_service.backend.uri
+      }
+
+      env {
+        name  = "JASON_API_AUDIENCE"
+        value = google_cloud_run_v2_service.backend.uri
+      }
+
       resources {
         limits = {
           cpu    = var.frontend_cpu
@@ -59,11 +69,6 @@ resource "google_cloud_run_v2_service" "backend" {
       }
 
       env {
-        name  = "FRONTEND_ORIGIN"
-        value = google_cloud_run_v2_service.frontend.uri
-      }
-
-      env {
         name  = "JASON_CLI_PATH"
         value = var.jason_cli_path
       }
@@ -83,7 +88,7 @@ resource "google_cloud_run_v2_service" "backend" {
 }
 
 resource "google_cloud_run_v2_service_iam_member" "frontend_public" {
-  count = var.allow_unauthenticated ? 1 : 0
+  count = var.frontend_allow_unauthenticated ? 1 : 0
 
   project  = var.project_id
   location = google_cloud_run_v2_service.frontend.location
@@ -92,12 +97,10 @@ resource "google_cloud_run_v2_service_iam_member" "frontend_public" {
   member   = "allUsers"
 }
 
-resource "google_cloud_run_v2_service_iam_member" "backend_public" {
-  count = var.allow_unauthenticated ? 1 : 0
-
+resource "google_cloud_run_v2_service_iam_member" "frontend_invokes_backend" {
   project  = var.project_id
   location = google_cloud_run_v2_service.backend.location
   name     = google_cloud_run_v2_service.backend.name
   role     = "roles/run.invoker"
-  member   = "allUsers"
+  member   = "serviceAccount:${google_service_account.frontend.email}"
 }
