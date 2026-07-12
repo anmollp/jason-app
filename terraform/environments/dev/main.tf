@@ -15,6 +15,6 @@ module "jason" {
   backend_min_instances  = var.backend_min_instances
   backend_max_instances  = var.backend_max_instances
 
-  budget_amount_usd = var.budget_amount_usd
+  budget_amount_usd  = var.budget_amount_usd
   billing_account_id = var.billing_account_id
 }
