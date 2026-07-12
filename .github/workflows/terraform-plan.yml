@@ -53,6 +53,10 @@ jobs:
             echo "::error::Set the GAR_REPOSITORY repository variable."
             exit 1
           fi
+          if [ -z "${{ vars.BILLING_ACCOUNT_ID }}" ]; then
+            echo "::error::Set the BILLING_ACCOUNT_ID repository variable."
+            exit 1
+          fi
           if [ -z "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" ]; then
             echo "::error::Set the GCP_WORKLOAD_IDENTITY_PROVIDER repository secret."
             exit 1
@@ -104,4 +108,5 @@ jobs:
             -var="backend_image=${BACKEND_IMAGE}" \
             -var="github_repository=${{ github.repository }}" \
             -var="github_ref=refs/heads/${{ github.ref_name }}" \
+            -var="billing_account_id=${{ vars.BILLING_ACCOUNT_ID }}" \
             -out=tfplan

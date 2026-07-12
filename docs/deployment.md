@@ -111,7 +111,8 @@ running the Terraform plan and apply workflows.
 
 Configure the workflow with:
 
-- `GCP_PROJECT_ID`, `GCP_REGION`, and `GAR_REPOSITORY` repository variables.
+- `GCP_PROJECT_ID`, `GCP_REGION`, `GAR_REPOSITORY`, and `BILLING_ACCOUNT_ID`
+  repository variables.
 - `GCP_WORKLOAD_IDENTITY_PROVIDER` from the Terraform
   `github_actions_workload_identity_provider` output.
 - `GCP_PUBLISHER_SERVICE_ACCOUNT` from the Terraform
