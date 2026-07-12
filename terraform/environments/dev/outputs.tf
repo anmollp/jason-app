@@ -28,6 +28,11 @@ output "github_actions_service_account_email" {
   value       = module.jason.github_actions_service_account_email
 }
 
+output "github_actions_deploy_service_account_email" {
+  description = "GitHub Actions Terraform deployer service account email."
+  value       = module.jason.github_actions_deploy_service_account_email
+}
+
 output "github_actions_workload_identity_provider" {
   description = "Workload Identity provider resource name for GitHub Actions."
   value       = module.jason.github_actions_workload_identity_provider

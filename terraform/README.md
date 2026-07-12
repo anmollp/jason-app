@@ -101,12 +101,17 @@ The first deployment keeps permissions intentionally narrow:
   because it only executes the packaged Jason CLI.
 - the GitHub Actions publisher service account receives Artifact Registry writer
   access only on the Jason container repository.
-- GitHub Actions can impersonate that publisher service account only through the
+- the GitHub Actions Terraform deployer service account receives the project
+  roles needed to plan/apply the Cloud Run, Artifact Registry, service account,
+  Workload Identity, IAM, and service API resources in this module.
+- when budget alerts are enabled, the deployer also receives
+  `roles/billing.costsManager` on the configured billing account.
+- GitHub Actions can impersonate these service accounts only through the
   Workload Identity provider restricted to `github_repository` and `github_ref`.
 
 ## Planned Resource PRs
 
-1. Add Terraform apply workflow and deploy identity permissions.
+1. Add Terraform apply workflow.
 2. Add IAM tightening.
 3. Add custom domain and DNS after the basic deployment is stable.
 
@@ -139,10 +144,9 @@ The `Terraform Plan` workflow is manual and review-only. It runs:
 It requires `frontend_image` and `backend_image` workflow inputs so plans use
 the exact image URIs published by the image workflow.
 
-The current GitHub Actions service account is intentionally scoped for image
-publishing. A successful cloud plan against a real project may require a
-separate deploy service account or additional read/manage roles. Add those with
-the Terraform apply workflow instead of expanding publisher permissions here.
+Terraform plan and destroy-plan workflows use `GCP_TERRAFORM_SERVICE_ACCOUNT`,
+which should be set from the `github_actions_deploy_service_account_email`
+output. This identity is separate from the image publisher identity.
 
 ## Terraform Destroy Plan Workflow
 
@@ -173,7 +177,7 @@ Required GitHub repository secrets:
 
 - `GCP_WORKLOAD_IDENTITY_PROVIDER`: value from the Terraform
   `github_actions_workload_identity_provider` output.
-- `GCP_SERVICE_ACCOUNT`: value from the Terraform
+- `GCP_PUBLISHER_SERVICE_ACCOUNT`: value from the Terraform
   `github_actions_service_account_email` output.
 
 Terraform creates the GitHub Actions publisher service account, grants it
@@ -187,6 +191,17 @@ After the workflow finishes, copy its printed image URIs into
 frontend_image = "us-central1-docker.pkg.dev/YOUR_PROJECT_ID/jason-dev-containers/frontend:latest"
 backend_image  = "us-central1-docker.pkg.dev/YOUR_PROJECT_ID/jason-dev-containers/backend:latest"
 ```
+
+Terraform plan, destroy-plan, and future apply workflows use:
+
+- `GCP_WORKLOAD_IDENTITY_PROVIDER`: value from the Terraform
+  `github_actions_workload_identity_provider` output.
+- `GCP_TERRAFORM_SERVICE_ACCOUNT`: value from the Terraform
+  `github_actions_deploy_service_account_email` output.
+
+The first apply that creates these identities still needs to be run by an
+administrator or owner credential because GitHub cannot impersonate an identity
+before it exists.
 
 ## State
 

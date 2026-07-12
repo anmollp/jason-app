@@ -115,7 +115,7 @@ Configure the workflow with:
 - `GCP_PROJECT_ID`, `GCP_REGION`, and `GAR_REPOSITORY` repository variables.
 - `GCP_WORKLOAD_IDENTITY_PROVIDER` from the Terraform
   `github_actions_workload_identity_provider` output.
-- `GCP_SERVICE_ACCOUNT` from the Terraform
+- `GCP_PUBLISHER_SERVICE_ACCOUNT` from the Terraform
   `github_actions_service_account_email` output.
 
 ## Terraform plan
@@ -124,9 +124,9 @@ Use the manual `Terraform Plan` GitHub Actions workflow after publishing images.
 Pass the printed `frontend_image` and `backend_image` values as workflow inputs.
 The workflow validates Terraform and produces a cloud plan without applying it.
 
-The initial GitHub Actions service account is scoped for image publishing. If
-the cloud plan needs broader read or management permissions, add a separate
-deploy identity before enabling apply.
+Configure `GCP_TERRAFORM_SERVICE_ACCOUNT` from the Terraform
+`github_actions_deploy_service_account_email` output for Terraform plan,
+destroy-plan, and future apply workflows.
 
 ## Terraform destroy plan
 
