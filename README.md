@@ -127,6 +127,9 @@ access are configured.
 Terraform plans can be reviewed through the manual `Terraform Plan` workflow
 after image URIs are available.
 
+Destroy plans can be reviewed through the manual `Terraform Destroy Plan`
+workflow before any teardown is considered.
+
 ## Architecture
 
 See [docs/architecture.md](docs/architecture.md) for the product problem,
