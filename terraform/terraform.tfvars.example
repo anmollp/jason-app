@@ -24,6 +24,6 @@ frontend_allow_unauthenticated  = true
 github_repository                = "anmollp/jason-app"
 github_ref                       = "refs/heads/master"
 
-# Budget alert resources will be added in a follow-up PR.
+# Leave empty to skip budget alerts.
 budget_amount_usd = 10
 billing_account_id = ""

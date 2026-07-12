@@ -109,13 +109,13 @@ variable "github_ref" {
 }
 
 variable "budget_amount_usd" {
-  description = "Monthly budget threshold in USD for alerting. Budget resource will be added later."
+  description = "Monthly budget amount in USD for alerting."
   type        = number
   default     = 10
 }
 
 variable "billing_account_id" {
-  description = "GCP billing account ID. Required when budget resources are added."
+  description = "GCP billing account ID. Leave empty to skip creating budget alerts."
   type        = string
   default     = ""
 }

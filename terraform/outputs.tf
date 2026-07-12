@@ -47,3 +47,8 @@ output "github_actions_workload_identity_provider" {
   description = "Workload Identity provider resource name for GitHub Actions."
   value       = google_iam_workload_identity_pool_provider.github_actions.name
 }
+
+output "budget_name" {
+  description = "Monthly billing budget resource name, when billing_account_id is set."
+  value       = try(google_billing_budget.monthly_project_budget[0].name, null)
+}
