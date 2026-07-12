@@ -17,3 +17,13 @@ resource "google_service_account" "backend" {
     google_project_service.required["iam.googleapis.com"],
   ]
 }
+
+resource "google_service_account" "github_actions_publisher" {
+  project      = var.project_id
+  account_id   = local.github_actions_service_account
+  display_name = "Jason ${var.environment} GitHub Actions image publisher"
+
+  depends_on = [
+    google_project_service.required["iam.googleapis.com"],
+  ]
+}

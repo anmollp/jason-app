@@ -110,6 +110,14 @@ push both containers to Artifact Registry. The workflow prints the
 `frontend_image` and `backend_image` values to copy into
 `terraform/environments/dev/terraform.tfvars`.
 
+Configure the workflow with:
+
+- `GCP_PROJECT_ID`, `GCP_REGION`, and `GAR_REPOSITORY` repository variables.
+- `GCP_WORKLOAD_IDENTITY_PROVIDER` from the Terraform
+  `github_actions_workload_identity_provider` output.
+- `GCP_SERVICE_ACCOUNT` from the Terraform
+  `github_actions_service_account_email` output.
+
 ## Smoke test
 
 After deploy, verify:
