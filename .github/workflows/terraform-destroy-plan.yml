@@ -25,6 +25,7 @@ permissions:
   id-token: write
 
 env:
+  GOOGLE_CLOUD_QUOTA_PROJECT: ${{ vars.GCP_PROJECT_ID }}
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
   TF_WORKING_DIR: terraform/environments/${{ inputs.environment }}
