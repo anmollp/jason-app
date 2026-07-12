@@ -61,7 +61,6 @@ Backend:
 
 ```text
 PORT=3000
-FRONTEND_ORIGIN=https://your-frontend.example.com
 JASON_CLI_PATH=/app/bin/jason
 ```
 
@@ -104,11 +103,19 @@ terraform fmt -recursive
 terraform validate
 ```
 
+## Image publish
+
+Use the manual `Publish Container Images` GitHub Actions workflow to build and
+push both containers to Artifact Registry. The workflow prints the
+`frontend_image` and `backend_image` values to copy into
+`terraform/environments/dev/terraform.tfvars`.
+
 ## Smoke test
 
 After deploy, verify:
 
-1. `GET https://your-backend.example.com/health` returns `status: "ok"`.
+1. Authenticated `GET https://your-backend.example.com/health` returns
+   `status: "ok"`.
 2. The frontend loads without console errors.
 3. Formatter sample succeeds from `/playground`.
 4. Diff sample returns patch operations.

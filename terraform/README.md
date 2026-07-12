@@ -95,16 +95,49 @@ The first deployment keeps permissions intentionally narrow:
   backend service, so only frontend server-side code can call the backend.
 - the backend runtime service account has no project-level roles in this PR
   because it only executes the packaged Jason CLI.
-- Artifact Registry writer permissions for CI are intentionally left for the
-  GitHub Actions image build PR, where the deploy identity will be defined.
+- Artifact Registry writer permissions for CI belong to the GitHub Actions
+  publishing identity.
 
 ## Planned Resource PRs
 
-1. Add GitHub Actions image build/push workflow.
+1. Add Terraform-managed GitHub Actions deploy identity.
 2. Add Terraform apply workflow.
-3. Add runtime frontend API config or a frontend API proxy.
-4. Add budget alert and IAM tightening.
-5. Add custom domain and DNS after the basic deployment is stable.
+3. Add budget alert and IAM tightening.
+4. Add custom domain and DNS after the basic deployment is stable.
+
+## Publishing Images
+
+The `Publish Container Images` workflow builds and pushes both service images to
+Artifact Registry. It is manual by design, so publishing images is explicit
+while the project is still cost-conscious and learning-focused.
+
+Required GitHub repository variables:
+
+- `GCP_PROJECT_ID`: GCP project ID.
+- `GCP_REGION`: Artifact Registry region, for example `us-central1`.
+- `GAR_REPOSITORY`: Artifact Registry repository ID, for example
+  `jason-dev-containers`.
+
+Required GitHub repository secrets:
+
+- `GCP_WORKLOAD_IDENTITY_PROVIDER`: Workload Identity provider resource name.
+- `GCP_SERVICE_ACCOUNT`: service account email used by GitHub Actions.
+
+The GitHub Actions service account needs Artifact Registry write access:
+
+```bash
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:YOUR_GITHUB_ACTIONS_SERVICE_ACCOUNT" \
+  --role="roles/artifactregistry.writer"
+```
+
+After the workflow finishes, copy its printed image URIs into
+`terraform/environments/dev/terraform.tfvars`:
+
+```hcl
+frontend_image = "us-central1-docker.pkg.dev/YOUR_PROJECT_ID/jason-dev-containers/frontend:latest"
+backend_image  = "us-central1-docker.pkg.dev/YOUR_PROJECT_ID/jason-dev-containers/backend:latest"
+```
 
 ## State
 
