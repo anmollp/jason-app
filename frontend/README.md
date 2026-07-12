@@ -34,3 +34,15 @@ The frontend expects the backend API to be reachable at
 The frontend can be deployed separately from the API. Set
 `NEXT_PUBLIC_API_BASE_URL` to the production backend URL so playground requests
 do not point at localhost.
+
+## Container image
+
+The frontend Docker image builds a standalone Next.js server that can run on
+Cloud Run or any Node-compatible container host.
+
+```bash
+docker build -t jason-frontend ./frontend
+```
+
+The runtime image listens on `PORT`, which defaults to `3000` and is compatible
+with Cloud Run's injected `PORT` environment variable.

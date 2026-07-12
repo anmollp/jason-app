@@ -24,7 +24,7 @@ Jason Rust CLI
 
 ## Frontend checklist
 
-1. Deploy the `frontend/` app with a Node-compatible Next.js host.
+1. Build and deploy the `frontend/` container image with a Node-compatible container host.
 2. Set `NEXT_PUBLIC_API_BASE_URL` to the public backend URL.
 3. Confirm the production site loads `/` and `/playground`.
 4. Open the browser network panel and verify playground requests go to the
