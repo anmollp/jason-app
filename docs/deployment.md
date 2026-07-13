@@ -144,6 +144,19 @@ plan.
 Approve with `yes`, `lgtm`, `done`, `approve`, or `approved`. Deny with `no`,
 `stop`, `deny`, `denied`, or `cancel`.
 
+## Custom domain
+
+Set `frontend_custom_domain` in `terraform/environments/dev/terraform.tfvars`
+to map the public frontend Cloud Run service to a verified domain, for example
+`app.example.com`.
+
+The domain must be verified in Google Search Console. Because GitHub Actions
+runs Terraform as the deploy service account, add that service account as a
+verified owner before applying. After apply, use the
+`frontend_custom_domain_dns_records` Terraform output to update DNS at the
+domain registrar. Google-managed HTTPS certificates usually provision within
+minutes, but can take up to 24 hours.
+
 ## Terraform destroy plan
 
 Use the manual `Terraform Destroy Plan` workflow before any planned teardown.

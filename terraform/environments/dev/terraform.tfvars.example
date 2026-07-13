@@ -20,6 +20,7 @@ backend_memory  = "512Mi"
 
 jason_cli_path                   = "/usr/local/bin/jason"
 frontend_allow_unauthenticated  = true
+frontend_custom_domain          = ""
 github_repository                = "anmollp/jason-app"
 github_ref                       = "refs/heads/master"
 

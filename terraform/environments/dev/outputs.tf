@@ -8,6 +8,16 @@ output "frontend_service_url" {
   value       = module.jason.frontend_service_url
 }
 
+output "frontend_custom_domain_url" {
+  description = "Public custom domain URL for the frontend, when configured."
+  value       = module.jason.frontend_custom_domain_url
+}
+
+output "frontend_custom_domain_dns_records" {
+  description = "DNS records to add at the domain registrar for the frontend custom domain."
+  value       = module.jason.frontend_custom_domain_dns_records
+}
+
 output "backend_service_url" {
   description = "Public backend Cloud Run URL."
   value       = module.jason.backend_service_url

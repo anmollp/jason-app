@@ -23,6 +23,16 @@ output "frontend_service_url" {
   value       = google_cloud_run_v2_service.frontend.uri
 }
 
+output "frontend_custom_domain_url" {
+  description = "Public custom domain URL for the frontend, when configured."
+  value       = var.frontend_custom_domain == "" ? null : "https://${var.frontend_custom_domain}"
+}
+
+output "frontend_custom_domain_dns_records" {
+  description = "DNS records to add at the domain registrar for the frontend custom domain."
+  value       = try(google_cloud_run_domain_mapping.frontend[0].status[0].resource_records, [])
+}
+
 output "backend_service_url" {
   description = "Public backend Cloud Run URL."
   value       = google_cloud_run_v2_service.backend.uri

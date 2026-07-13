@@ -85,6 +85,23 @@ variable "frontend_allow_unauthenticated" {
   default     = true
 }
 
+variable "frontend_custom_domain" {
+  description = "Optional custom domain for the public frontend Cloud Run service, for example app.example.com. Leave empty to skip domain mapping."
+  type        = string
+  default     = ""
+
+  validation {
+    condition = (
+      var.frontend_custom_domain == "" ||
+      (
+        length(var.frontend_custom_domain) <= 64 &&
+        can(regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$", var.frontend_custom_domain))
+      )
+    )
+    error_message = "frontend_custom_domain must be empty or a lowercase domain name without protocol or path, such as app.example.com."
+  }
+}
+
 variable "github_repository" {
   description = "GitHub repository allowed to publish images through Workload Identity Federation."
   type        = string
