@@ -109,6 +109,7 @@ jobs:
             -var="backend_image=${BACKEND_IMAGE}" \
             -var="github_repository=${{ github.repository }}" \
             -var="github_ref=refs/heads/${{ github.ref_name }}" \
+            -var="frontend_custom_domain=${{ vars.FRONTEND_CUSTOM_DOMAIN }}" \
             -var="billing_account_id=${{ vars.BILLING_ACCOUNT_ID }}" \
             -out=tfplan
 
