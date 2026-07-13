@@ -150,6 +150,9 @@ Set `frontend_custom_domain` in `terraform/environments/dev/terraform.tfvars`
 to map the public frontend Cloud Run service to a verified domain, for example
 `app.example.com`.
 
+For GitHub Actions deploys, set the optional repository variable
+`FRONTEND_CUSTOM_DOMAIN` to the same value.
+
 The domain must be verified in Google Search Console. Because GitHub Actions
 runs Terraform as the deploy service account, add that service account as a
 verified owner before applying. After apply, use the
