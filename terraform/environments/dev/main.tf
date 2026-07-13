@@ -20,6 +20,7 @@ module "jason" {
   backend_memory                 = var.backend_memory
   jason_cli_path                 = var.jason_cli_path
   frontend_allow_unauthenticated = var.frontend_allow_unauthenticated
+  frontend_custom_domain         = var.frontend_custom_domain
   github_repository              = var.github_repository
   github_ref                     = var.github_ref
 

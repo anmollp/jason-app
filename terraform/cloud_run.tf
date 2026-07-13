@@ -145,6 +145,26 @@ resource "google_cloud_run_v2_service_iam_member" "frontend_public" {
   member   = "allUsers"
 }
 
+resource "google_cloud_run_domain_mapping" "frontend" {
+  count = var.frontend_custom_domain == "" ? 0 : 1
+
+  location = google_cloud_run_v2_service.frontend.location
+  name     = var.frontend_custom_domain
+
+  metadata {
+    labels    = local.common_labels
+    namespace = var.project_id
+  }
+
+  spec {
+    route_name = google_cloud_run_v2_service.frontend.name
+  }
+
+  depends_on = [
+    google_cloud_run_v2_service_iam_member.frontend_public,
+  ]
+}
+
 resource "google_cloud_run_v2_service_iam_member" "frontend_invokes_backend" {
   project  = var.project_id
   location = google_cloud_run_v2_service.backend.location
