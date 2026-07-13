@@ -66,8 +66,11 @@ JASON_CLI_PATH=/app/bin/jason
 
 ## Health checks
 
-The backend exposes JSON health metadata at both `GET /` and `GET /health`.
-Use `/health` for hosting probes.
+The frontend exposes `GET /api/health`. The backend exposes JSON health
+metadata at both `GET /` and `GET /health`.
+
+Cloud Run probes use `/api/health` for the frontend and `/health` for the
+backend.
 
 Expected response:
 

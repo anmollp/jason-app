@@ -78,6 +78,7 @@ The dev module creates the first production-shaped resource set:
 - separate Cloud Run runtime service accounts for frontend and backend.
 - a public Cloud Run frontend service.
 - a private Cloud Run backend service invoked by the frontend service account.
+- Cloud Run startup and liveness probes for both services.
 - cost-control defaults with `min_instance_count = 0` and
   `max_instance_count = 1`.
 - an optional project-scoped monthly billing budget when `billing_account_id` is

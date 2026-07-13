@@ -46,7 +46,7 @@ The frontend and backend can deploy as separate services. Production needs:
   backend.
 - `FRONTEND_ORIGIN` on the backend for CORS.
 - `JASON_CLI_PATH` on the backend so Node can execute the Rust binary.
-- `GET /health` configured as the backend health probe.
+- `GET /api/health` and `GET /health` configured as Cloud Run health probes.
 
 ## Why This Shape
 

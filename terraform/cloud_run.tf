@@ -21,6 +21,30 @@ resource "google_cloud_run_v2_service" "frontend" {
         container_port = 3000
       }
 
+      startup_probe {
+        initial_delay_seconds = 0
+        timeout_seconds       = 5
+        period_seconds        = 10
+        failure_threshold     = 12
+
+        http_get {
+          path = "/api/health"
+          port = 3000
+        }
+      }
+
+      liveness_probe {
+        initial_delay_seconds = 0
+        timeout_seconds       = 5
+        period_seconds        = 30
+        failure_threshold     = 3
+
+        http_get {
+          path = "/api/health"
+          port = 3000
+        }
+      }
+
       env {
         name  = "JASON_API_BASE_URL"
         value = google_cloud_run_v2_service.backend.uri
@@ -66,6 +90,30 @@ resource "google_cloud_run_v2_service" "backend" {
 
       ports {
         container_port = 3000
+      }
+
+      startup_probe {
+        initial_delay_seconds = 0
+        timeout_seconds       = 5
+        period_seconds        = 10
+        failure_threshold     = 12
+
+        http_get {
+          path = "/health"
+          port = 3000
+        }
+      }
+
+      liveness_probe {
+        initial_delay_seconds = 0
+        timeout_seconds       = 5
+        period_seconds        = 30
+        failure_threshold     = 3
+
+        http_get {
+          path = "/health"
+          port = 3000
+        }
       }
 
       env {
