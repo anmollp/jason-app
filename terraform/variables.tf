@@ -72,6 +72,12 @@ variable "frontend_memory" {
   default     = "512Mi"
 }
 
+variable "frontend_startup_cpu_boost" {
+  description = "Enable Cloud Run startup CPU boost for faster frontend cold starts without keeping idle instances warm."
+  type        = bool
+  default     = true
+}
+
 variable "backend_cpu" {
   description = "Backend Cloud Run CPU limit."
   type        = string
@@ -82,6 +88,12 @@ variable "backend_memory" {
   description = "Backend Cloud Run memory limit."
   type        = string
   default     = "512Mi"
+}
+
+variable "backend_startup_cpu_boost" {
+  description = "Enable Cloud Run startup CPU boost for faster backend cold starts without keeping idle instances warm."
+  type        = bool
+  default     = true
 }
 
 variable "jason_cli_path" {

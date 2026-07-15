@@ -60,6 +60,8 @@ resource "google_cloud_run_v2_service" "frontend" {
           cpu    = var.frontend_cpu
           memory = var.frontend_memory
         }
+
+        startup_cpu_boost = var.frontend_startup_cpu_boost
       }
     }
   }
@@ -126,6 +128,8 @@ resource "google_cloud_run_v2_service" "backend" {
           cpu    = var.backend_cpu
           memory = var.backend_memory
         }
+
+        startup_cpu_boost = var.backend_startup_cpu_boost
       }
     }
   }

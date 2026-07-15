@@ -14,10 +14,12 @@ frontend_max_instances = 1
 backend_min_instances  = 0
 backend_max_instances  = 1
 
-frontend_cpu    = "1"
-frontend_memory = "512Mi"
-backend_cpu     = "1"
-backend_memory  = "512Mi"
+frontend_cpu               = "1"
+frontend_memory            = "512Mi"
+frontend_startup_cpu_boost = true
+backend_cpu                = "1"
+backend_memory             = "512Mi"
+backend_startup_cpu_boost  = true
 
 jason_cli_path                   = "/usr/local/bin/jason"
 frontend_allow_unauthenticated  = true
