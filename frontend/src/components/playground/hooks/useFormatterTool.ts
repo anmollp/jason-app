@@ -2,6 +2,12 @@ import { useState } from "react";
 
 import { formatJson } from "../api";
 import { initialInputJson } from "../constants";
+import {
+  formatByteSize,
+  getUtf8ByteLength,
+  maxJsonPayloadBytes,
+  maxJsonPayloadLabel,
+} from "../payload-utils";
 import { countJsonKeys, countLines, parseErrorLine } from "../playground-utils";
 import type { FormatterState, InspectorStat } from "../types";
 
@@ -11,6 +17,9 @@ export function useFormatterTool(resetCopyMessage: () => void) {
   const [parseError, setParseError] = useState("");
   const [keyCount, setKeyCount] = useState(0);
   const [state, setState] = useState<FormatterState>("idle");
+  const inputSizeBytes = getUtf8ByteLength(inputJson);
+  const isOverPayloadLimit = inputSizeBytes > maxJsonPayloadBytes;
+  const payloadSizeLabel = formatByteSize(inputSizeBytes);
 
   function handleInputChange(value: string) {
     setInputJson(value);
@@ -28,6 +37,17 @@ export function useFormatterTool(resetCopyMessage: () => void) {
       resetCopyMessage();
       setKeyCount(0);
       setState("idle");
+      return;
+    }
+
+    if (isOverPayloadLimit) {
+      setOutputJson("");
+      setParseError(
+        `This JSON is ${payloadSizeLabel}. Jason supports formatter payloads up to ${maxJsonPayloadLabel}.`,
+      );
+      resetCopyMessage();
+      setKeyCount(0);
+      setState("error");
       return;
     }
 
@@ -87,6 +107,11 @@ export function useFormatterTool(resetCopyMessage: () => void) {
     { label: "Lines", value: countLines(outputJson || inputJson) },
     { label: "Keys", value: keyCount },
     {
+      label: "Size",
+      tone: isOverPayloadLimit ? "danger" : inputSizeBytes > 0 ? "success" : "default",
+      value: payloadSizeLabel,
+    },
+    {
       label: "Issues",
       tone: state === "error" ? "danger" : "success",
       value: state === "error" ? 1 : 0,
@@ -95,18 +120,22 @@ export function useFormatterTool(resetCopyMessage: () => void) {
 
   return {
     canCopy: Boolean(outputJson.trim()),
-    canRun: inputJson.trim().length > 0 && state !== "thinking",
+    canRun:
+      inputJson.trim().length > 0 && state !== "thinking" && !isOverPayloadLimit,
     clear,
     errorLine,
     handleFormat,
     handleInputChange,
     inputJson,
+    isOverPayloadLimit,
     isThinking: state === "thinking",
     keyCount,
     loadSample,
     outputCode,
     outputJson,
     parseError,
+    payloadLimitLabel: maxJsonPayloadLabel,
+    payloadSizeLabel,
     state,
     stats,
   };

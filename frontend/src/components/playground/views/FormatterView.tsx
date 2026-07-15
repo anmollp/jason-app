@@ -10,7 +10,13 @@ export function FormatterView({ tool }: FormatterViewProps) {
     <>
       <CodePanel
         title="Input JSON"
-        meta={tool.errorLine ? `line ${tool.errorLine}` : "editable"}
+        meta={
+          tool.isOverPayloadLimit
+            ? `${tool.payloadSizeLabel} / ${tool.payloadLimitLabel}`
+            : tool.errorLine
+              ? `line ${tool.errorLine}`
+              : `${tool.payloadSizeLabel} / ${tool.payloadLimitLabel}`
+        }
         code={tool.inputJson}
         editable
         errorLine={tool.errorLine}
@@ -19,7 +25,7 @@ export function FormatterView({ tool }: FormatterViewProps) {
           void tool.handleFormat();
         }}
         showLineNumbers
-        tone={tool.errorLine ? "error" : "default"}
+        tone={tool.errorLine || tool.isOverPayloadLimit ? "error" : "default"}
       />
       <CodePanel
         title="Formatted Output"
