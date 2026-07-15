@@ -109,6 +109,18 @@ The backend exposes four JSON endpoints:
 
 All endpoints return structured responses designed for the playground UI.
 
+## Performance smoke
+
+Run a small latency baseline against local or deployed services:
+
+```bash
+node scripts/perf-smoke.mjs --frontend https://askjason.dev --backend https://YOUR_BACKEND_URL
+```
+
+The script checks frontend health, backend health, and formatter latency for
+small and large JSON payloads. Use `--help` to see local defaults and tuning
+options.
+
 ## Deployment
 
 See [docs/deployment.md](docs/deployment.md) for the production runbook,
