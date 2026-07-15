@@ -16,8 +16,10 @@ module "jason" {
   backend_max_instances          = var.backend_max_instances
   frontend_cpu                   = var.frontend_cpu
   frontend_memory                = var.frontend_memory
+  frontend_startup_cpu_boost     = var.frontend_startup_cpu_boost
   backend_cpu                    = var.backend_cpu
   backend_memory                 = var.backend_memory
+  backend_startup_cpu_boost      = var.backend_startup_cpu_boost
   jason_cli_path                 = var.jason_cli_path
   frontend_allow_unauthenticated = var.frontend_allow_unauthenticated
   frontend_custom_domain         = var.frontend_custom_domain
