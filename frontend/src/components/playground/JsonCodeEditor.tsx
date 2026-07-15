@@ -3,7 +3,9 @@
 import { json } from "@codemirror/lang-json";
 import {
   HighlightStyle,
+  codeFolding,
   foldGutter,
+  foldKeymap,
   indentOnInput,
   syntaxHighlighting,
 } from "@codemirror/language";
@@ -33,6 +35,7 @@ type LineHighlight = {
 
 type JsonCodeEditorProps = {
   ariaLabel: string;
+  enableFolding?: boolean;
   errorLine?: number;
   highlightedLines?: LineHighlight[];
   onChange?: (value: string) => void;
@@ -173,10 +176,13 @@ const jasonHighlightStyle = syntaxHighlighting(
 
 const noOpExtension: Extension = [];
 
-const lineGutterExtension: Extension = [
-  lineNumbers(),
-  foldGutter(),
-];
+function createFoldMarker(isOpen: boolean) {
+  const marker = document.createElement("span");
+  marker.textContent = isOpen ? "-" : "+";
+  marker.setAttribute("aria-hidden", "true");
+  marker.className = "cm-jason-fold-marker";
+  return marker;
+}
 
 const jasonEditorTheme = EditorView.theme({
   "&": {
@@ -190,7 +196,7 @@ const jasonEditorTheme = EditorView.theme({
   ".cm-content": {
     caretColor: "#22D3EE",
     cursor: "text",
-    minHeight: "330px",
+    minHeight: "300px",
     padding: "0 0 0 16px",
   },
   ".cm-cursor, .cm-dropCursor": {
@@ -207,7 +213,7 @@ const jasonEditorTheme = EditorView.theme({
     backgroundColor: "transparent",
     borderRight: "1px solid #27272A",
     color: "#52525B",
-    minHeight: "330px",
+    minHeight: "300px",
   },
   ".cm-line": {
     cursor: "text",
@@ -223,10 +229,57 @@ const jasonEditorTheme = EditorView.theme({
     color: "#A1A1AA",
   },
   ".cm-foldGutter": {
-    display: "none",
+    color: "#71717A",
+    minWidth: "18px",
+  },
+  ".cm-foldGutter .cm-gutterElement": {
+    alignItems: "center",
+    cursor: "pointer",
+    display: "flex",
+    justifyContent: "center",
+  },
+  ".cm-jason-fold-marker": {
+    alignItems: "center",
+    border: "1px solid #3F3F46",
+    borderRadius: "4px",
+    color: "#A1A1AA",
+    display: "inline-flex",
+    fontSize: "12px",
+    fontWeight: "700",
+    height: "15px",
+    justifyContent: "center",
+    lineHeight: "15px",
+    width: "15px",
+  },
+  ".cm-foldPlaceholder": {
+    backgroundColor: "rgba(39, 39, 42, 0.92)",
+    border: "1px solid #3F3F46",
+    borderRadius: "6px",
+    color: "#A1A1AA",
+    cursor: "pointer",
+    margin: "0 4px",
+    padding: "0 6px",
   },
   ".cm-scroller": {
     overflow: "auto",
+    scrollbarColor: "#71717A #18181B",
+    scrollbarWidth: "thin",
+  },
+  ".cm-scroller::-webkit-scrollbar": {
+    height: "10px",
+    width: "10px",
+  },
+  ".cm-scroller::-webkit-scrollbar-track": {
+    backgroundColor: "#18181B",
+  },
+  ".cm-scroller::-webkit-scrollbar-thumb": {
+    backgroundClip: "content-box",
+    backgroundColor: "#71717A",
+    border: "2px solid #18181B",
+    borderRadius: "999px",
+  },
+  ".cm-scroller::-webkit-scrollbar-thumb:hover": {
+    backgroundColor: "#A1A1AA",
   },
   ".cm-selectionBackground": {
     backgroundColor: "rgba(16, 185, 129, 0.24) !important",
@@ -269,6 +322,7 @@ const jasonEditorTheme = EditorView.theme({
 
 export function JsonCodeEditor({
   ariaLabel,
+  enableFolding = false,
   errorLine,
   highlightedLines = emptyHighlightedLines,
   onChange,
@@ -303,13 +357,23 @@ export function JsonCodeEditor({
     }
 
     const extensions: Extension[] = [
-      showLineNumbers ? lineGutterExtension : noOpExtension,
+      showLineNumbers ? lineNumbers() : noOpExtension,
+      enableFolding
+        ? foldGutter({
+            markerDOM: createFoldMarker,
+          })
+        : noOpExtension,
       history(),
       drawSelection(),
       indentOnInput(),
       highlightActiveLine(),
       highlightActiveLineGutter(),
       json(),
+      enableFolding
+        ? codeFolding({
+            placeholderText: "...",
+          })
+        : noOpExtension,
       jasonHighlightStyle,
       jasonEditorTheme,
       tone === "error"
@@ -346,6 +410,7 @@ export function JsonCodeEditor({
               indentWithTab,
             ],
         ...defaultKeymap,
+        ...(enableFolding ? foldKeymap : []),
         ...historyKeymap,
       ].flat()),
     ];
@@ -364,6 +429,7 @@ export function JsonCodeEditor({
     };
   }, [
     ariaLabel,
+    enableFolding,
     errorLine,
     highlightedLines,
     readOnly,
@@ -388,5 +454,5 @@ export function JsonCodeEditor({
     });
   }, [value]);
 
-  return <div ref={containerRef} className="h-full min-h-[330px]" />;
+  return <div ref={containerRef} className="h-full min-h-[300px]" />;
 }

@@ -369,7 +369,9 @@ export function PlaygroundShell() {
               ? "xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1fr)_170px]"
               : isPointer
                 ? "xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.7fr)_minmax(0,0.75fr)_170px]"
-              : "xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_170px]"
+                : isDiff
+                  ? "xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_170px]"
+                  : "xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_170px]"
           }`}
         >
           {isDiff ? (

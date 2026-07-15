@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { execFile } from 'node:child_process';
+import { spawn } from 'node:child_process';
 
 @Injectable()
 export class JasonCliService {
@@ -23,31 +23,70 @@ export class JasonCliService {
 
   private run(args: string[], input: string): Promise<string> {
     return new Promise((resolve, reject) => {
-      const child = execFile(
-        this.cliPath,
-        args,
-        {
-          timeout: 5_000,
-          maxBuffer: 1024 * 1024,
-        },
-        (error, stdout, stderr) => {
-          if (error) {
-            if ('code' in error && error.code === 'ENOENT') {
-              reject(
-                new Error(
-                  `Jason CLI not found at "${this.cliPath}". Set JASON_CLI_PATH to the built Rust binary, or add jason to PATH.`,
-                ),
-              );
-              return;
-            }
+      const child = spawn(this.cliPath, args, {
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      const stdout: Buffer[] = [];
+      const stderr: Buffer[] = [];
+      let isSettled = false;
+      const timeout = setTimeout(() => {
+        child.kill('SIGTERM');
+        finish(new Error('Jason CLI timed out.'));
+      }, 5_000);
 
-            reject(new Error(stderr.trim() || error.message));
-            return;
-          }
+      function finish(error?: Error, output = '') {
+        if (isSettled) {
+          return;
+        }
 
-          resolve(stdout.trimEnd());
-        },
-      );
+        isSettled = true;
+        clearTimeout(timeout);
+
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve(output.trimEnd());
+      }
+
+      child.stdout.on('data', (chunk: Buffer) => {
+        stdout.push(chunk);
+      });
+
+      child.stderr.on('data', (chunk: Buffer) => {
+        stderr.push(chunk);
+      });
+
+      child.on('error', (error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT') {
+          finish(
+            new Error(
+              `Jason CLI not found at "${this.cliPath}". Set JASON_CLI_PATH to the built Rust binary, or add jason to PATH.`,
+            ),
+          );
+          return;
+        }
+
+        finish(error);
+      });
+
+      child.on('close', (code) => {
+        if (isSettled) {
+          return;
+        }
+
+        const stderrOutput = Buffer.concat(stderr).toString('utf8').trim();
+
+        if (code !== 0) {
+          finish(
+            new Error(stderrOutput || `Jason CLI exited with code ${code}.`),
+          );
+          return;
+        }
+
+        finish(undefined, Buffer.concat(stdout).toString('utf8'));
+      });
 
       child.stdin?.end(input);
     });

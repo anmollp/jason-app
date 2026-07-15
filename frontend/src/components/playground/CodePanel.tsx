@@ -13,6 +13,7 @@ type CodePanelProps = {
     tone?: "neutral" | "add" | "remove" | "change";
   }>;
   editable?: boolean;
+  enableFolding?: boolean;
   errorLine?: number;
   highlightedLines?: Array<{
     line: number;
@@ -53,6 +54,7 @@ export function CodePanel({
   code,
   diffRows,
   editable = false,
+  enableFolding = false,
   errorLine,
   highlightedLines = emptyHighlightedLines,
   onChange,
@@ -62,14 +64,14 @@ export function CodePanel({
   tone = "default",
 }: CodePanelProps) {
   return (
-    <section className="flex min-h-[420px] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-900">
+    <section className="flex h-[clamp(420px,46vh,560px)] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-900">
       <header className="flex h-14 items-center justify-between border-b border-zinc-800 bg-zinc-800 px-5">
         <h2 className="font-mono text-sm font-semibold text-zinc-50">{title}</h2>
         <span className={`font-mono text-xs font-semibold ${toneStyles[tone]}`}>
           {meta}
         </span>
       </header>
-      <div className="flex-1 bg-[#09090B] p-5">
+      <div className="min-h-0 flex-1 overflow-hidden bg-[#09090B] p-5">
         {editable ? (
           <JsonCodeEditor
             ariaLabel={title}
@@ -109,6 +111,7 @@ export function CodePanel({
           <JsonCodeEditor
             ariaLabel={title}
             errorLine={errorLine}
+            enableFolding={enableFolding}
             highlightedLines={highlightedLines}
             readOnly
             shouldWrapLines={shouldWrapLines}
