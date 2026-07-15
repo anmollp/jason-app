@@ -39,6 +39,7 @@ export function FormatterView({ tool }: FormatterViewProps) {
                 : "waiting"
         }
         code={tool.outputCode}
+        enableFolding={Boolean(tool.outputJson)}
         tone={
           tool.state === "error" ? "error" : tool.outputJson ? "success" : "default"
         }
