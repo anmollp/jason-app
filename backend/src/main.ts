@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadEnvFile } from 'node:process';
 import { AppModule } from './app.module';
+import { configureBodyParser } from './body-parser.config';
 
 async function bootstrap() {
   const localEnvPaths = [
@@ -15,7 +16,8 @@ async function bootstrap() {
     loadEnvFile(localEnvPath);
   }
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  configureBodyParser(app);
   app.enableCors({
     origin: parseCorsOrigins(process.env.FRONTEND_ORIGIN),
   });

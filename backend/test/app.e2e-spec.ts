@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { configureBodyParser } from './../src/body-parser.config';
 import { JasonCliService } from './../src/jason-cli.service';
 
 describe('AppController (e2e)', () => {
@@ -25,7 +26,8 @@ describe('AppController (e2e)', () => {
       .useValue(jasonCliService)
       .compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication({ bodyParser: false });
+    configureBodyParser(app);
     await app.init();
   });
 
@@ -52,6 +54,31 @@ describe('AppController (e2e)', () => {
       .expect(200)
       .expect({
         output: '{\n  "service": "billing",\n  "retry": true\n}',
+      });
+  });
+
+  it('/format (POST) accepts JSON documents larger than the default body limit', () => {
+    const largeInput = JSON.stringify({
+      records: Array.from({ length: 8000 }, (_, index) => ({
+        enabled: index % 2 === 0,
+        id: index,
+        label: `record-${index}`,
+      })),
+    });
+
+    expect(
+      Buffer.byteLength(JSON.stringify({ input: largeInput })),
+    ).toBeGreaterThan(100 * 1024);
+
+    return request(app.getHttpServer())
+      .post('/format')
+      .send({ input: largeInput })
+      .expect(200)
+      .expect(({ body }) => {
+        const responseBody = body as { output?: unknown };
+
+        expect(responseBody.output).toEqual(expect.any(String));
+        expect(jasonCliService.format).toHaveBeenCalledWith(largeInput);
       });
   });
 
