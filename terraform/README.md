@@ -194,8 +194,8 @@ Terraform still needs baseline frontend and backend image tags when Cloud Run
 services are first created, but Terraform ignores later image drift so an
 infrastructure apply does not roll back an app revision.
 
-The manual `Publish Container Images` workflow remains available when both
-service images need to be republished explicitly.
+The app deploy workflows push both a short-SHA tag and `latest`, while Cloud Run
+is updated to the short-SHA image.
 
 Required GitHub repository variables:
 
@@ -219,9 +219,9 @@ Terraform creates the GitHub Actions publisher service account, grants it
 Artifact Registry writer access on the Jason repository, and allows GitHub OIDC
 tokens from `github_repository` and `github_ref` to impersonate it.
 
-For a first Terraform-created environment, publish `frontend:latest` and
-`backend:latest` before running the Terraform plan and apply workflows. Override
-`frontend_image` and `backend_image` in Terraform variables only when you need a
+For a first Terraform-created environment, make sure `frontend:latest` and
+`backend:latest` exist before creating Cloud Run services. Override
+`frontend_image` and `backend_image` in Terraform variables when you need a
 different bootstrap image.
 
 Terraform plan, destroy-plan, and future apply workflows use:

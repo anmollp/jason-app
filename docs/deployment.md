@@ -117,9 +117,8 @@ Terraform still needs baseline frontend and backend image tags when Cloud Run
 services are first created. After that, Terraform ignores Cloud Run image drift
 so infrastructure applies do not roll back app revisions.
 
-The manual `Publish Container Images` workflow remains available when both
-containers need to be republished explicitly. Publish `latest` before creating
-Cloud Run services with Terraform.
+The app deploy workflows push both a short-SHA tag and `latest`, while Cloud Run
+is updated to the short-SHA image.
 
 Configure the workflow with:
 
