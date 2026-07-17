@@ -132,24 +132,6 @@ The budget uses Google Cloud's default billing IAM recipients for threshold
 notifications. This is meant to be an early warning system, not a hard spending
 cap.
 
-## Terraform Plan Workflow
-
-The `Terraform Plan` workflow is manual and review-only. It runs:
-
-- `terraform fmt -check -recursive terraform`
-- `terraform init`
-- `terraform validate`
-- `terraform plan`
-
-It derives baseline frontend and backend image URIs from the Terraform-managed
-Artifact Registry repository. The baseline images are required when Terraform
-creates the Cloud Run services; later app image updates are handled by the app
-deploy workflows.
-
-Terraform plan and destroy-plan workflows use `GCP_TERRAFORM_SERVICE_ACCOUNT`,
-which should be set from the `github_actions_deploy_service_account_email`
-output. This identity is separate from the image publisher identity.
-
 ## Terraform Deploy Workflow
 
 The `Terraform Deploy` workflow is manual and runs as three jobs:
@@ -158,8 +140,8 @@ The `Terraform Deploy` workflow is manual and runs as three jobs:
 Plan -> Approval -> Apply
 ```
 
-The plan job runs the same validation steps as the normal plan workflow, writes
-a plan file, and uploads it as a short-lived workflow artifact. The approval job
+The plan job runs Terraform formatting, initialization, validation, and planning,
+then uploads the plan file as a short-lived workflow artifact. The approval job
 opens a GitHub approval issue. The apply job downloads and applies that exact
 plan after approval:
 
@@ -170,10 +152,15 @@ terraform apply -auto-approve tfplan
 Approve by commenting `yes`, `lgtm`, `done`, `approve`, or `approved` on the
 issue. Deny by commenting `no`, `stop`, `deny`, `denied`, or `cancel`.
 
+Terraform deploy and destroy-plan workflows use
+`GCP_TERRAFORM_SERVICE_ACCOUNT`, which should be set from the
+`github_actions_deploy_service_account_email` output. This identity is separate
+from the image publisher identity.
+
 ## Terraform Destroy Plan Workflow
 
 The `Terraform Destroy Plan` workflow is manual and review-only. It runs the
-same validation steps as the normal plan workflow, then runs:
+same validation steps as the deploy plan job, then runs:
 
 ```bash
 terraform plan -destroy
@@ -224,7 +211,7 @@ For a first Terraform-created environment, make sure `frontend:latest` and
 `frontend_image` and `backend_image` in Terraform variables when you need a
 different bootstrap image.
 
-Terraform plan, destroy-plan, and future apply workflows use:
+Terraform deploy and destroy-plan workflows use:
 
 - `GCS_STATE_BUCKET`: GCS bucket used for Terraform state.
 - `GCP_WORKLOAD_IDENTITY_PROVIDER`: value from the Terraform

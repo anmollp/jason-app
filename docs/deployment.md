@@ -131,19 +131,6 @@ Configure the workflow with:
 - `GCP_TERRAFORM_SERVICE_ACCOUNT` from the Terraform
   `github_actions_deploy_service_account_email` output.
 
-## Terraform plan
-
-Use the manual `Terraform Plan` GitHub Actions workflow for infrastructure
-changes. The workflow validates Terraform and produces a cloud plan without
-applying it.
-
-Configure `GCP_TERRAFORM_SERVICE_ACCOUNT` from the Terraform
-`github_actions_deploy_service_account_email` output for Terraform plan,
-destroy-plan, and future apply workflows.
-
-Set `GCS_STATE_BUCKET` to the Terraform state bucket before running Terraform
-workflows in GitHub Actions.
-
 ## Terraform deploy
 
 Use the manual `Terraform Deploy` GitHub Actions workflow for infrastructure
@@ -153,6 +140,13 @@ plan.
 
 Approve with `yes`, `lgtm`, `done`, `approve`, or `approved`. Deny with `no`,
 `stop`, `deny`, `denied`, or `cancel`.
+
+Configure `GCP_TERRAFORM_SERVICE_ACCOUNT` from the Terraform
+`github_actions_deploy_service_account_email` output for Terraform deploy and
+destroy-plan workflows.
+
+Set `GCS_STATE_BUCKET` to the Terraform state bucket before running Terraform
+workflows in GitHub Actions.
 
 ## Custom domain
 
@@ -173,9 +167,8 @@ minutes, but can take up to 24 hours.
 ## Terraform destroy plan
 
 Use the manual `Terraform Destroy Plan` workflow before any planned teardown.
-It requires the same image inputs as the normal plan workflow plus a
-`confirmation` value of `destroy-plan`. The workflow runs `terraform plan
--destroy` only; it does not apply or destroy resources.
+It requires a `confirmation` value of `destroy-plan`. The workflow runs
+`terraform plan -destroy` only; it does not apply or destroy resources.
 
 ## Budget alerts
 
