@@ -132,12 +132,13 @@ The first IaC target is GCP Cloud Run managed with Terraform. See
 [docs/decisions/0001-gcp-cloud-run-terraform.md](docs/decisions/0001-gcp-cloud-run-terraform.md)
 for the hosting decision, cost controls, alternatives, and rollout plan.
 
-Container images are published manually through the `Publish Container Images`
-GitHub Actions workflow once GCP Workload Identity and Artifact Registry writer
-access are configured.
+Frontend and backend app changes merged to `master` trigger small path-filtered
+deploy workflows. The changed service image is pushed to Artifact Registry and
+the matching Cloud Run service image is updated.
 
-Terraform plans can be reviewed through the manual `Terraform Plan` workflow
-after an image tag is published.
+Terraform plans can be reviewed through the manual `Terraform Plan` workflow.
+Terraform owns infrastructure changes; day-to-day Cloud Run image updates are
+handled by the app deploy workflows.
 
 Destroy plans can be reviewed through the manual `Terraform Destroy Plan`
 workflow before any teardown is considered.

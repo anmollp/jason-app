@@ -15,7 +15,7 @@ resource "google_cloud_run_v2_service" "frontend" {
     }
 
     containers {
-      image = var.frontend_image
+      image = local.frontend_image
 
       ports {
         container_port = 3000
@@ -69,6 +69,12 @@ resource "google_cloud_run_v2_service" "frontend" {
   depends_on = [
     google_project_service.required["run.googleapis.com"],
   ]
+
+  lifecycle {
+    ignore_changes = [
+      template[0].containers[0].image,
+    ]
+  }
 }
 
 resource "google_cloud_run_v2_service" "backend" {
@@ -88,7 +94,7 @@ resource "google_cloud_run_v2_service" "backend" {
     }
 
     containers {
-      image = var.backend_image
+      image = local.backend_image
 
       ports {
         container_port = 3000
@@ -137,6 +143,12 @@ resource "google_cloud_run_v2_service" "backend" {
   depends_on = [
     google_project_service.required["run.googleapis.com"],
   ]
+
+  lifecycle {
+    ignore_changes = [
+      template[0].containers[0].image,
+    ]
+  }
 }
 
 resource "google_cloud_run_v2_service_iam_member" "frontend_public" {

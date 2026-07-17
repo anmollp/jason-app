@@ -1,0 +1,86 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "backend/**"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GAR_REGION: ${{ vars.GCP_REGION || 'us-central1' }}
+  GAR_REPOSITORY: ${{ vars.GAR_REPOSITORY || 'jason-dev-containers' }}
+  GOOGLE_CLOUD_QUOTA_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+
+jobs:
+  deploy:
+    name: Build, push, and update Cloud Run
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate configuration
+        run: |
+          if [ -z "${{ vars.GCP_PROJECT_ID }}" ]; then
+            echo "::error::Set the GCP_PROJECT_ID repository variable."
+            exit 1
+          fi
+          if [ -z "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" ]; then
+            echo "::error::Set the GCP_WORKLOAD_IDENTITY_PROVIDER repository secret."
+            exit 1
+          fi
+          if [ -z "${{ secrets.GCP_PUBLISHER_SERVICE_ACCOUNT }}" ]; then
+            echo "::error::Set the GCP_PUBLISHER_SERVICE_ACCOUNT repository secret."
+            exit 1
+          fi
+          if [ -z "${{ secrets.GCP_TERRAFORM_SERVICE_ACCOUNT }}" ]; then
+            echo "::error::Set the GCP_TERRAFORM_SERVICE_ACCOUNT repository secret."
+            exit 1
+          fi
+
+      - name: Set image
+        run: |
+          echo "IMAGE=${GAR_REGION}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${GAR_REPOSITORY}/backend:${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Authenticate for image push
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_PUBLISHER_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker auth
+        run: gcloud auth configure-docker "${GAR_REGION}-docker.pkg.dev" --quiet
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE }}
+
+      - name: Authenticate for Cloud Run update
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_TERRAFORM_SERVICE_ACCOUNT }}
+
+      - name: Update Cloud Run image
+        run: |
+          gcloud run services update "jason-dev-backend" \
+            --image "${IMAGE}" \
+            --region "${GAR_REGION}" \
+            --project "${{ vars.GCP_PROJECT_ID }}" \
+            --quiet

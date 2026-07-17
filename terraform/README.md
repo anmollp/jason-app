@@ -141,8 +141,10 @@ The `Terraform Plan` workflow is manual and review-only. It runs:
 - `terraform validate`
 - `terraform plan`
 
-It requires the published `image_tag` workflow input and derives the frontend
-and backend image URIs from the configured GCP repository variables.
+It derives baseline frontend and backend image URIs from the Terraform-managed
+Artifact Registry repository. The baseline images are required when Terraform
+creates the Cloud Run services; later app image updates are handled by the app
+deploy workflows.
 
 Terraform plan and destroy-plan workflows use `GCP_TERRAFORM_SERVICE_ACCOUNT`,
 which should be set from the `github_actions_deploy_service_account_email`
@@ -180,11 +182,20 @@ terraform plan -destroy
 It requires the `confirmation` input to be exactly `destroy-plan`. This workflow
 does not destroy or apply anything; it only shows what Terraform would remove.
 
-## Publishing Images
+## App Image Deployments
 
-The `Publish Container Images` workflow builds and pushes both service images to
-Artifact Registry. It is manual by design, so publishing images is explicit
-while the project is still cost-conscious and learning-focused.
+The `Deploy Frontend` and `Deploy Backend` workflows release app changes after
+they merge to `master`. Frontend path changes build and push only the frontend
+image, then update `jason-dev-frontend`. Backend path changes do the same for
+`jason-dev-backend`. Images are tagged with the short commit SHA and pushed to
+Artifact Registry.
+
+Terraform still needs baseline frontend and backend image tags when Cloud Run
+services are first created, but Terraform ignores later image drift so an
+infrastructure apply does not roll back an app revision.
+
+The manual `Publish Container Images` workflow remains available when both
+service images need to be republished explicitly.
 
 Required GitHub repository variables:
 
@@ -200,13 +211,18 @@ Required GitHub repository secrets:
   `github_actions_workload_identity_provider` output.
 - `GCP_PUBLISHER_SERVICE_ACCOUNT`: value from the Terraform
   `github_actions_service_account_email` output.
+- `GCP_TERRAFORM_SERVICE_ACCOUNT`: value from the Terraform
+  `github_actions_deploy_service_account_email` output. The app deployment jobs
+  use this identity to update Cloud Run service images.
 
 Terraform creates the GitHub Actions publisher service account, grants it
 Artifact Registry writer access on the Jason repository, and allows GitHub OIDC
 tokens from `github_repository` and `github_ref` to impersonate it.
 
-After the workflow finishes, use the same image tag with the Terraform plan and
-apply workflows.
+For a first Terraform-created environment, publish `frontend:latest` and
+`backend:latest` before running the Terraform plan and apply workflows. Override
+`frontend_image` and `backend_image` in Terraform variables only when you need a
+different bootstrap image.
 
 Terraform plan, destroy-plan, and future apply workflows use:
 
