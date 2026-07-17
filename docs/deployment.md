@@ -143,7 +143,7 @@ Approve with `yes`, `lgtm`, `done`, `approve`, or `approved`. Deny with `no`,
 
 Configure `GCP_TERRAFORM_SERVICE_ACCOUNT` from the Terraform
 `github_actions_deploy_service_account_email` output for Terraform deploy and
-destroy-plan workflows.
+destroy workflows.
 
 Set `GCS_STATE_BUCKET` to the Terraform state bucket before running Terraform
 workflows in GitHub Actions.
@@ -164,11 +164,13 @@ verified owner before applying. After apply, use the
 domain registrar. Google-managed HTTPS certificates usually provision within
 minutes, but can take up to 24 hours.
 
-## Terraform destroy plan
+## Terraform destroy
 
-Use the manual `Terraform Destroy Plan` workflow before any planned teardown.
-It requires a `confirmation` value of `destroy-plan`. The workflow runs
-`terraform plan -destroy` only; it does not apply or destroy resources.
+Use the manual `Terraform Destroy` workflow for planned teardown. Its graph is
+`Plan -> Approval -> Apply`: it creates a destroy plan, opens a GitHub approval
+issue, waits for an approval comment, and applies that exact destroy plan.
+
+It requires a `confirmation` value of `destroy` before planning starts.
 
 ## Budget alerts
 

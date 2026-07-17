@@ -152,22 +152,31 @@ terraform apply -auto-approve tfplan
 Approve by commenting `yes`, `lgtm`, `done`, `approve`, or `approved` on the
 issue. Deny by commenting `no`, `stop`, `deny`, `denied`, or `cancel`.
 
-Terraform deploy and destroy-plan workflows use
+Terraform deploy and destroy workflows use
 `GCP_TERRAFORM_SERVICE_ACCOUNT`, which should be set from the
 `github_actions_deploy_service_account_email` output. This identity is separate
 from the image publisher identity.
 
-## Terraform Destroy Plan Workflow
+## Terraform Destroy Workflow
 
-The `Terraform Destroy Plan` workflow is manual and review-only. It runs the
-same validation steps as the deploy plan job, then runs:
+The `Terraform Destroy` workflow is manual and runs as three jobs:
+
+```text
+Plan -> Approval -> Apply
+```
+
+The plan job runs the same validation steps as the deploy plan job, then writes
+a destroy plan with:
 
 ```bash
 terraform plan -destroy
 ```
 
-It requires the `confirmation` input to be exactly `destroy-plan`. This workflow
-does not destroy or apply anything; it only shows what Terraform would remove.
+The approval job opens a GitHub approval issue. The apply job downloads and
+applies that exact destroy plan after approval.
+
+It requires the `confirmation` input to be exactly `destroy` before planning
+starts.
 
 ## App Image Deployments
 
@@ -211,7 +220,7 @@ For a first Terraform-created environment, make sure `frontend:latest` and
 `frontend_image` and `backend_image` in Terraform variables when you need a
 different bootstrap image.
 
-Terraform deploy and destroy-plan workflows use:
+Terraform deploy and destroy workflows use:
 
 - `GCS_STATE_BUCKET`: GCS bucket used for Terraform state.
 - `GCP_WORKLOAD_IDENTITY_PROVIDER`: value from the Terraform
