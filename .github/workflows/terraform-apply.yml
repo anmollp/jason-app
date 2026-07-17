@@ -10,10 +10,6 @@ on:
         type: choice
         options:
           - dev
-      image_tag:
-        description: "Container image tag to deploy. Leave blank to use the short commit SHA."
-        required: false
-        default: ""
 
 permissions:
   contents: read
@@ -21,7 +17,6 @@ permissions:
   issues: write
 
 env:
-  GAR_REPOSITORY: ${{ vars.GAR_REPOSITORY || 'jason-dev-containers' }}
   GOOGLE_CLOUD_QUOTA_PROJECT: ${{ vars.GCP_PROJECT_ID }}
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
@@ -31,8 +26,6 @@ jobs:
   plan:
     name: Plan
     runs-on: ubuntu-latest
-    outputs:
-      image_tag: ${{ steps.resolve_image_tag.outputs.image_tag }}
 
     steps:
       - name: Checkout
@@ -50,10 +43,6 @@ jobs:
           fi
           if [ -z "${{ vars.GCS_STATE_BUCKET }}" ]; then
             echo "::error::Set the GCS_STATE_BUCKET repository variable."
-            exit 1
-          fi
-          if [ -z "${{ vars.GAR_REPOSITORY }}" ]; then
-            echo "::error::Set the GAR_REPOSITORY repository variable."
             exit 1
           fi
           if [ -z "${{ vars.BILLING_ACCOUNT_ID }}" ]; then
@@ -74,44 +63,6 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_TERRAFORM_SERVICE_ACCOUNT }}
-
-      - name: Setup gcloud
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Resolve image tag
-        id: resolve_image_tag
-        run: |
-          image_tag="${{ inputs.image_tag }}"
-          if [ -z "$image_tag" ]; then
-            image_tag="${GITHUB_SHA::7}"
-          fi
-
-          echo "IMAGE_TAG=${image_tag}" >> "$GITHUB_ENV"
-          echo "image_tag=${image_tag}" >> "$GITHUB_OUTPUT"
-          echo "Resolved image tag: ${image_tag}"
-
-      - name: Set Terraform image variables
-        run: |
-          echo "FRONTEND_IMAGE=${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${GAR_REPOSITORY}/frontend:${IMAGE_TAG}" >> "$GITHUB_ENV"
-          echo "BACKEND_IMAGE=${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${GAR_REPOSITORY}/backend:${IMAGE_TAG}" >> "$GITHUB_ENV"
-
-      - name: Verify container images exist
-        run: |
-          missing=0
-          for image in "${FRONTEND_IMAGE}" "${BACKEND_IMAGE}"; do
-            digest=$(gcloud artifacts docker images describe "${image}" --format='value(image_summary.fully_qualified_digest)' 2>/dev/null || true)
-            if [ -n "$digest" ]; then
-              echo "Found container image: ${digest}"
-            else
-              echo "::error::Container image not found: ${image}"
-              missing=1
-            fi
-          done
-
-          if [ "$missing" -ne 0 ]; then
-            echo "::error::Publish both images with image_tag=${IMAGE_TAG} before running Terraform."
-            exit 1
-          fi
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -140,8 +91,6 @@ jobs:
           terraform plan \
             -var="project_id=${{ vars.GCP_PROJECT_ID }}" \
             -var="region=${{ vars.GCP_REGION }}" \
-            -var="frontend_image=${FRONTEND_IMAGE}" \
-            -var="backend_image=${BACKEND_IMAGE}" \
             -var="github_repository=${{ github.repository }}" \
             -var="github_ref=refs/heads/${{ github.ref_name }}" \
             -var="frontend_custom_domain=${{ vars.FRONTEND_CUSTOM_DOMAIN }}" \
@@ -171,7 +120,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > approval-body.md <<'EOF'
-          Terraform plan completed for `${{ inputs.environment }}` using image tag `${{ needs.plan.outputs.image_tag }}`.
+          Terraform plan completed for `${{ inputs.environment }}`.
 
           Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           Branch: `${{ github.ref_name }}`
@@ -182,7 +131,7 @@ jobs:
 
           issue_url=$(gh issue create \
             --repo "${{ github.repository }}" \
-            --title "Approve Terraform deploy to ${{ inputs.environment }}: ${{ needs.plan.outputs.image_tag }}" \
+            --title "Approve Terraform deploy to ${{ inputs.environment }}" \
             --body-file approval-body.md)
           issue_number="${issue_url##*/}"
           echo "issue_number=${issue_number}" >> "$GITHUB_OUTPUT"
@@ -273,14 +222,6 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_TERRAFORM_SERVICE_ACCOUNT }}
 
-      - name: Setup gcloud
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Set Terraform image variables
-        run: |
-          echo "FRONTEND_IMAGE=${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${GAR_REPOSITORY}/frontend:${{ needs.plan.outputs.image_tag }}" >> "$GITHUB_ENV"
-          echo "BACKEND_IMAGE=${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${GAR_REPOSITORY}/backend:${{ needs.plan.outputs.image_tag }}" >> "$GITHUB_ENV"
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -304,46 +245,6 @@ jobs:
       - name: Terraform apply
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform apply -auto-approve tfplan
-
-      - name: Verify Cloud Run revisions
-        run: |
-          verify_service() {
-            service_name="$1"
-            expected_image="$2"
-
-            latest_ready_revision=$(gcloud run services describe "${service_name}" \
-              --region "${{ vars.GCP_REGION }}" \
-              --project "${{ vars.GCP_PROJECT_ID }}" \
-              --format='value(status.latestReadyRevisionName)')
-            traffic_revision=$(gcloud run services describe "${service_name}" \
-              --region "${{ vars.GCP_REGION }}" \
-              --project "${{ vars.GCP_PROJECT_ID }}" \
-              --format='value(status.traffic[0].revisionName)')
-            actual_image=$(gcloud run services describe "${service_name}" \
-              --region "${{ vars.GCP_REGION }}" \
-              --project "${{ vars.GCP_PROJECT_ID }}" \
-              --format='value(spec.template.spec.containers[0].image)')
-
-            if [ -z "$latest_ready_revision" ]; then
-              echo "::error::${service_name} does not have a ready revision."
-              exit 1
-            fi
-
-            if [ "$traffic_revision" != "$latest_ready_revision" ]; then
-              echo "::error::${service_name} traffic is on ${traffic_revision}, but latest ready revision is ${latest_ready_revision}."
-              exit 1
-            fi
-
-            if [ "$actual_image" != "$expected_image" ]; then
-              echo "::error::${service_name} is configured with ${actual_image}, expected ${expected_image}."
-              exit 1
-            fi
-
-            echo "Verified ${service_name}: ${traffic_revision} serving ${actual_image}"
-          }
-
-          verify_service "jason-${{ inputs.environment }}-frontend" "${FRONTEND_IMAGE}"
-          verify_service "jason-${{ inputs.environment }}-backend" "${BACKEND_IMAGE}"
 
       - name: Close approval issue
         if: always() && needs.approval.outputs.issue_number != ''

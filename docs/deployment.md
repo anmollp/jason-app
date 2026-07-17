@@ -106,11 +106,20 @@ terraform fmt -recursive
 terraform validate
 ```
 
-## Image publish
+## App image deployment
 
-Use the manual `Publish Container Images` GitHub Actions workflow to build and
-push both containers to Artifact Registry. Use the same `image_tag` value when
-running the Terraform plan and apply workflows.
+After app changes merge to `master`, the `Deploy Frontend` and `Deploy Backend`
+workflows run only when their service path changes. A frontend change builds and
+pushes the frontend image, then updates `jason-dev-frontend`. A backend change
+does the same for `jason-dev-backend`.
+
+Terraform still needs baseline frontend and backend image tags when Cloud Run
+services are first created. After that, Terraform ignores Cloud Run image drift
+so infrastructure applies do not roll back app revisions.
+
+The manual `Publish Container Images` workflow remains available when both
+containers need to be republished explicitly. Publish `latest` before creating
+Cloud Run services with Terraform.
 
 Configure the workflow with:
 
@@ -120,12 +129,14 @@ Configure the workflow with:
   `github_actions_workload_identity_provider` output.
 - `GCP_PUBLISHER_SERVICE_ACCOUNT` from the Terraform
   `github_actions_service_account_email` output.
+- `GCP_TERRAFORM_SERVICE_ACCOUNT` from the Terraform
+  `github_actions_deploy_service_account_email` output.
 
 ## Terraform plan
 
-Use the manual `Terraform Plan` GitHub Actions workflow after publishing images.
-Pass the published `image_tag` as the workflow input. The workflow validates
-Terraform and produces a cloud plan without applying it.
+Use the manual `Terraform Plan` GitHub Actions workflow for infrastructure
+changes. The workflow validates Terraform and produces a cloud plan without
+applying it.
 
 Configure `GCP_TERRAFORM_SERVICE_ACCOUNT` from the Terraform
 `github_actions_deploy_service_account_email` output for Terraform plan,
@@ -136,8 +147,8 @@ workflows in GitHub Actions.
 
 ## Terraform deploy
 
-Use the manual `Terraform Deploy` GitHub Actions workflow after publishing
-images. Its graph is `Plan -> Approval -> Apply`: it creates a plan, opens a
+Use the manual `Terraform Deploy` GitHub Actions workflow for infrastructure
+changes. Its graph is `Plan -> Approval -> Apply`: it creates a plan, opens a
 GitHub approval issue, waits for an approval comment, and applies that exact
 plan.
 

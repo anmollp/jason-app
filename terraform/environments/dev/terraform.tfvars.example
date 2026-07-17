@@ -3,9 +3,10 @@ region     = "us-central1"
 
 service_name = "jason"
 
-# Use image URIs from Artifact Registry after images have been pushed.
-frontend_image = "us-central1-docker.pkg.dev/your-gcp-project-id/jason-dev-containers/frontend:latest"
-backend_image  = "us-central1-docker.pkg.dev/your-gcp-project-id/jason-dev-containers/backend:latest"
+# Optional bootstrap image overrides. Defaults use this environment's
+# Terraform-managed Artifact Registry repository with the latest tag.
+# frontend_image = "us-central1-docker.pkg.dev/your-gcp-project-id/jason-dev-containers/frontend:latest"
+# backend_image  = "us-central1-docker.pkg.dev/your-gcp-project-id/jason-dev-containers/backend:latest"
 
 # Cost-control defaults for individual hosting.
 frontend_min_instances = 0

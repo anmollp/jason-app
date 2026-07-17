@@ -16,13 +16,15 @@ variable "service_name" {
 }
 
 variable "frontend_image" {
-  description = "Frontend container image URI to deploy to Cloud Run."
+  description = "Optional frontend container image URI used when Terraform creates the Cloud Run service. Defaults to the local Artifact Registry frontend:latest image."
   type        = string
+  default     = ""
 }
 
 variable "backend_image" {
-  description = "Backend container image URI to deploy to Cloud Run."
+  description = "Optional backend container image URI used when Terraform creates the Cloud Run service. Defaults to the local Artifact Registry backend:latest image."
   type        = string
+  default     = ""
 }
 
 variable "frontend_min_instances" {

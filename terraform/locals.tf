@@ -6,6 +6,8 @@ locals {
   github_actions_service_account   = "${local.name_prefix}-gha-publisher"
   github_workload_identity_pool_id = "${local.name_prefix}-github"
   create_budget_alert              = var.billing_account_id != ""
+  frontend_image                   = var.frontend_image == "" ? "${var.region}-docker.pkg.dev/${var.project_id}/${local.artifact_registry_repository_id}/frontend:latest" : var.frontend_image
+  backend_image                    = var.backend_image == "" ? "${var.region}-docker.pkg.dev/${var.project_id}/${local.artifact_registry_repository_id}/backend:latest" : var.backend_image
 
   common_labels = {
     app         = var.service_name
