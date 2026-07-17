@@ -47,6 +47,7 @@ jobs:
       - name: Set image
         run: |
           echo "IMAGE=${GAR_REGION}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${GAR_REPOSITORY}/backend:${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+          echo "LATEST_IMAGE=${GAR_REGION}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${GAR_REPOSITORY}/backend:latest" >> "$GITHUB_ENV"
 
       - name: Authenticate for image push
         uses: google-github-actions/auth@v2
@@ -69,7 +70,9 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: ${{ env.IMAGE }}
+          tags: |
+            ${{ env.IMAGE }}
+            ${{ env.LATEST_IMAGE }}
 
       - name: Authenticate for Cloud Run update
         uses: google-github-actions/auth@v2

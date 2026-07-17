@@ -136,12 +136,12 @@ Frontend and backend app changes merged to `master` trigger small path-filtered
 deploy workflows. The changed service image is pushed to Artifact Registry and
 the matching Cloud Run service image is updated.
 
-Terraform plans can be reviewed through the manual `Terraform Plan` workflow.
 Terraform owns infrastructure changes; day-to-day Cloud Run image updates are
 handled by the app deploy workflows.
 
-Destroy plans can be reviewed through the manual `Terraform Destroy Plan`
-workflow before any teardown is considered.
+Terraform destroys are manual through the `Terraform Destroy` workflow. Its graph
+is also `Plan -> Approval -> Apply`, and the apply job uses the exact saved
+destroy plan only after approval.
 
 Terraform deploys are manual through the `Terraform Deploy` workflow. Its graph
 is `Plan -> Approval -> Apply`, and the apply job uses the exact saved plan only

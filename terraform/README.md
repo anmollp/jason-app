@@ -132,24 +132,6 @@ The budget uses Google Cloud's default billing IAM recipients for threshold
 notifications. This is meant to be an early warning system, not a hard spending
 cap.
 
-## Terraform Plan Workflow
-
-The `Terraform Plan` workflow is manual and review-only. It runs:
-
-- `terraform fmt -check -recursive terraform`
-- `terraform init`
-- `terraform validate`
-- `terraform plan`
-
-It derives baseline frontend and backend image URIs from the Terraform-managed
-Artifact Registry repository. The baseline images are required when Terraform
-creates the Cloud Run services; later app image updates are handled by the app
-deploy workflows.
-
-Terraform plan and destroy-plan workflows use `GCP_TERRAFORM_SERVICE_ACCOUNT`,
-which should be set from the `github_actions_deploy_service_account_email`
-output. This identity is separate from the image publisher identity.
-
 ## Terraform Deploy Workflow
 
 The `Terraform Deploy` workflow is manual and runs as three jobs:
@@ -158,8 +140,8 @@ The `Terraform Deploy` workflow is manual and runs as three jobs:
 Plan -> Approval -> Apply
 ```
 
-The plan job runs the same validation steps as the normal plan workflow, writes
-a plan file, and uploads it as a short-lived workflow artifact. The approval job
+The plan job runs Terraform formatting, initialization, validation, and planning,
+then uploads the plan file as a short-lived workflow artifact. The approval job
 opens a GitHub approval issue. The apply job downloads and applies that exact
 plan after approval:
 
@@ -170,17 +152,31 @@ terraform apply -auto-approve tfplan
 Approve by commenting `yes`, `lgtm`, `done`, `approve`, or `approved` on the
 issue. Deny by commenting `no`, `stop`, `deny`, `denied`, or `cancel`.
 
-## Terraform Destroy Plan Workflow
+Terraform deploy and destroy workflows use
+`GCP_TERRAFORM_SERVICE_ACCOUNT`, which should be set from the
+`github_actions_deploy_service_account_email` output. This identity is separate
+from the image publisher identity.
 
-The `Terraform Destroy Plan` workflow is manual and review-only. It runs the
-same validation steps as the normal plan workflow, then runs:
+## Terraform Destroy Workflow
+
+The `Terraform Destroy` workflow is manual and runs as three jobs:
+
+```text
+Plan -> Approval -> Apply
+```
+
+The plan job runs the same validation steps as the deploy plan job, then writes
+a destroy plan with:
 
 ```bash
 terraform plan -destroy
 ```
 
-It requires the `confirmation` input to be exactly `destroy-plan`. This workflow
-does not destroy or apply anything; it only shows what Terraform would remove.
+The approval job opens a GitHub approval issue. The apply job downloads and
+applies that exact destroy plan after approval.
+
+It requires the `confirmation` input to be exactly `destroy` before planning
+starts.
 
 ## App Image Deployments
 
@@ -194,8 +190,8 @@ Terraform still needs baseline frontend and backend image tags when Cloud Run
 services are first created, but Terraform ignores later image drift so an
 infrastructure apply does not roll back an app revision.
 
-The manual `Publish Container Images` workflow remains available when both
-service images need to be republished explicitly.
+The app deploy workflows push both a short-SHA tag and `latest`, while Cloud Run
+is updated to the short-SHA image.
 
 Required GitHub repository variables:
 
@@ -219,12 +215,12 @@ Terraform creates the GitHub Actions publisher service account, grants it
 Artifact Registry writer access on the Jason repository, and allows GitHub OIDC
 tokens from `github_repository` and `github_ref` to impersonate it.
 
-For a first Terraform-created environment, publish `frontend:latest` and
-`backend:latest` before running the Terraform plan and apply workflows. Override
-`frontend_image` and `backend_image` in Terraform variables only when you need a
+For a first Terraform-created environment, make sure `frontend:latest` and
+`backend:latest` exist before creating Cloud Run services. Override
+`frontend_image` and `backend_image` in Terraform variables when you need a
 different bootstrap image.
 
-Terraform plan, destroy-plan, and future apply workflows use:
+Terraform deploy and destroy workflows use:
 
 - `GCS_STATE_BUCKET`: GCS bucket used for Terraform state.
 - `GCP_WORKLOAD_IDENTITY_PROVIDER`: value from the Terraform
