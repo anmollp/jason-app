@@ -1,21 +1,29 @@
 import { useMemo, useState } from "react";
 
 import { patchJson } from "../api";
-import { patchDocumentJson, patchOperationsJson } from "../constants";
+import { patchDocumentJson, patchOperationSample } from "../constants";
 import {
   buildDiffHighlights,
-  buildPatchOperationHighlights,
   parseErrorLine,
-  parsePatchOperations,
 } from "../playground-utils";
-import type { FormatterState, InspectorStat, PatchJsonResponse } from "../types";
+import {
+  buildPatchOperation,
+  validatePatchOperations,
+} from "../patch-operations";
+import type {
+  FormatterState,
+  InspectorStat,
+  JsonPatchOperation,
+  PatchJsonResponse,
+} from "../types";
 
 import { errorField } from "./utils";
 
 export function usePatchTool(resetCopyMessage: () => void) {
   const [patchDocumentInput, setPatchDocumentInput] = useState(patchDocumentJson);
-  const [patchOperationsInput, setPatchOperationsInput] =
-    useState(patchOperationsJson);
+  const [patchOperations, setPatchOperations] = useState<JsonPatchOperation[]>(
+    patchOperationSample,
+  );
   const [patchOutput, setPatchOutput] = useState("");
   const [patchState, setPatchState] = useState<FormatterState>("idle");
   const [patchError, setPatchError] = useState("");
@@ -23,14 +31,17 @@ export function usePatchTool(resetCopyMessage: () => void) {
     "document" | "patch" | undefined
   >();
   const [patchResult, setPatchResult] = useState<PatchJsonResponse | null>(null);
+  const [selectedPatchLine, setSelectedPatchLine] = useState<number | undefined>();
+  const [selectedPatchPath, setSelectedPatchPath] = useState("");
 
-  function handlePatchInputChange(side: "document" | "patch", value: string) {
-    if (side === "document") {
-      setPatchDocumentInput(value);
-    } else {
-      setPatchOperationsInput(value);
-    }
+  function handlePatchDocumentChange(value: string) {
+    setPatchDocumentInput(value);
+    setSelectedPatchLine(undefined);
+    setSelectedPatchPath("");
+    resetPatchResult();
+  }
 
+  function resetPatchResult() {
     setPatchOutput("");
     setPatchError("");
     setPatchErrorField(undefined);
@@ -39,11 +50,59 @@ export function usePatchTool(resetCopyMessage: () => void) {
     setPatchState("idle");
   }
 
+  function handlePatchDocumentSelection(selection: { line: number; path: string }) {
+    setSelectedPatchPath(selection.path);
+    setSelectedPatchLine(selection.path ? selection.line : undefined);
+  }
+
+  function handlePatchOperationCreate(op: JsonPatchOperation["op"]) {
+    const operation = buildPatchOperation(patchDocumentInput, selectedPatchPath, op);
+
+    if (!operation) {
+      return undefined;
+    }
+
+    const nextOperations = [...patchOperations, operation];
+
+    setPatchOperations(nextOperations);
+    setSelectedPatchLine(undefined);
+    setSelectedPatchPath("");
+    resetPatchResult();
+
+    return nextOperations.length - 1;
+  }
+
+  function handlePatchOperationRemove(index: number) {
+    const nextOperations = patchOperations.filter((_, operationIndex) => {
+      return operationIndex !== index;
+    });
+
+    setPatchOperations(nextOperations);
+    resetPatchResult();
+  }
+
+  function handlePatchOperationUpdate(
+    index: number,
+    nextOperation: JsonPatchOperation,
+  ) {
+    if (!patchOperations[index]) {
+      return;
+    }
+
+    const nextOperations = patchOperations.map((operation, operationIndex) => {
+      return operationIndex === index ? nextOperation : operation;
+    });
+
+    setPatchOperations(nextOperations);
+    resetPatchResult();
+  }
+
   async function handlePatch() {
     if (
       patchState === "thinking" ||
       !patchDocumentInput.trim() ||
-      !patchOperationsInput.trim()
+      patchOperations.length === 0 ||
+      patchOperationIssues.length > 0
     ) {
       setPatchOutput("");
       setPatchError("");
@@ -63,7 +122,7 @@ export function usePatchTool(resetCopyMessage: () => void) {
 
       const patchResponse = await patchJson(
         patchDocumentInput,
-        patchOperationsInput,
+        JSON.stringify(patchOperations),
       );
 
       if (
@@ -94,38 +153,27 @@ export function usePatchTool(resetCopyMessage: () => void) {
 
   function clear() {
     setPatchDocumentInput("");
-    setPatchOperationsInput("");
-    setPatchOutput("");
-    setPatchError("");
-    setPatchErrorField(undefined);
-    setPatchResult(null);
-    setPatchState("idle");
+    setPatchOperations([]);
+    setSelectedPatchLine(undefined);
+    setSelectedPatchPath("");
+    resetPatchResult();
   }
 
   function loadSample() {
     setPatchDocumentInput(patchDocumentJson);
-    setPatchOperationsInput(patchOperationsJson);
-    setPatchOutput("");
-    setPatchError("");
-    setPatchErrorField(undefined);
-    setPatchResult(null);
-    resetCopyMessage();
-    setPatchState("idle");
+    setPatchOperations([...patchOperationSample]);
+    setSelectedPatchLine(undefined);
+    setSelectedPatchPath("");
+    resetPatchResult();
   }
 
   const patchErrorLine =
     patchState === "error" ? parseErrorLine(patchError) : undefined;
   const patchDocumentErrorLine =
     patchErrorField === "document" ? patchErrorLine ?? 1 : undefined;
-  const patchOperationsErrorLine =
-    patchErrorField === "patch" ? patchErrorLine ?? 1 : undefined;
-  const patchOperations = useMemo(
-    () => parsePatchOperations(patchOperationsInput),
-    [patchOperationsInput],
-  );
-  const patchOperationHighlights = useMemo(
-    () => buildPatchOperationHighlights(patchOperationsInput),
-    [patchOperationsInput],
+  const patchOperationIssues = validatePatchOperations(
+    patchDocumentInput,
+    patchOperations,
   );
   const patchResultHighlights = useMemo(
     () =>
@@ -147,8 +195,11 @@ export function usePatchTool(resetCopyMessage: () => void) {
     { label: "Review", tone: "warning", value: currentPatchSummary.replaced },
     {
       label: "Issues",
-      tone: patchState === "error" ? "danger" : "success",
-      value: patchState === "error" ? 1 : 0,
+      tone:
+        patchState === "error" || patchOperationIssues.length > 0
+          ? "danger"
+          : "success",
+      value: patchState === "error" ? 1 : patchOperationIssues.length,
     },
   ] satisfies InspectorStat[];
 
@@ -157,22 +208,28 @@ export function usePatchTool(resetCopyMessage: () => void) {
     canRun:
       patchState !== "thinking" &&
       patchDocumentInput.trim().length > 0 &&
-      patchOperationsInput.trim().length > 0,
+      patchOperations.length > 0 &&
+      patchOperationIssues.length === 0,
     clear,
     currentPatchSummary,
     handlePatch,
-    handlePatchInputChange,
+    handlePatchDocumentSelection,
+    handlePatchDocumentChange,
+    handlePatchOperationCreate,
+    handlePatchOperationRemove,
+    handlePatchOperationUpdate,
     isThinking: patchState === "thinking",
     loadSample,
     patchDocumentErrorLine,
     patchDocumentInput,
     patchError,
-    patchOperationHighlights,
-    patchOperationsErrorLine,
-    patchOperationsInput,
+    patchOperationIssues,
+    patchOperations,
     patchOutput,
     patchResultHighlights,
     patchState,
+    selectedPatchLine,
+    selectedPatchPath,
     stats,
   };
 }

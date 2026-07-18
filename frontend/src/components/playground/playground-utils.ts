@@ -95,52 +95,6 @@ export function buildDiffHighlights(
   );
 }
 
-export function parsePatchOperations(input: string): JsonPatchOperation[] {
-  try {
-    const parsed = JSON.parse(input) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter((item): item is JsonPatchOperation => {
-      if (!item || typeof item !== "object") {
-        return false;
-      }
-
-      const operation = item as Record<string, unknown>;
-
-      return typeof operation.op === "string" && typeof operation.path === "string";
-    });
-  } catch {
-    return [];
-  }
-}
-
-export function buildPatchOperationHighlights(input: string): LineHighlight[] {
-  return input.split(/\r?\n/).flatMap<LineHighlight>((line, index) => {
-    const match = line.match(/"op"\s*:\s*"(add|remove|replace)"/);
-
-    if (!match) {
-      return [];
-    }
-
-    const [, op] = match;
-
-    return [
-      {
-        line: index + 1,
-        tone:
-          op === "add"
-            ? "add"
-            : op === "remove"
-              ? "remove"
-              : "change",
-      },
-    ];
-  });
-}
-
 export function primaryPointerPath(input: string) {
   return input
     .split(/\r?\n/)

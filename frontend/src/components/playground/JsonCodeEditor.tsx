@@ -26,7 +26,20 @@ import {
   type ViewUpdate,
 } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
+import type { RefObject } from "react";
 import { useEffect, useRef } from "react";
+
+import {
+  jsonPointerAtPosition,
+  selectionPointerPosition,
+} from "./json-selection";
+import {
+  SelectionActionOverlay,
+  selectionActionDecorations,
+  selectionActionTheme,
+  type SelectionAction,
+  useJsonSelectionActions,
+} from "./JsonSelectionActions";
 
 type LineHighlight = {
   line: number;
@@ -39,8 +52,13 @@ type JsonCodeEditorProps = {
   errorLine?: number;
   highlightedLines?: LineHighlight[];
   onChange?: (value: string) => void;
+  onSelectionChange?: (selection: {
+    line: number;
+    path: string;
+  }) => void;
   onSubmit?: () => void;
   readOnly?: boolean;
+  selectionAction?: SelectionAction;
   shouldWrapLines?: boolean;
   showLineNumbers?: boolean;
   tone?: "default" | "error";
@@ -59,6 +77,7 @@ function buildLineDecorations(
   view: EditorView,
   errorLine?: number,
   highlightedLines: LineHighlight[] = [],
+  selectionAction?: SelectionAction,
 ) {
   const decorations = highlightedLines.flatMap((highlight) => {
     if (highlight.line < 1 || highlight.line > view.state.doc.lines) {
@@ -99,6 +118,8 @@ function buildLineDecorations(
     );
   }
 
+  decorations.push(...selectionActionDecorations(view, selectionAction));
+
   return Decoration.set(decorations, true);
 }
 
@@ -120,21 +141,28 @@ class LineMarkerWidget extends WidgetType {
 function lineDecorationPlugin(
   errorLine?: number,
   highlightedLines: LineHighlight[] = [],
+  selectionActionRef?: RefObject<SelectionAction | undefined>,
 ) {
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
 
       constructor(view: EditorView) {
-        this.decorations = buildLineDecorations(view, errorLine, highlightedLines);
+        this.decorations = buildLineDecorations(
+          view,
+          errorLine,
+          highlightedLines,
+          selectionActionRef?.current,
+        );
       }
 
       update(update: ViewUpdate) {
-        if (update.docChanged || update.viewportChanged) {
+        if (update.docChanged || update.viewportChanged || update.transactions.length) {
           this.decorations = buildLineDecorations(
             update.view,
             errorLine,
             highlightedLines,
+            selectionActionRef?.current,
           );
         }
       }
@@ -326,8 +354,10 @@ export function JsonCodeEditor({
   errorLine,
   highlightedLines = emptyHighlightedLines,
   onChange,
+  onSelectionChange,
   onSubmit,
   readOnly = false,
+  selectionAction,
   shouldWrapLines = true,
   showLineNumbers = true,
   tone = "default",
@@ -337,11 +367,18 @@ export function JsonCodeEditor({
   const latestValueRef = useRef(value);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
+  const onSelectionChangeRef = useRef(onSelectionChange);
   const onSubmitRef = useRef(onSubmit);
+  const { anchor: selectionAnchor, selectionActionRef } =
+    useJsonSelectionActions(viewRef, containerRef, selectionAction);
 
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
+
+  useEffect(() => {
+    onSelectionChangeRef.current = onSelectionChange;
+  }, [onSelectionChange]);
 
   useEffect(() => {
     onSubmitRef.current = onSubmit;
@@ -376,6 +413,7 @@ export function JsonCodeEditor({
         : noOpExtension,
       jasonHighlightStyle,
       jasonEditorTheme,
+      selectionActionTheme,
       tone === "error"
         ? EditorView.theme({
             "&": {
@@ -384,7 +422,7 @@ export function JsonCodeEditor({
           })
         : noOpExtension,
       placeholder("Paste JSON here..."),
-      lineDecorationPlugin(errorLine, highlightedLines),
+      lineDecorationPlugin(errorLine, highlightedLines, selectionActionRef),
       readOnly ? EditorView.editable.of(false) : noOpExtension,
       EditorState.readOnly.of(readOnly),
       shouldWrapLines ? EditorView.lineWrapping : noOpExtension,
@@ -394,6 +432,16 @@ export function JsonCodeEditor({
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           onChangeRef.current?.(update.state.doc.toString());
+        }
+
+        if (update.selectionSet) {
+          const position = selectionPointerPosition(update.state);
+          const line = update.state.doc.lineAt(position);
+
+          onSelectionChangeRef.current?.({
+            line: line.number,
+            path: jsonPointerAtPosition(update.state, position),
+          });
         }
       }),
       keymap.of([
@@ -433,6 +481,7 @@ export function JsonCodeEditor({
     errorLine,
     highlightedLines,
     readOnly,
+    selectionActionRef,
     shouldWrapLines,
     showLineNumbers,
     tone,
@@ -454,5 +503,12 @@ export function JsonCodeEditor({
     });
   }, [value]);
 
-  return <div ref={containerRef} className="h-full min-h-[300px]" />;
+  return (
+    <div className="relative h-full min-h-0 overflow-hidden">
+      <div ref={containerRef} className="h-full min-h-0" />
+      {selectionAction?.isOpen && selectionAnchor ? (
+        <SelectionActionOverlay action={selectionAction} anchor={selectionAnchor} />
+      ) : null}
+    </div>
+  );
 }
