@@ -1,8 +1,9 @@
 import { JasonMascot } from "@/components/mascot/JasonMascot";
 
-type JasonStatusProps = {
-  detail?: string;
-  title?: string;
+type JasonToastProps = {
+  detail: string;
+  onDismiss: () => void;
+  title: string;
   tone?: "idle" | "thinking" | "success" | "error";
 };
 
@@ -25,36 +26,19 @@ const toneStyles = {
   },
 };
 
-const defaultCopy = {
-  idle: {
-    title: "Paste JSON to wake Jason",
-    detail: "Formatter output will appear here.",
-  },
-  thinking: {
-    title: "Jason is formatting...",
-    detail: "Sending JSON to the formatter endpoint.",
-  },
-  success: {
-    title: "Jason cleaned your JSON",
-    detail: "Output is formatted and ready to copy.",
-  },
-  error: {
-    title: "Jason found a parse error",
-    detail: "Fix the highlighted JSON and try again.",
-  },
-};
-
-export function JasonStatus({
+export function JasonToast({
   detail,
+  onDismiss,
   title,
   tone = "success",
-}: JasonStatusProps) {
+}: JasonToastProps) {
   const isError = tone === "error";
-  const copy = defaultCopy[tone];
 
   return (
     <aside
-      className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${toneStyles[tone].border}`}
+      aria-live={isError ? "assertive" : "polite"}
+      className={`fixed right-5 top-20 z-50 flex w-[min(310px,calc(100vw-2.5rem))] items-center gap-3 rounded-2xl border px-4 py-3 shadow-2xl sm:right-8 lg:right-12 ${toneStyles[tone].border}`}
+      role={isError ? "alert" : "status"}
     >
       <div className="grid size-12 shrink-0 place-items-center rounded-2xl border border-zinc-700 bg-[#09090B]">
         <JasonMascot
@@ -63,14 +47,22 @@ export function JasonStatus({
           label={isError ? "Jason error state" : "Jason formatter state"}
         />
       </div>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className={`font-mono text-sm font-semibold ${toneStyles[tone].text}`}>
-          {title ?? copy.title}
+          {title}
         </p>
         <p className="mt-1 text-sm text-zinc-400">
-          {detail ?? copy.detail}
+          {detail}
         </p>
       </div>
+      <button
+        aria-label="Dismiss notification"
+        className="grid size-7 shrink-0 place-items-center rounded-md font-mono text-sm text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-50"
+        onClick={onDismiss}
+        type="button"
+      >
+        x
+      </button>
     </aside>
   );
 }
