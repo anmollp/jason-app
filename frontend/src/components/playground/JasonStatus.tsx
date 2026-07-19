@@ -37,7 +37,7 @@ export function JasonToast({
   return (
     <aside
       aria-live={isError ? "assertive" : "polite"}
-      className={`fixed right-5 top-[5.75rem] z-50 flex w-[min(340px,calc(100vw-2.5rem))] items-center gap-2 rounded-2xl border px-3 py-3 shadow-2xl sm:right-8 lg:right-12 ${toneStyles[tone].border}`}
+      className={`fixed right-5 top-[4.75rem] z-50 flex w-[min(340px,calc(100vw-2.5rem))] items-center gap-2 rounded-2xl border px-3 py-3 shadow-2xl sm:right-8 lg:right-12 ${toneStyles[tone].border}`}
       role={isError ? "alert" : "status"}
     >
       <div className="grid size-10 shrink-0 place-items-center rounded-xl border border-zinc-700 bg-[#09090B]">
