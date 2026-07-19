@@ -1,5 +1,6 @@
 "use client";
 
+import { DeleteIcon } from "@chakra-ui/icons";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { CodePanel, playgroundPanelHeightClass } from "../CodePanel";
@@ -319,19 +320,30 @@ function OperationCard({
             {pathSummary(operation)}
           </span>
         </span>
-        <button
-          className={`flex h-6 w-6 items-center justify-center rounded-md border transition ${
-            expanded
-              ? "border-zinc-600 bg-zinc-800 text-zinc-100 hover:border-zinc-500 hover:bg-zinc-700"
-              : "border-zinc-600 bg-zinc-950 text-zinc-200 hover:border-zinc-400 hover:bg-zinc-800 hover:text-zinc-50"
-          }`}
-          aria-label={expanded ? "Minimize patch operation" : "Edit patch operation"}
-          title={expanded ? "Minimize" : "Edit"}
-          type="button"
-          onClick={onExpand}
-        >
-          {expanded ? <MinimizeIcon /> : <EditIcon />}
-        </button>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            className={`flex h-6 w-6 items-center justify-center rounded-md border transition ${
+              expanded
+                ? "border-zinc-600 bg-zinc-800 text-zinc-100 hover:border-zinc-500 hover:bg-zinc-700"
+                : "border-zinc-600 bg-zinc-950 text-zinc-200 hover:border-zinc-400 hover:bg-zinc-800 hover:text-zinc-50"
+            }`}
+            aria-label={expanded ? "Minimize patch operation" : "Edit patch operation"}
+            title={expanded ? "Minimize" : "Edit"}
+            type="button"
+            onClick={onExpand}
+          >
+            {expanded ? <MinimizeIcon /> : <EditIcon />}
+          </button>
+          <button
+            aria-label="Delete patch operation"
+            className="flex h-6 w-6 items-center justify-center rounded-md border border-red-400/60 bg-red-950/40 text-red-300 transition hover:border-red-300 hover:bg-red-500/20 hover:text-red-100"
+            title="Delete"
+            type="button"
+            onClick={onRemove}
+          >
+            <DeleteIcon boxSize="14px" />
+          </button>
+        </div>
       </div>
 
       {expanded ? (
