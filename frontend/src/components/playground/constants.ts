@@ -56,35 +56,12 @@ export const pointerDocumentJson = `{
 
 export const pointerPathInput = "/user/role";
 
-export const patchOperationsJson = `[
-  {
-    "op": "replace",
-    "path": "/status",
-    "value": "ready"
-  },
-  {
-    "op": "replace",
-    "path": "/plan",
-    "value": "pro"
-  },
-  {
-    "op": "replace",
-    "path": "/user/seats",
-    "value": 10
-  },
-  {
-    "op": "replace",
-    "path": "/features/auditLog",
-    "value": true
-  },
-  {
-    "op": "replace",
-    "path": "/features/webhooks",
-    "value": true
-  },
-  {
-    "op": "add",
-    "path": "/timeoutMs",
-    "value": 3000
-  }
-]`;
+export const patchOperationSample: JsonPatchOperation[] = [
+  { op: "replace", path: "/status", value: "ready" },
+  { op: "replace", path: "/plan", value: "pro" },
+  { op: "replace", path: "/user/seats", value: 10 },
+  { op: "replace", path: "/features/auditLog", value: true },
+  { op: "replace", path: "/features/webhooks", value: true },
+  { op: "add", path: "/timeoutMs", value: 3000 },
+];
+import type { JsonPatchOperation } from "./types";

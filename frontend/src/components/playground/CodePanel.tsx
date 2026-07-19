@@ -1,6 +1,7 @@
 "use client";
 
 import { JsonCodeEditor } from "./JsonCodeEditor";
+import type { SelectionAction } from "./JsonSelectionActions";
 
 type CodePanelProps = {
   title: string;
@@ -20,7 +21,12 @@ type CodePanelProps = {
     tone: "add" | "remove" | "change";
   }>;
   onChange?: (value: string) => void;
+  onSelectionChange?: (selection: {
+    line: number;
+    path: string;
+  }) => void;
   onSubmit?: () => void;
+  selectionAction?: SelectionAction;
   shouldWrapLines?: boolean;
   showLineNumbers?: boolean;
   tone?: "default" | "success" | "error";
@@ -58,7 +64,9 @@ export function CodePanel({
   errorLine,
   highlightedLines = emptyHighlightedLines,
   onChange,
+  onSelectionChange,
   onSubmit,
+  selectionAction,
   shouldWrapLines = true,
   showLineNumbers = false,
   tone = "default",
@@ -71,20 +79,8 @@ export function CodePanel({
           {meta}
         </span>
       </header>
-      <div className="min-h-0 flex-1 overflow-hidden bg-[#09090B] p-5">
-        {editable ? (
-          <JsonCodeEditor
-            ariaLabel={title}
-            errorLine={errorLine}
-            highlightedLines={highlightedLines}
-            onChange={onChange}
-            onSubmit={onSubmit}
-            shouldWrapLines={shouldWrapLines}
-            showLineNumbers={showLineNumbers}
-            tone={tone === "error" ? "error" : "default"}
-            value={code}
-          />
-        ) : diffRows ? (
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#09090B] p-5">
+        {!editable && diffRows ? (
           <div className="space-y-1 font-mono text-sm leading-6">
             {diffRows.map((row) => {
               const tone = row.tone ?? "neutral";
@@ -108,17 +104,23 @@ export function CodePanel({
             })}
           </div>
         ) : (
-          <JsonCodeEditor
-            ariaLabel={title}
-            errorLine={errorLine}
-            enableFolding={enableFolding}
-            highlightedLines={highlightedLines}
-            readOnly
-            shouldWrapLines={shouldWrapLines}
-            showLineNumbers
-            tone={tone === "error" ? "error" : "default"}
-            value={code}
-          />
+          <div className="min-h-0 flex-1">
+            <JsonCodeEditor
+              ariaLabel={title}
+              errorLine={errorLine}
+              enableFolding={!editable && enableFolding}
+              highlightedLines={highlightedLines}
+              onChange={editable ? onChange : undefined}
+              onSelectionChange={editable ? onSelectionChange : undefined}
+              onSubmit={editable ? onSubmit : undefined}
+              readOnly={!editable}
+              selectionAction={editable ? selectionAction : undefined}
+              shouldWrapLines={shouldWrapLines}
+              showLineNumbers={editable ? showLineNumbers : true}
+              tone={tone === "error" ? "error" : "default"}
+              value={code}
+            />
+          </div>
         )}
       </div>
     </section>
