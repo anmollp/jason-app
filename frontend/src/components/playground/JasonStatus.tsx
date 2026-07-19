@@ -1,3 +1,5 @@
+import { CloseIcon } from "@chakra-ui/icons";
+
 import { JasonMascot } from "@/components/mascot/JasonMascot";
 
 type JasonToastProps = {
@@ -37,7 +39,7 @@ export function JasonToast({
   return (
     <aside
       aria-live={isError ? "assertive" : "polite"}
-      className={`fixed right-5 top-[4.75rem] z-50 flex w-[min(340px,calc(100vw-2.5rem))] items-center gap-2 rounded-2xl border px-3 py-3 shadow-2xl sm:right-8 lg:right-12 ${toneStyles[tone].border}`}
+      className={`fixed right-5 top-[4.75rem] z-50 flex w-[min(340px,calc(100vw-2.5rem))] items-center gap-2 rounded-2xl border px-3 py-3 pr-10 shadow-2xl sm:right-8 lg:right-12 ${toneStyles[tone].border}`}
       role={isError ? "alert" : "status"}
     >
       <div className="grid size-10 shrink-0 place-items-center rounded-xl border border-zinc-700 bg-[#09090B]">
@@ -57,11 +59,11 @@ export function JasonToast({
       </div>
       <button
         aria-label="Dismiss notification"
-        className="grid size-6 shrink-0 place-items-center rounded-md font-mono text-sm text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-50"
+        className="absolute right-3 top-3 grid size-5 place-items-center rounded-full bg-white text-zinc-950 transition hover:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         onClick={onDismiss}
         type="button"
       >
-        x
+        <CloseIcon boxSize="9px" />
       </button>
     </aside>
   );
