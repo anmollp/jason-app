@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { CodePanel } from "../CodePanel";
+import { CodePanel, playgroundPanelHeightClass } from "../CodePanel";
 import type { usePatchTool } from "../hooks";
 import type { JsonPatchOperation } from "../types";
 
@@ -216,7 +216,7 @@ function OperationQueuePanel({
   }, [expandedIndex, tool.patchOperations.length]);
 
   return (
-    <section className="flex h-[clamp(460px,58vh,640px)] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-900">
+    <section className={`flex ${playgroundPanelHeightClass} min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-900`}>
       <header className="flex h-14 items-center justify-between border-b border-zinc-800 bg-zinc-800 px-5">
         <h2 className="font-mono text-sm font-semibold text-zinc-50">JSON Patch</h2>
         <div className="flex items-center gap-2">
