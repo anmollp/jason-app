@@ -9,15 +9,21 @@ import { JasonCliService } from './../src/jason-cli.service';
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
   const jasonCliService = {
+    diff: jest.fn(() => Promise.resolve('[]')),
     format: jest.fn((input: string) => {
       const parsed = JSON.parse(input) as unknown;
 
       return Promise.resolve(JSON.stringify(parsed, null, 2));
     }),
+    patch: jest.fn(() => Promise.resolve('{"records":[]}')),
+    pointer: jest.fn(() => Promise.resolve('"record-0"')),
   };
 
   beforeEach(async () => {
+    jasonCliService.diff.mockClear();
     jasonCliService.format.mockClear();
+    jasonCliService.patch.mockClear();
+    jasonCliService.pointer.mockClear();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -58,13 +64,7 @@ describe('AppController (e2e)', () => {
   });
 
   it('/format (POST) accepts JSON documents larger than the default body limit', () => {
-    const largeInput = JSON.stringify({
-      records: Array.from({ length: 8000 }, (_, index) => ({
-        enabled: index % 2 === 0,
-        id: index,
-        label: `record-${index}`,
-      })),
-    });
+    const largeInput = createLargeInput();
 
     expect(
       Buffer.byteLength(JSON.stringify({ input: largeInput })),
@@ -79,6 +79,71 @@ describe('AppController (e2e)', () => {
 
         expect(responseBody.output).toEqual(expect.any(String));
         expect(jasonCliService.format).toHaveBeenCalledWith(largeInput);
+      });
+  });
+
+  it('/diff (POST) accepts request bodies larger than the default body limit', () => {
+    const before = createInputAtSizeLimit();
+    const after = createInputAtSizeLimit();
+
+    expect(Buffer.byteLength(before)).toBeLessThanOrEqual(5 * 1024 * 1024);
+    expect(Buffer.byteLength(after)).toBeLessThanOrEqual(5 * 1024 * 1024);
+    expect(Buffer.byteLength(JSON.stringify({ before, after }))).toBeGreaterThan(
+      10 * 1024 * 1024,
+    );
+
+    return request(app.getHttpServer())
+      .post('/diff')
+      .send({ before, after })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          operations: [],
+          summary: { changes: 0 },
+        });
+        expect(jasonCliService.diff).toHaveBeenCalledWith(before, after);
+      });
+  });
+
+  it('/patch (POST) accepts request bodies larger than the default body limit', () => {
+    const document = createLargeInput();
+    const patch = '[{"op":"remove","path":"/records/0"}]';
+
+    expect(Buffer.byteLength(JSON.stringify({ document, patch }))).toBeGreaterThan(
+      100 * 1024,
+    );
+
+    return request(app.getHttpServer())
+      .post('/patch')
+      .send({ document, patch })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          output: '{"records":[]}',
+          summary: { operations: 1, removed: 1 },
+        });
+        expect(jasonCliService.patch).toHaveBeenCalledWith(document, patch);
+      });
+  });
+
+  it('/pointer (POST) accepts request bodies larger than the default body limit', () => {
+    const document = createLargeInput();
+    const path = '/records/0';
+
+    expect(Buffer.byteLength(JSON.stringify({ document, path }))).toBeGreaterThan(
+      100 * 1024,
+    );
+
+    return request(app.getHttpServer())
+      .post('/pointer')
+      .send({ document, path })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          output: '"record-0"',
+          summary: { found: true, path },
+        });
+        expect(jasonCliService.pointer).toHaveBeenCalledWith(document, path);
       });
   });
 
@@ -113,3 +178,22 @@ describe('AppController (e2e)', () => {
     await app.close();
   });
 });
+
+function createLargeInput() {
+  return JSON.stringify({
+    records: Array.from({ length: 8000 }, (_, index) => ({
+      enabled: index % 2 === 0,
+      id: index,
+      label: `record-${index}`,
+    })),
+  });
+}
+
+function createInputAtSizeLimit() {
+  const emptyDocument = JSON.stringify({ payload: '' });
+  const payloadSize = 5 * 1024 * 1024 - Buffer.byteLength(emptyDocument);
+
+  return JSON.stringify({
+    payload: 'x'.repeat(payloadSize),
+  });
+}

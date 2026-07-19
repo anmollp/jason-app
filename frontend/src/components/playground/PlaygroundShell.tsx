@@ -44,25 +44,34 @@ export function PlaygroundShell() {
     diffResult,
     diffState,
     handleDiff,
+    isOverPayloadLimit: isOverDiffPayloadLimit,
     isThinking: isDiffing,
+    payloadLimitError: diffPayloadLimitError,
+    payloadLimitLabel: diffPayloadLimitLabel,
   } = diff;
   const {
     handlePatch,
+    isOverPayloadLimit: isOverPatchPayloadLimit,
     isThinking: isPatching,
     patchDocumentInput,
     patchError,
     patchOperationIssues,
     patchOperations,
     patchOutput,
+    payloadLimitLabel: patchPayloadLimitLabel,
+    payloadSizeLabel: patchPayloadSizeLabel,
     patchState,
   } = patch;
   const {
     currentPointerSummary,
     handlePointer,
+    isOverPayloadLimit: isOverPointerPayloadLimit,
     isThinking: isResolvingPointer,
     pointerDocumentInput,
     pointerError,
     pointerOutput,
+    payloadLimitLabel: pointerPayloadLimitLabel,
+    payloadSizeLabel: pointerPayloadSizeLabel,
     pointerState,
     selectedPointerPath,
   } = pointer;
@@ -193,7 +202,9 @@ export function PlaygroundShell() {
   const statusDetail =
     copyMessage ||
     (isDiff
-      ? diffState === "thinking"
+      ? isOverDiffPayloadLimit
+        ? diffPayloadLimitError
+        : diffState === "thinking"
         ? "Calling POST /diff on the backend."
         : diffState === "error"
           ? diffError
@@ -203,7 +214,9 @@ export function PlaygroundShell() {
               ? "Jason is ready to compare these documents."
               : "Paste JSON into both sides to compare."
       : isPatch
-        ? patchState === "thinking"
+        ? isOverPatchPayloadLimit
+          ? `This patch payload is ${patchPayloadSizeLabel}. Trim it below ${patchPayloadLimitLabel}, then apply again.`
+          : patchState === "thinking"
           ? "Calling POST /patch on the backend."
           : patchState === "error"
             ? patchError
@@ -215,7 +228,9 @@ export function PlaygroundShell() {
                 ? "Jason is ready to apply these operations."
                 : "Paste a document and add JSON Patch operations."
       : isPointer
-        ? pointerState === "thinking"
+        ? isOverPointerPayloadLimit
+          ? `This pointer payload is ${pointerPayloadSizeLabel}. Trim it below ${pointerPayloadLimitLabel}, then find again.`
+          : pointerState === "thinking"
           ? "Calling POST /pointer on the backend."
           : pointerState === "error"
             ? pointerError
@@ -238,7 +253,9 @@ export function PlaygroundShell() {
   const statusTitle =
     (copyMessage ? "Copied to clipboard." : undefined) ||
     (isDiff
-      ? diffState === "thinking"
+      ? isOverDiffPayloadLimit
+        ? "Jason needs a smaller payload."
+        : diffState === "thinking"
         ? "Jason is comparing..."
         : diffState === "error"
           ? "Jason couldn't compare these documents."
@@ -246,7 +263,9 @@ export function PlaygroundShell() {
             ? `Jason found ${currentDiffSummary.changes} changes`
             : "Jason is ready to compare"
       : isPatch
-        ? patchState === "thinking"
+        ? isOverPatchPayloadLimit
+          ? "Jason needs a smaller payload."
+          : patchState === "thinking"
           ? "Jason is applying the patch..."
           : patchState === "error"
             ? "Jason couldn't apply this patch."
@@ -256,7 +275,9 @@ export function PlaygroundShell() {
               ? "Jason needs valid patch paths."
               : "Jason is ready to patch"
       : isPointer
-        ? pointerState === "thinking"
+        ? isOverPointerPayloadLimit
+          ? "Jason needs a smaller payload."
+          : pointerState === "thinking"
           ? "Jason is finding the value..."
           : pointerState === "error"
             ? "Jason couldn't resolve this pointer."
@@ -272,7 +293,9 @@ export function PlaygroundShell() {
         : undefined);
   const footerHint =
     isDiff
-      ? diffState === "thinking"
+      ? isOverDiffPayloadLimit
+        ? `Diff supports ${diffPayloadLimitLabel}.`
+        : diffState === "thinking"
         ? "Calling POST /diff on the backend."
         : diffState === "error"
           ? "Fix the diff input, then compare again."
@@ -280,7 +303,9 @@ export function PlaygroundShell() {
             ? "Diff result is generated from Rust patch operations."
             : "Paste before and after JSON, then run Compare."
       : isPatch
-        ? patchState === "thinking"
+        ? isOverPatchPayloadLimit
+          ? `Patch input is capped at ${patchPayloadLimitLabel}.`
+          : patchState === "thinking"
           ? "Calling POST /patch on the backend."
           : patchState === "error"
             ? "Fix the document or patch operations, then apply again."
@@ -290,7 +315,9 @@ export function PlaygroundShell() {
               ? "Fix the highlighted operation path before running Apply Patch."
               : "Paste a document, add operations, then run Apply Patch."
       : isPointer
-        ? pointerState === "thinking"
+        ? isOverPointerPayloadLimit
+          ? `Pointer input is capped at ${pointerPayloadLimitLabel}.`
+          : pointerState === "thinking"
           ? "Calling POST /pointer on the backend."
           : pointerState === "error"
             ? "Fix the JSON document or pointer path, then find again."

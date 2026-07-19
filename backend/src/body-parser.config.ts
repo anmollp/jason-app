@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { json, urlencoded } from 'express';
 
-export const jsonPayloadLimit = '6mb';
+export const jsonPayloadLimit = '12mb';
 
 export function configureBodyParser(app: INestApplication) {
   app.use(json({ limit: jsonPayloadLimit }));

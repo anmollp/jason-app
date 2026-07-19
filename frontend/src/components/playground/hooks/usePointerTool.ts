@@ -3,6 +3,12 @@ import { useMemo, useState } from "react";
 import { pointerJson } from "../api";
 import { pointerDocumentJson, pointerPathInput } from "../constants";
 import {
+  formatByteSize,
+  getJsonRequestByteLength,
+  maxJsonPayloadBytes,
+  maxJsonPayloadLabel,
+} from "../payload-utils";
+import {
   lineForJsonPointer,
   parseErrorLine,
   pointerDepth,
@@ -24,6 +30,12 @@ export function usePointerTool(resetCopyMessage: () => void) {
   >();
   const [pointerResult, setPointerResult] =
     useState<PointerJsonResponse | null>(null);
+  const payloadSizeBytes = getJsonRequestByteLength({
+    document: pointerDocumentInput,
+    path: pointerPath,
+  });
+  const isOverPayloadLimit = payloadSizeBytes > maxJsonPayloadBytes;
+  const payloadSizeLabel = formatByteSize(payloadSizeBytes);
 
   function handlePointerInputChange(side: "document" | "path", value: string) {
     if (side === "document") {
@@ -53,6 +65,18 @@ export function usePointerTool(resetCopyMessage: () => void) {
       setPointerResult(null);
       resetCopyMessage();
       setPointerState("idle");
+      return;
+    }
+
+    if (isOverPayloadLimit) {
+      setPointerOutput("");
+      setPointerError(
+        `This pointer payload is ${payloadSizeLabel}. Jason supports pointer payloads up to ${maxJsonPayloadLabel}.`,
+      );
+      setPointerErrorField(undefined);
+      setPointerResult(null);
+      resetCopyMessage();
+      setPointerState("error");
       return;
     }
 
@@ -146,6 +170,11 @@ export function usePointerTool(resetCopyMessage: () => void) {
     { label: "Path", value: currentPointerSummary.path },
     { label: "Depth", value: currentPointerSummary.depth },
     {
+      label: "Size",
+      tone: isOverPayloadLimit ? "danger" : "success",
+      value: payloadSizeLabel,
+    },
+    {
       label: "Found",
       tone: currentPointerSummary.found ? "success" : "default",
       value: String(currentPointerSummary.found),
@@ -162,17 +191,21 @@ export function usePointerTool(resetCopyMessage: () => void) {
     canRun:
       pointerState !== "thinking" &&
       pointerDocumentInput.trim().length > 0 &&
-      selectedPointerPath.length > 0,
+      selectedPointerPath.length > 0 &&
+      !isOverPayloadLimit,
     clear,
     currentPointerSummary,
     handlePointer,
     handlePointerInputChange,
     isThinking: pointerState === "thinking",
+    isOverPayloadLimit,
     loadSample,
     pointerDocumentErrorLine,
     pointerDocumentInput,
     pointerError,
     pointerOutput,
+    payloadLimitLabel: maxJsonPayloadLabel,
+    payloadSizeLabel,
     pointerPath,
     pointerPathErrorLine,
     pointerSourceHighlights,

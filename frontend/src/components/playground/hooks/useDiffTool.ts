@@ -3,6 +3,13 @@ import { useMemo, useState } from "react";
 import { diffJson } from "../api";
 import { diffAfterJson, diffBeforeJson } from "../constants";
 import {
+  formatByteSize,
+  getJsonRequestByteLength,
+  getUtf8ByteLength,
+  maxJsonPayloadBytes,
+  maxJsonPayloadLabel,
+} from "../payload-utils";
+import {
   buildDiffHighlights,
   parseErrorLine,
 } from "../playground-utils";
@@ -19,6 +26,25 @@ export function useDiffTool(resetCopyMessage: () => void) {
     "after" | "before" | undefined
   >();
   const [diffResult, setDiffResult] = useState<DiffJsonResponse | null>(null);
+  const beforeSizeBytes = getUtf8ByteLength(diffBeforeInput);
+  const afterSizeBytes = getUtf8ByteLength(diffAfterInput);
+  const payloadSizeBytes = getJsonRequestByteLength({
+    after: diffAfterInput,
+    before: diffBeforeInput,
+  });
+  const overLimitSide =
+    beforeSizeBytes > maxJsonPayloadBytes
+      ? "Before JSON"
+      : afterSizeBytes > maxJsonPayloadBytes
+        ? "Changed JSON"
+        : undefined;
+  const isOverPayloadLimit = Boolean(overLimitSide);
+  const payloadSizeLabel = formatByteSize(payloadSizeBytes);
+  const payloadLimitError = overLimitSide
+    ? `${overLimitSide} is ${formatByteSize(
+        overLimitSide === "Before JSON" ? beforeSizeBytes : afterSizeBytes,
+      )}. Jason supports up to ${maxJsonPayloadLabel} per diff document.`
+    : "";
 
   function handleDiffInputChange(side: "before" | "after", value: string) {
     if (side === "before") {
@@ -44,6 +70,14 @@ export function useDiffTool(resetCopyMessage: () => void) {
       setDiffResult(null);
       resetCopyMessage();
       setDiffState("idle");
+      return;
+    }
+
+    if (isOverPayloadLimit) {
+      setDiffError(payloadLimitError);
+      setDiffResult(null);
+      resetCopyMessage();
+      setDiffState("error");
       return;
     }
 
@@ -127,6 +161,11 @@ export function useDiffTool(resetCopyMessage: () => void) {
     { label: "Removed", tone: "danger", value: `-${currentDiffSummary.removed}` },
     { label: "Review", tone: "warning", value: currentDiffSummary.replaced },
     {
+      label: "Size",
+      tone: isOverPayloadLimit ? "danger" : "success",
+      value: payloadSizeLabel,
+    },
+    {
       label: "Issues",
       tone: diffState === "error" ? "danger" : "success",
       value: diffState === "error" ? 1 : 0,
@@ -142,7 +181,8 @@ export function useDiffTool(resetCopyMessage: () => void) {
     canRun:
       diffState !== "thinking" &&
       diffBeforeInput.trim().length > 0 &&
-      diffAfterInput.trim().length > 0,
+      diffAfterInput.trim().length > 0 &&
+      !isOverPayloadLimit,
     clear,
     currentDiffSummary,
     diffAfterInput,
@@ -153,7 +193,11 @@ export function useDiffTool(resetCopyMessage: () => void) {
     handleDiff,
     handleDiffInputChange,
     isThinking: diffState === "thinking",
+    isOverPayloadLimit,
     loadSample,
+    payloadLimitError,
+    payloadLimitLabel: `${maxJsonPayloadLabel} per document`,
+    payloadSizeLabel,
     stats,
   };
 }

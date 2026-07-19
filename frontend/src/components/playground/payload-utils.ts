@@ -5,6 +5,10 @@ export function getUtf8ByteLength(value: string) {
   return new TextEncoder().encode(value).length;
 }
 
+export function getJsonRequestByteLength(body: Record<string, string>) {
+  return getUtf8ByteLength(JSON.stringify(body));
+}
+
 export function formatByteSize(bytes: number) {
   if (bytes < 1024) {
     return `${bytes} B`;
