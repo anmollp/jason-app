@@ -17,8 +17,8 @@ const toneStyles = {
     text: "text-sky-300",
   },
   success: {
-    border: "border-emerald-500/40 bg-emerald-500/10",
-    text: "text-emerald-400",
+    border: "border-emerald-400/70 bg-emerald-500/20",
+    text: "text-emerald-300",
   },
   error: {
     border: "border-red-500/40 bg-red-500/10",
@@ -37,27 +37,27 @@ export function JasonToast({
   return (
     <aside
       aria-live={isError ? "assertive" : "polite"}
-      className={`fixed right-5 top-20 z-50 flex w-[min(310px,calc(100vw-2.5rem))] items-center gap-3 rounded-2xl border px-4 py-3 shadow-2xl sm:right-8 lg:right-12 ${toneStyles[tone].border}`}
+      className={`fixed right-5 top-[4.75rem] z-50 flex w-[min(340px,calc(100vw-2.5rem))] items-center gap-2 rounded-2xl border px-3 py-3 shadow-2xl sm:right-8 lg:right-12 ${toneStyles[tone].border}`}
       role={isError ? "alert" : "status"}
     >
-      <div className="grid size-12 shrink-0 place-items-center rounded-2xl border border-zinc-700 bg-[#09090B]">
+      <div className="grid size-10 shrink-0 place-items-center rounded-xl border border-zinc-700 bg-[#09090B]">
         <JasonMascot
           mood={tone}
-          size={38}
+          size={32}
           label={isError ? "Jason error state" : "Jason formatter state"}
         />
       </div>
       <div className="min-w-0 flex-1">
-        <p className={`font-mono text-sm font-semibold ${toneStyles[tone].text}`}>
+        <p className={`font-mono text-sm font-semibold leading-5 ${toneStyles[tone].text}`}>
           {title}
         </p>
-        <p className="mt-1 text-sm text-zinc-400">
+        <p className="mt-0.5 text-xs leading-4 text-zinc-300">
           {detail}
         </p>
       </div>
       <button
         aria-label="Dismiss notification"
-        className="grid size-7 shrink-0 place-items-center rounded-md font-mono text-sm text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-50"
+        className="grid size-6 shrink-0 place-items-center rounded-md font-mono text-sm text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-50"
         onClick={onDismiss}
         type="button"
       >
