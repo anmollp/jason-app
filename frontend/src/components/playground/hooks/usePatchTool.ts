@@ -3,6 +3,12 @@ import { useMemo, useState } from "react";
 import { patchJson } from "../api";
 import { patchDocumentJson, patchOperationSample } from "../constants";
 import {
+  formatByteSize,
+  getJsonRequestByteLength,
+  maxJsonPayloadBytes,
+  maxJsonPayloadLabel,
+} from "../payload-utils";
+import {
   buildDiffHighlights,
   parseErrorLine,
 } from "../playground-utils";
@@ -33,6 +39,13 @@ export function usePatchTool(resetCopyMessage: () => void) {
   const [patchResult, setPatchResult] = useState<PatchJsonResponse | null>(null);
   const [selectedPatchLine, setSelectedPatchLine] = useState<number | undefined>();
   const [selectedPatchPath, setSelectedPatchPath] = useState("");
+  const patchInput = JSON.stringify(patchOperations);
+  const payloadSizeBytes = getJsonRequestByteLength({
+    document: patchDocumentInput,
+    patch: patchInput,
+  });
+  const isOverPayloadLimit = payloadSizeBytes > maxJsonPayloadBytes;
+  const payloadSizeLabel = formatByteSize(payloadSizeBytes);
 
   function handlePatchDocumentChange(value: string) {
     setPatchDocumentInput(value);
@@ -117,6 +130,18 @@ export function usePatchTool(resetCopyMessage: () => void) {
       return;
     }
 
+    if (isOverPayloadLimit) {
+      setPatchOutput("");
+      setPatchError(
+        `This patch payload is ${payloadSizeLabel}. Jason supports patch payloads up to ${maxJsonPayloadLabel}.`,
+      );
+      setPatchErrorField(undefined);
+      setPatchResult(null);
+      resetCopyMessage();
+      setPatchState("error");
+      return;
+    }
+
     try {
       setPatchState("thinking");
       setPatchOutput("");
@@ -127,7 +152,7 @@ export function usePatchTool(resetCopyMessage: () => void) {
 
       const patchResponse = await patchJson(
         patchDocumentInput,
-        JSON.stringify(patchOperations),
+        patchInput,
       );
 
       if (
@@ -199,6 +224,11 @@ export function usePatchTool(resetCopyMessage: () => void) {
     { label: "Removed", tone: "danger", value: `-${currentPatchSummary.removed}` },
     { label: "Review", tone: "warning", value: currentPatchSummary.replaced },
     {
+      label: "Size",
+      tone: isOverPayloadLimit ? "danger" : "success",
+      value: payloadSizeLabel,
+    },
+    {
       label: "Issues",
       tone:
         patchState === "error" || patchOperationIssues.length > 0
@@ -214,7 +244,8 @@ export function usePatchTool(resetCopyMessage: () => void) {
       patchState !== "thinking" &&
       patchDocumentInput.trim().length > 0 &&
       patchOperations.length > 0 &&
-      patchOperationIssues.length === 0,
+      patchOperationIssues.length === 0 &&
+      !isOverPayloadLimit,
     clear,
     currentPatchSummary,
     handlePatch,
@@ -224,6 +255,7 @@ export function usePatchTool(resetCopyMessage: () => void) {
     handlePatchOperationRemove,
     handlePatchOperationUpdate,
     isThinking: patchState === "thinking",
+    isOverPayloadLimit,
     loadSample,
     patchDocumentErrorLine,
     patchDocumentInput,
@@ -231,6 +263,8 @@ export function usePatchTool(resetCopyMessage: () => void) {
     patchOperationIssues,
     patchOperations,
     patchOutput,
+    payloadLimitLabel: maxJsonPayloadLabel,
+    payloadSizeLabel,
     patchResultHighlights,
     patchState,
     selectedPatchLine,

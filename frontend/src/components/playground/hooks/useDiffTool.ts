@@ -3,6 +3,12 @@ import { useMemo, useState } from "react";
 import { diffJson } from "../api";
 import { diffAfterJson, diffBeforeJson } from "../constants";
 import {
+  formatByteSize,
+  getJsonRequestByteLength,
+  maxJsonPayloadBytes,
+  maxJsonPayloadLabel,
+} from "../payload-utils";
+import {
   buildDiffHighlights,
   parseErrorLine,
 } from "../playground-utils";
@@ -19,6 +25,12 @@ export function useDiffTool(resetCopyMessage: () => void) {
     "after" | "before" | undefined
   >();
   const [diffResult, setDiffResult] = useState<DiffJsonResponse | null>(null);
+  const payloadSizeBytes = getJsonRequestByteLength({
+    after: diffAfterInput,
+    before: diffBeforeInput,
+  });
+  const isOverPayloadLimit = payloadSizeBytes > maxJsonPayloadBytes;
+  const payloadSizeLabel = formatByteSize(payloadSizeBytes);
 
   function handleDiffInputChange(side: "before" | "after", value: string) {
     if (side === "before") {
@@ -44,6 +56,16 @@ export function useDiffTool(resetCopyMessage: () => void) {
       setDiffResult(null);
       resetCopyMessage();
       setDiffState("idle");
+      return;
+    }
+
+    if (isOverPayloadLimit) {
+      setDiffError(
+        `This diff payload is ${payloadSizeLabel}. Jason supports diff payloads up to ${maxJsonPayloadLabel}.`,
+      );
+      setDiffResult(null);
+      resetCopyMessage();
+      setDiffState("error");
       return;
     }
 
@@ -127,6 +149,11 @@ export function useDiffTool(resetCopyMessage: () => void) {
     { label: "Removed", tone: "danger", value: `-${currentDiffSummary.removed}` },
     { label: "Review", tone: "warning", value: currentDiffSummary.replaced },
     {
+      label: "Size",
+      tone: isOverPayloadLimit ? "danger" : "success",
+      value: payloadSizeLabel,
+    },
+    {
       label: "Issues",
       tone: diffState === "error" ? "danger" : "success",
       value: diffState === "error" ? 1 : 0,
@@ -142,7 +169,8 @@ export function useDiffTool(resetCopyMessage: () => void) {
     canRun:
       diffState !== "thinking" &&
       diffBeforeInput.trim().length > 0 &&
-      diffAfterInput.trim().length > 0,
+      diffAfterInput.trim().length > 0 &&
+      !isOverPayloadLimit,
     clear,
     currentDiffSummary,
     diffAfterInput,
@@ -153,7 +181,10 @@ export function useDiffTool(resetCopyMessage: () => void) {
     handleDiff,
     handleDiffInputChange,
     isThinking: diffState === "thinking",
+    isOverPayloadLimit,
     loadSample,
+    payloadLimitLabel: maxJsonPayloadLabel,
+    payloadSizeLabel,
     stats,
   };
 }
