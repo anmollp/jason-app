@@ -46,8 +46,8 @@ export function PlaygroundShell() {
     handleDiff,
     isOverPayloadLimit: isOverDiffPayloadLimit,
     isThinking: isDiffing,
+    payloadLimitError: diffPayloadLimitError,
     payloadLimitLabel: diffPayloadLimitLabel,
-    payloadSizeLabel: diffPayloadSizeLabel,
   } = diff;
   const {
     handlePatch,
@@ -203,7 +203,7 @@ export function PlaygroundShell() {
     copyMessage ||
     (isDiff
       ? isOverDiffPayloadLimit
-        ? `This diff payload is ${diffPayloadSizeLabel}. Trim it below ${diffPayloadLimitLabel}, then compare again.`
+        ? diffPayloadLimitError
         : diffState === "thinking"
         ? "Calling POST /diff on the backend."
         : diffState === "error"
@@ -294,7 +294,7 @@ export function PlaygroundShell() {
   const footerHint =
     isDiff
       ? isOverDiffPayloadLimit
-        ? `Diff input is capped at ${diffPayloadLimitLabel}.`
+        ? `Diff supports ${diffPayloadLimitLabel}.`
         : diffState === "thinking"
         ? "Calling POST /diff on the backend."
         : diffState === "error"

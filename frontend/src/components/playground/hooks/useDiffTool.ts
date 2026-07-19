@@ -5,6 +5,7 @@ import { diffAfterJson, diffBeforeJson } from "../constants";
 import {
   formatByteSize,
   getJsonRequestByteLength,
+  getUtf8ByteLength,
   maxJsonPayloadBytes,
   maxJsonPayloadLabel,
 } from "../payload-utils";
@@ -25,12 +26,25 @@ export function useDiffTool(resetCopyMessage: () => void) {
     "after" | "before" | undefined
   >();
   const [diffResult, setDiffResult] = useState<DiffJsonResponse | null>(null);
+  const beforeSizeBytes = getUtf8ByteLength(diffBeforeInput);
+  const afterSizeBytes = getUtf8ByteLength(diffAfterInput);
   const payloadSizeBytes = getJsonRequestByteLength({
     after: diffAfterInput,
     before: diffBeforeInput,
   });
-  const isOverPayloadLimit = payloadSizeBytes > maxJsonPayloadBytes;
+  const overLimitSide =
+    beforeSizeBytes > maxJsonPayloadBytes
+      ? "Before JSON"
+      : afterSizeBytes > maxJsonPayloadBytes
+        ? "Changed JSON"
+        : undefined;
+  const isOverPayloadLimit = Boolean(overLimitSide);
   const payloadSizeLabel = formatByteSize(payloadSizeBytes);
+  const payloadLimitError = overLimitSide
+    ? `${overLimitSide} is ${formatByteSize(
+        overLimitSide === "Before JSON" ? beforeSizeBytes : afterSizeBytes,
+      )}. Jason supports up to ${maxJsonPayloadLabel} per diff document.`
+    : "";
 
   function handleDiffInputChange(side: "before" | "after", value: string) {
     if (side === "before") {
@@ -60,9 +74,7 @@ export function useDiffTool(resetCopyMessage: () => void) {
     }
 
     if (isOverPayloadLimit) {
-      setDiffError(
-        `This diff payload is ${payloadSizeLabel}. Jason supports diff payloads up to ${maxJsonPayloadLabel}.`,
-      );
+      setDiffError(payloadLimitError);
       setDiffResult(null);
       resetCopyMessage();
       setDiffState("error");
@@ -183,7 +195,8 @@ export function useDiffTool(resetCopyMessage: () => void) {
     isThinking: diffState === "thinking",
     isOverPayloadLimit,
     loadSample,
-    payloadLimitLabel: maxJsonPayloadLabel,
+    payloadLimitError,
+    payloadLimitLabel: `${maxJsonPayloadLabel} per document`,
     payloadSizeLabel,
     stats,
   };

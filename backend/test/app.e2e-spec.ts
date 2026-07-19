@@ -83,11 +83,13 @@ describe('AppController (e2e)', () => {
   });
 
   it('/diff (POST) accepts request bodies larger than the default body limit', () => {
-    const before = createLargeInput();
-    const after = createLargeInput();
+    const before = createInputAtSizeLimit();
+    const after = createInputAtSizeLimit();
 
+    expect(Buffer.byteLength(before)).toBeLessThanOrEqual(5 * 1024 * 1024);
+    expect(Buffer.byteLength(after)).toBeLessThanOrEqual(5 * 1024 * 1024);
     expect(Buffer.byteLength(JSON.stringify({ before, after }))).toBeGreaterThan(
-      100 * 1024,
+      10 * 1024 * 1024,
     );
 
     return request(app.getHttpServer())
@@ -184,5 +186,14 @@ function createLargeInput() {
       id: index,
       label: `record-${index}`,
     })),
+  });
+}
+
+function createInputAtSizeLimit() {
+  const emptyDocument = JSON.stringify({ payload: '' });
+  const payloadSize = 5 * 1024 * 1024 - Buffer.byteLength(emptyDocument);
+
+  return JSON.stringify({
+    payload: 'x'.repeat(payloadSize),
   });
 }
