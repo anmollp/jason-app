@@ -56,7 +56,12 @@ export function usePatchTool(resetCopyMessage: () => void) {
   }
 
   function handlePatchOperationCreate(op: JsonPatchOperation["op"]) {
-    const operation = buildPatchOperation(patchDocumentInput, selectedPatchPath, op);
+    const operation = buildPatchOperation(
+      patchDocumentInput,
+      selectedPatchPath,
+      op,
+      patchOperations,
+    );
 
     if (!operation) {
       return undefined;

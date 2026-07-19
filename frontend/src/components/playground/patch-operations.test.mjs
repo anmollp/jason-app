@@ -50,6 +50,30 @@ test("builds copy and move destinations beside the selected value", () => {
   });
 });
 
+test("builds new operations from the queued patch result", () => {
+  assert.deepEqual(
+    buildPatchOperation(document, "/user/role", "test", [
+      { op: "replace", path: "/user/role", value: "admin" },
+    ]),
+    {
+      op: "test",
+      path: "/user/role",
+      value: "admin",
+    },
+  );
+
+  assert.deepEqual(
+    buildPatchOperation(document, "/items/1", "copy", [
+      { op: "remove", path: "/items/0" },
+    ]),
+    {
+      from: "/items/1",
+      op: "copy",
+      path: "/items/-",
+    },
+  );
+});
+
 test("rejects missing sources and invalid move destinations", () => {
   assert.deepEqual(
     validatePatchOperation(document, {

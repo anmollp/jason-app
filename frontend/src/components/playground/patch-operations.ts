@@ -67,6 +67,112 @@ function resolvePointer(value: unknown, path: string) {
   );
 }
 
+function cloneJsonValue(value: unknown) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return JSON.parse(JSON.stringify(value)) as unknown;
+}
+
+function setPointerValue(document: unknown, path: string, value: unknown) {
+  if (!path) {
+    return cloneJsonValue(value);
+  }
+
+  const segments = pointerSegments(path);
+  const lastSegment = segments.at(-1);
+  const parent = resolvePointer(document, parentPath(path));
+
+  if (!parent.exists || lastSegment === undefined) {
+    return document;
+  }
+
+  if (Array.isArray(parent.value)) {
+    if (lastSegment === "-") {
+      parent.value.push(cloneJsonValue(value));
+      return document;
+    }
+
+    const index = Number(lastSegment);
+
+    if (Number.isInteger(index) && index >= 0 && index <= parent.value.length) {
+      parent.value[index] = cloneJsonValue(value);
+    }
+
+    return document;
+  }
+
+  if (parent.value && typeof parent.value === "object") {
+    (parent.value as Record<string, unknown>)[lastSegment] = cloneJsonValue(value);
+  }
+
+  return document;
+}
+
+function removePointerValue(document: unknown, path: string) {
+  if (!path) {
+    return undefined;
+  }
+
+  const segments = pointerSegments(path);
+  const lastSegment = segments.at(-1);
+  const parent = resolvePointer(document, parentPath(path));
+
+  if (!parent.exists || lastSegment === undefined) {
+    return document;
+  }
+
+  if (Array.isArray(parent.value)) {
+    const index = Number(lastSegment);
+
+    if (Number.isInteger(index) && index >= 0 && index < parent.value.length) {
+      parent.value.splice(index, 1);
+    }
+
+    return document;
+  }
+
+  if (parent.value && typeof parent.value === "object") {
+    delete (parent.value as Record<string, unknown>)[lastSegment];
+  }
+
+  return document;
+}
+
+function applyPatchOperations(
+  document: unknown,
+  operations: JsonPatchOperation[],
+) {
+  return operations.reduce((currentDocument, operation) => {
+    if (operation.op === "test") {
+      return currentDocument;
+    }
+
+    if (operation.op === "remove") {
+      return removePointerValue(currentDocument, operation.path);
+    }
+
+    if (operation.op === "copy" || operation.op === "move") {
+      const source = resolvePointer(currentDocument, operation.from ?? "");
+
+      if (!source.exists) {
+        return currentDocument;
+      }
+
+      let nextDocument = currentDocument;
+
+      if (operation.op === "move") {
+        nextDocument = removePointerValue(nextDocument, operation.from ?? "");
+      }
+
+      return setPointerValue(nextDocument, operation.path, source.value);
+    }
+
+    return setPointerValue(currentDocument, operation.path, operation.value);
+  }, cloneJsonValue(document));
+}
+
 function parentPath(path: string) {
   return pointerFromSegments(pointerSegments(path).slice(0, -1));
 }
@@ -230,14 +336,18 @@ export function buildPatchOperation(
   input: string,
   path: string,
   op: JsonPatchOperation["op"],
+  existingOperations: JsonPatchOperation[] = [],
 ): JsonPatchOperation | undefined {
   if (!path && op !== "add") {
     return undefined;
   }
 
   const document = parseJsonDocument(input);
+  const operationDocument = document.valid
+    ? applyPatchOperations(document.value, existingOperations)
+    : document.value;
   const selectedValue = document.valid
-    ? resolvePointer(document.value, path).value
+    ? resolvePointer(operationDocument, path).value
     : undefined;
 
   if (op === "add" || op === "replace" || op === "test") {
