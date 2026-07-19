@@ -59,7 +59,7 @@ export function JasonToast({
       </div>
       <button
         aria-label="Dismiss notification"
-        className="absolute right-3 top-3 grid size-5 place-items-center rounded-full bg-white text-zinc-950 transition hover:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        className="absolute right-3 top-3 grid size-4 place-items-center rounded-full bg-white text-zinc-950 transition hover:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         onClick={onDismiss}
         type="button"
       >
