@@ -148,6 +148,21 @@ function EditIcon() {
   );
 }
 
+function TrashIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-3.5 w-3.5"
+      fill="currentColor"
+      viewBox="0 0 16 16"
+    >
+      <path
+        d="M6 1.75A1.25 1.25 0 0 0 4.75 3H3.5a.75.75 0 0 0 0 1.5h.42l.56 8.05A1.5 1.5 0 0 0 5.98 14h4.04a1.5 1.5 0 0 0 1.5-1.45l.56-8.05h.42a.75.75 0 0 0 0-1.5h-1.25A1.25 1.25 0 0 0 10 1.75H6Zm0 1.5h4v.1H6v-.1Zm-.58 1.25h5.16l-.56 8H5.98l-.56-8Z"
+      />
+    </svg>
+  );
+}
+
 function MinimizeIcon() {
   return (
     <svg
@@ -319,19 +334,30 @@ function OperationCard({
             {pathSummary(operation)}
           </span>
         </span>
-        <button
-          className={`flex h-6 w-6 items-center justify-center rounded-md border transition ${
-            expanded
-              ? "border-zinc-600 bg-zinc-800 text-zinc-100 hover:border-zinc-500 hover:bg-zinc-700"
-              : "border-zinc-600 bg-zinc-950 text-zinc-200 hover:border-zinc-400 hover:bg-zinc-800 hover:text-zinc-50"
-          }`}
-          aria-label={expanded ? "Minimize patch operation" : "Edit patch operation"}
-          title={expanded ? "Minimize" : "Edit"}
-          type="button"
-          onClick={onExpand}
-        >
-          {expanded ? <MinimizeIcon /> : <EditIcon />}
-        </button>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            className={`flex h-6 w-6 items-center justify-center rounded-md border transition ${
+              expanded
+                ? "border-zinc-600 bg-zinc-800 text-zinc-100 hover:border-zinc-500 hover:bg-zinc-700"
+                : "border-zinc-600 bg-zinc-950 text-zinc-200 hover:border-zinc-400 hover:bg-zinc-800 hover:text-zinc-50"
+            }`}
+            aria-label={expanded ? "Minimize patch operation" : "Edit patch operation"}
+            title={expanded ? "Minimize" : "Edit"}
+            type="button"
+            onClick={onExpand}
+          >
+            {expanded ? <MinimizeIcon /> : <EditIcon />}
+          </button>
+          <button
+            aria-label="Delete patch operation"
+            className="flex h-6 w-6 items-center justify-center rounded-md border border-red-400/60 bg-red-950/40 text-red-300 transition hover:border-red-300 hover:bg-red-500/20 hover:text-red-100"
+            title="Delete"
+            type="button"
+            onClick={onRemove}
+          >
+            <TrashIcon />
+          </button>
+        </div>
       </div>
 
       {expanded ? (
