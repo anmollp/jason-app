@@ -42,7 +42,7 @@ export function InspectorPanel({
         </dl>
       </div>
 
-      <div className="mt-8">
+      <div className="mt-auto pt-8">
         <p className="font-mono text-xs font-semibold uppercase text-zinc-500">
           Actions
         </p>
