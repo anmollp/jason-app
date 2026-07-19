@@ -63,7 +63,7 @@ export function JasonToast({
         onClick={onDismiss}
         type="button"
       >
-        <CloseIcon boxSize="9px" />
+        <CloseIcon boxSize="7px" />
       </button>
     </aside>
   );
