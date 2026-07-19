@@ -14,7 +14,6 @@ permissions:
 env:
   GAR_REGION: ${{ vars.GCP_REGION || 'us-central1' }}
   GAR_REPOSITORY: ${{ vars.GAR_REPOSITORY || 'jason-dev-containers' }}
-  GOOGLE_CLOUD_QUOTA_PROJECT: ${{ vars.GCP_PROJECT_ID }}
 
 jobs:
   deploy:
