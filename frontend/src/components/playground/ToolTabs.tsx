@@ -11,7 +11,7 @@ export function ToolTabs({ activeTool, onToolChange }: ToolTabsProps) {
   return (
     <div
       aria-label="JSON tools"
-      className="inline-flex flex-wrap gap-2 rounded-2xl border border-zinc-700 bg-zinc-900 p-1.5"
+      className="inline-flex w-fit max-w-full self-start flex-wrap gap-2 rounded-2xl border border-zinc-700 bg-zinc-900 p-1.5"
     >
       {tools.map((tool) => (
         <button
