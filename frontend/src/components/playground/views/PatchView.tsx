@@ -1,5 +1,6 @@
 "use client";
 
+import { DeleteIcon } from "@chakra-ui/icons";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { CodePanel, playgroundPanelHeightClass } from "../CodePanel";
@@ -143,21 +144,6 @@ function EditIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="1.7"
-      />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="h-3.5 w-3.5"
-      fill="currentColor"
-      viewBox="0 0 16 16"
-    >
-      <path
-        d="M6 1.75A1.25 1.25 0 0 0 4.75 3H3.5a.75.75 0 0 0 0 1.5h.42l.56 8.05A1.5 1.5 0 0 0 5.98 14h4.04a1.5 1.5 0 0 0 1.5-1.45l.56-8.05h.42a.75.75 0 0 0 0-1.5h-1.25A1.25 1.25 0 0 0 10 1.75H6Zm0 1.5h4v.1H6v-.1Zm-.58 1.25h5.16l-.56 8H5.98l-.56-8Z"
       />
     </svg>
   );
@@ -355,7 +341,7 @@ function OperationCard({
             type="button"
             onClick={onRemove}
           >
-            <TrashIcon />
+            <DeleteIcon boxSize="14px" />
           </button>
         </div>
       </div>
