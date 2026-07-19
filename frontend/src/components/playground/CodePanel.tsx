@@ -72,7 +72,7 @@ export function CodePanel({
   tone = "default",
 }: CodePanelProps) {
   return (
-    <section className="flex h-[clamp(420px,46vh,560px)] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-900">
+    <section className="flex h-[clamp(460px,58vh,640px)] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-900">
       <header className="flex h-14 items-center justify-between border-b border-zinc-800 bg-zinc-800 px-5">
         <h2 className="font-mono text-sm font-semibold text-zinc-50">{title}</h2>
         <span className={`font-mono text-xs font-semibold ${toneStyles[tone]}`}>

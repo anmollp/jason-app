@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { JasonLogo } from "@/components/mascot/JasonLogo";
 import { Button } from "@/components/ui/Button";
 
 import { InspectorPanel } from "./InspectorPanel";
-import { JasonStatus } from "./JasonStatus";
+import { JasonToast } from "./JasonStatus";
 import { ToolTabs, type PlaygroundTool } from "./ToolTabs";
 import {
   useDiffTool,
@@ -20,6 +20,7 @@ import { DiffView, FormatterView, PatchView, PointerView } from "./views";
 export function PlaygroundShell() {
   const [activeTool, setActiveTool] = useState<PlaygroundTool>("Formatter");
   const [copyMessage, setCopyMessage] = useState("");
+  const [dismissedToast, setDismissedToast] = useState("");
   const resetCopyMessage = () => setCopyMessage("");
   const formatter = useFormatterTool(resetCopyMessage);
   const diff = useDiffTool(resetCopyMessage);
@@ -79,10 +80,12 @@ export function PlaygroundShell() {
   function handleToolChange(tool: PlaygroundTool) {
     setActiveTool(tool);
     setCopyMessage("");
+    setDismissedToast("");
   }
 
   function handleClear() {
     setCopyMessage("");
+    setDismissedToast("");
 
     if (activeTool === "Diff") {
       diff.clear();
@@ -104,6 +107,7 @@ export function PlaygroundShell() {
 
   function handleLoadSample() {
     setCopyMessage("");
+    setDismissedToast("");
 
     if (activeTool === "Diff") {
       diff.loadSample();
@@ -124,6 +128,8 @@ export function PlaygroundShell() {
   }
 
   function handleCopy() {
+    setDismissedToast("");
+
     if (activeTool === "Diff") {
       if (!diffResult) {
         return;
@@ -291,6 +297,31 @@ export function PlaygroundShell() {
       : state === "error"
         ? "Jason couldn't parse this JSON."
         : undefined);
+  const activeToolState = isDiff
+    ? diffState
+    : isPatch
+      ? patchState
+      : isPointer
+        ? pointerState
+        : state;
+  const toastTone = copyMessage ? "success" : activeToolState;
+  const toastTitle = copyMessage ? "Copied to clipboard." : statusTitle;
+  const toastDetail = copyMessage || statusDetail;
+  const toastKey = `${activeTool}:${toastTone}:${toastTitle ?? ""}:${toastDetail}`;
+  const isToastVisible = toastTone !== "idle" && dismissedToast !== toastKey;
+
+  useEffect(() => {
+    if (!isToastVisible || toastTone !== "success") {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setDismissedToast(toastKey);
+    }, 4000);
+
+    return () => window.clearTimeout(timeout);
+  }, [isToastVisible, toastKey, toastTone]);
+
   const footerHint =
     isDiff
       ? isOverDiffPayloadLimit
@@ -344,7 +375,7 @@ export function PlaygroundShell() {
   return (
     <div className="min-h-screen bg-[#09090B] text-zinc-50">
       <header className="border-b border-zinc-800">
-        <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
+        <div className="mx-auto flex h-16 max-w-[1728px] items-center justify-between px-5 sm:px-8 lg:px-12">
           <Link href="/" className="flex items-center gap-3">
             <JasonLogo size={34} />
             <span className="font-mono text-xl font-semibold">Jason</span>
@@ -364,37 +395,16 @@ export function PlaygroundShell() {
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-[1440px] flex-col gap-8 px-5 py-10 sm:px-8 lg:px-12 lg:py-12">
-        <section className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="font-mono text-sm font-semibold uppercase text-emerald-400">
-              JSON workspace
-            </p>
-            <h1 className="mt-3 max-w-[760px] text-4xl font-bold tracking-tight sm:text-5xl">
-              {isDiff
-                ? "Compare JSON changes before they ship."
-                : isPatch
-                  ? "Apply JSON patches safely."
-                  : isPointer
-                    ? "Find exact JSON paths instantly."
-                  : "Format, diff, patch, and inspect JSON."}
-            </h1>
-          </div>
-          <JasonStatus
-            detail={statusDetail}
-            title={statusTitle}
-            tone={
-              isDiff
-                ? diffState
-                : isPatch
-                  ? patchState
-                  : isPointer
-                    ? pointerState
-                    : state
-            }
-          />
-        </section>
+      {isToastVisible ? (
+        <JasonToast
+          detail={toastDetail}
+          onDismiss={() => setDismissedToast(toastKey)}
+          title={toastTitle ?? "Jason"}
+          tone={toastTone}
+        />
+      ) : null}
 
+      <main className="mx-auto flex max-w-[1728px] flex-col gap-5 px-5 py-6 sm:px-8 lg:px-12 lg:py-8">
         <ToolTabs activeTool={activeTool} onToolChange={handleToolChange} />
 
         <section
@@ -437,6 +447,8 @@ export function PlaygroundShell() {
             <Button
               disabled={!canRunPrimaryAction}
               onClick={() => {
+                setDismissedToast("");
+
                 if (isDiff) {
                   void handleDiff();
                   return;
