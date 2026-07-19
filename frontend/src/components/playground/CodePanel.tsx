@@ -2,6 +2,7 @@
 
 import { JsonCodeEditor } from "./JsonCodeEditor";
 import type { SelectionAction } from "./JsonSelectionActions";
+import type { ReactNode } from "react";
 
 type CodePanelProps = {
   title: string;
@@ -14,6 +15,7 @@ type CodePanelProps = {
     tone?: "neutral" | "add" | "remove" | "change";
   }>;
   editable?: boolean;
+  editorOverlay?: ReactNode;
   enableFolding?: boolean;
   errorLine?: number;
   highlightedLines?: Array<{
@@ -63,6 +65,7 @@ export function CodePanel({
   code,
   diffRows,
   editable = false,
+  editorOverlay,
   enableFolding = false,
   errorLine,
   highlightedLines = emptyHighlightedLines,
@@ -107,7 +110,7 @@ export function CodePanel({
             })}
           </div>
         ) : (
-          <div className="min-h-0 flex-1">
+          <div className="relative min-h-0 flex-1">
             <JsonCodeEditor
               ariaLabel={title}
               errorLine={errorLine}
@@ -123,6 +126,7 @@ export function CodePanel({
               tone={tone === "error" ? "error" : "default"}
               value={code}
             />
+            {editorOverlay}
           </div>
         )}
       </div>
