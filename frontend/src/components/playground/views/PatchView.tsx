@@ -506,6 +506,7 @@ export function PatchView({ tool }: PatchViewProps) {
             : tool.patchOutput || "Patched JSON will appear here."
         }
         highlightedLines={tool.patchResultHighlights}
+        shouldWrapLines={false}
         tone={
           tool.patchState === "error"
             ? "error"
