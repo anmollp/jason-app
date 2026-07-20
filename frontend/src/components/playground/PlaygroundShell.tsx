@@ -374,20 +374,24 @@ export function PlaygroundShell() {
 
   return (
     <div className="min-h-screen bg-[#09090B] text-zinc-50">
-      <header className="border-b border-zinc-800">
-        <div className="mx-auto flex h-16 max-w-[1728px] items-center justify-between px-5 sm:px-8 lg:px-12">
+      <header className="px-3 pt-3 sm:px-5 sm:pt-4 lg:px-7">
+        <div className="mx-auto flex h-14 max-w-[1728px] items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-950 px-5 sm:px-8 lg:px-12">
           <Link href="/" className="flex items-center gap-3">
             <JasonLogo size={34} />
             <span className="font-mono text-xl font-semibold">Jason</span>
           </Link>
           <nav className="flex items-center gap-3">
-            <Button href="/" variant="secondary" className="hidden sm:inline-flex">
+            <Button
+              href="/"
+              variant="secondary"
+              className="hidden h-10 rounded-lg px-4 text-xs sm:inline-flex"
+            >
               Landing
             </Button>
             <Button
               href="https://github.com/anmollp/jason"
               variant="secondary"
-              className="hidden sm:inline-flex"
+              className="hidden h-10 rounded-lg px-4 text-xs sm:inline-flex"
             >
               GitHub
             </Button>
@@ -404,7 +408,7 @@ export function PlaygroundShell() {
         />
       ) : null}
 
-      <main className="mx-auto flex max-w-[1728px] flex-col gap-5 px-5 py-6 sm:px-8 lg:px-12 lg:py-8">
+      <main className="mx-auto flex max-w-[1728px] flex-col gap-5 px-5 pb-4 pt-6 sm:px-8 lg:px-12 lg:pb-5 lg:pt-8">
         <ToolTabs activeTool={activeTool} onToolChange={handleToolChange} />
 
         <section
