@@ -414,7 +414,7 @@ export function PlaygroundShell() {
         <section
           className={`grid gap-5 ${
             isPatch
-              ? "xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1fr)_170px]"
+              ? "xl:grid-cols-[minmax(0,1.4fr)_minmax(280px,1fr)_minmax(0,1.3fr)_170px]"
               : isPointer
                 ? "xl:grid-cols-[minmax(0,1fr)_170px]"
                 : isDiff
