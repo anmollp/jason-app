@@ -17,7 +17,7 @@ import type {
   PatchJsonResponse,
   PointerJsonRequest,
   PointerJsonResponse,
-} from './app.service';
+} from './json-tools.types';
 
 @Controller()
 export class AppController {
