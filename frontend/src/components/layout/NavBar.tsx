@@ -3,13 +3,13 @@ import { Button } from "../ui/Button";
 
 const githubUrl = "https://github.com/anmollp/jason-app";
 
-export function Navbar() {
+export function Navbar({ aiEnabled = false }: { aiEnabled?: boolean }) {
   return (
     <header className="mx-auto flex h-20 w-full max-w-[1220px] items-center justify-between rounded-[20px] border border-zinc-800 bg-[#09090B]/90 px-8 shadow-[0_18px_60px_rgba(0,0,0,0.22)] backdrop-blur md:px-16">
       <div className="flex items-center gap-3">
         <JasonLogo />
         <span className="font-mono text-xl font-semibold text-zinc-50">
-          Jason
+          AskJason
         </span>
       </div>
 
@@ -20,6 +20,11 @@ export function Navbar() {
         <a href="#workflow" className="hover:text-zinc-50">
           Workflow
         </a>
+        {aiEnabled ? (
+          <a href="#ai" className="hover:text-zinc-50">
+            AI Copilot
+          </a>
+        ) : null}
         <a href={githubUrl} target="_blank" rel="noreferrer" className="hover:text-zinc-50">
           GitHub
         </a>
