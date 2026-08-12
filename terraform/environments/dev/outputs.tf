@@ -52,3 +52,18 @@ output "budget_name" {
   description = "Monthly billing budget resource name, when billing_account_id is set."
   value       = module.jason.budget_name
 }
+
+output "firestore_database_name" {
+  description = "Firestore database used for AI quota and spend ledgers."
+  value       = module.jason.firestore_database_name
+}
+
+output "openai_api_key_secret_id" {
+  description = "Secret Manager container for the OpenAI key."
+  value       = module.jason.openai_api_key_secret_id
+}
+
+output "ai_identity_key_secret_id" {
+  description = "Secret Manager container for the identity HMAC key."
+  value       = module.jason.ai_identity_key_secret_id
+}

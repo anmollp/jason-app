@@ -2,4 +2,5 @@ packages:
   - .
 
 allowBuilds:
+  protobufjs: false
   unrs-resolver: false

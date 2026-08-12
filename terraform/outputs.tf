@@ -67,3 +67,18 @@ output "budget_name" {
   description = "Monthly billing budget resource name, when billing_account_id is set."
   value       = try(google_billing_budget.monthly_project_budget[0].name, null)
 }
+
+output "firestore_database_name" {
+  description = "Firestore database used for AI quota and spend ledgers."
+  value       = google_firestore_database.agent_state.name
+}
+
+output "openai_api_key_secret_id" {
+  description = "Secret Manager container for the OpenAI key; no secret version is managed by Terraform."
+  value       = google_secret_manager_secret.openai_api_key.secret_id
+}
+
+output "ai_identity_key_secret_id" {
+  description = "Secret Manager container for the AI identity HMAC key; no secret version is managed by Terraform."
+  value       = google_secret_manager_secret.ai_identity_key.secret_id
+}

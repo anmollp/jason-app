@@ -26,6 +26,11 @@ module "jason" {
   github_repository              = var.github_repository
   github_ref                     = var.github_ref
 
-  budget_amount_usd  = var.budget_amount_usd
-  billing_account_id = var.billing_account_id
+  budget_amount_usd              = var.budget_amount_usd
+  billing_account_id             = var.billing_account_id
+  firestore_location             = var.firestore_location
+  ai_enabled                     = var.ai_enabled
+  openai_api_key_secret_version  = var.openai_api_key_secret_version
+  ai_identity_key_secret_version = var.ai_identity_key_secret_version
+  ai_daily_session_limit         = var.ai_daily_session_limit
 }

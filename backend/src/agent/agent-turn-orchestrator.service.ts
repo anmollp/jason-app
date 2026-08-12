@@ -3,6 +3,7 @@ import { AgentError } from './agent.errors';
 import { AgentToolExecutor } from './agent-tool-executor.service';
 import type {
   AgentProvider,
+  AgentTurnHooks,
   AgentTurnEvent,
   NormalizedToolResult,
   ProviderToolCall,
@@ -21,6 +22,7 @@ export class AgentTurnOrchestrator {
     provider: AgentProvider,
     request: ProviderTurnRequest,
     signal: AbortSignal,
+    hooks: AgentTurnHooks = {},
   ): AsyncIterable<AgentTurnEvent> {
     throwIfAborted(signal);
     const turn = await provider.createTurn(request, signal);
@@ -104,6 +106,7 @@ export class AgentTurnOrchestrator {
         const nextResults: NormalizedToolResult[] = [];
         for (const call of calls) {
           throwIfAborted(signal);
+          await hooks.beforeToolCall?.(call);
           const result = await this.toolExecutor.execute(call);
           nextResults.push(result);
           yield { type: 'tool_result', result };
