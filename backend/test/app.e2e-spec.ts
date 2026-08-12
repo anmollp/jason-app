@@ -63,12 +63,11 @@ describe('AppController (e2e)', () => {
       });
   });
 
-  it('/format (POST) accepts JSON documents larger than the default body limit', () => {
-    const largeInput = createLargeInput();
+  it('/format (POST) keeps the deterministic 5 MiB path independent from the AI limit', () => {
+    const largeInput = createInputAtSizeLimit();
 
-    expect(
-      Buffer.byteLength(JSON.stringify({ input: largeInput })),
-    ).toBeGreaterThan(100 * 1024);
+    expect(Buffer.byteLength(largeInput)).toBeLessThanOrEqual(5 * 1024 * 1024);
+    expect(Buffer.byteLength(largeInput)).toBeGreaterThan(16 * 1024);
 
     return request(app.getHttpServer())
       .post('/format')
@@ -88,9 +87,9 @@ describe('AppController (e2e)', () => {
 
     expect(Buffer.byteLength(before)).toBeLessThanOrEqual(5 * 1024 * 1024);
     expect(Buffer.byteLength(after)).toBeLessThanOrEqual(5 * 1024 * 1024);
-    expect(Buffer.byteLength(JSON.stringify({ before, after }))).toBeGreaterThan(
-      10 * 1024 * 1024,
-    );
+    expect(
+      Buffer.byteLength(JSON.stringify({ before, after })),
+    ).toBeGreaterThan(10 * 1024 * 1024);
 
     return request(app.getHttpServer())
       .post('/diff')
@@ -109,9 +108,9 @@ describe('AppController (e2e)', () => {
     const document = createLargeInput();
     const patch = '[{"op":"remove","path":"/records/0"}]';
 
-    expect(Buffer.byteLength(JSON.stringify({ document, patch }))).toBeGreaterThan(
-      100 * 1024,
-    );
+    expect(
+      Buffer.byteLength(JSON.stringify({ document, patch })),
+    ).toBeGreaterThan(100 * 1024);
 
     return request(app.getHttpServer())
       .post('/patch')
@@ -130,9 +129,9 @@ describe('AppController (e2e)', () => {
     const document = createLargeInput();
     const path = '/records/0';
 
-    expect(Buffer.byteLength(JSON.stringify({ document, path }))).toBeGreaterThan(
-      100 * 1024,
-    );
+    expect(
+      Buffer.byteLength(JSON.stringify({ document, path })),
+    ).toBeGreaterThan(100 * 1024);
 
     return request(app.getHttpServer())
       .post('/pointer')
