@@ -197,6 +197,14 @@ export function usePatchTool(resetCopyMessage: () => void) {
     resetPatchResult();
   }
 
+  function applyAgentProposal(output: string) {
+    setPatchDocumentInput(output);
+    setPatchOperations([]);
+    setSelectedPatchLine(undefined);
+    setSelectedPatchPath("");
+    resetPatchResult();
+  }
+
   const patchErrorLine =
     patchState === "error" ? parseErrorLine(patchError) : undefined;
   const patchDocumentErrorLine =
@@ -239,6 +247,7 @@ export function usePatchTool(resetCopyMessage: () => void) {
   ] satisfies InspectorStat[];
 
   return {
+    applyAgentProposal,
     canCopy: Boolean(patchOutput.trim()),
     canRun:
       patchState !== "thinking" &&

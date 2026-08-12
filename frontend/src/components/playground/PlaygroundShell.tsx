@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import { AgentCopilot } from "@/components/agent/AgentCopilot";
+import type { AgentSelectedTool } from "@/components/agent/agent-client";
 import { JasonLogo } from "@/components/mascot/JasonLogo";
 import { Button } from "@/components/ui/Button";
 
@@ -17,7 +19,7 @@ import {
 } from "./hooks";
 import { DiffView, FormatterView, PatchView, PointerView } from "./views";
 
-export function PlaygroundShell() {
+export function PlaygroundShell({ aiEnabled = false }: { aiEnabled?: boolean }) {
   const [activeTool, setActiveTool] = useState<PlaygroundTool>("Formatter");
   const [copyMessage, setCopyMessage] = useState("");
   const [dismissedToast, setDismissedToast] = useState("");
@@ -51,6 +53,7 @@ export function PlaygroundShell() {
     payloadLimitLabel: diffPayloadLimitLabel,
   } = diff;
   const {
+    applyAgentProposal,
     handlePatch,
     isOverPayloadLimit: isOverPatchPayloadLimit,
     isThinking: isPatching,
@@ -76,6 +79,42 @@ export function PlaygroundShell() {
     pointerState,
     selectedPointerPath,
   } = pointer;
+
+  const agentTool = activeTool.toLowerCase() as AgentSelectedTool;
+  const agentContext = useMemo<Record<string, string>>(() => {
+    const selectedContext: Record<string, string> = {};
+    switch (activeTool) {
+      case "Diff":
+        selectedContext.before = diffBeforeInput;
+        selectedContext.after = diffAfterInput;
+        break;
+      case "Patch":
+        selectedContext.document = patchDocumentInput;
+        if (patchOperations.length > 0) {
+          selectedContext.patch = JSON.stringify(patchOperations);
+        }
+        break;
+      case "Pointer":
+        selectedContext.document = pointerDocumentInput;
+        if (selectedPointerPath) {
+          selectedContext.path = selectedPointerPath;
+        }
+        break;
+      case "Formatter":
+        selectedContext.input = inputJson;
+        break;
+    }
+    return selectedContext;
+  }, [
+    activeTool,
+    diffAfterInput,
+    diffBeforeInput,
+    inputJson,
+    patchDocumentInput,
+    patchOperations,
+    pointerDocumentInput,
+    selectedPointerPath,
+  ]);
 
   function handleToolChange(tool: PlaygroundTool) {
     setActiveTool(tool);
@@ -378,7 +417,7 @@ export function PlaygroundShell() {
         <div className="mx-auto flex h-14 max-w-[1728px] items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-950 px-5 sm:px-8 lg:px-12">
           <Link href="/" className="flex items-center gap-3">
             <JasonLogo size={34} />
-            <span className="font-mono text-xl font-semibold">Jason</span>
+            <span className="font-mono text-xl font-semibold">AskJason</span>
           </Link>
           <nav className="flex items-center gap-3">
             <Button
@@ -395,6 +434,16 @@ export function PlaygroundShell() {
             >
               GitHub
             </Button>
+            {aiEnabled ? (
+              <AgentCopilot
+                selectedTool={agentTool}
+                context={agentContext}
+                onApplyPatchProposal={(output) => {
+                  setActiveTool("Patch");
+                  applyAgentProposal(output);
+                }}
+              />
+            ) : null}
           </nav>
         </div>
       </header>

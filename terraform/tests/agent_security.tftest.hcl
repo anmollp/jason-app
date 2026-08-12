@@ -13,6 +13,11 @@ run "disabled_secure_defaults" {
   }
 
   assert {
+    condition     = one([for env in google_cloud_run_v2_service.frontend.template[0].containers[0].env : env.value if env.name == "AI_ENABLED"]) == "false"
+    error_message = "The frontend must hide the copilot while the shared AI flag is disabled."
+  }
+
+  assert {
     condition     = var.openai_api_key_secret_version == "" && var.ai_identity_key_secret_version == ""
     error_message = "Secret versions must remain detached by default."
   }

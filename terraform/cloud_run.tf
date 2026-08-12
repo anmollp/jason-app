@@ -55,6 +55,11 @@ resource "google_cloud_run_v2_service" "frontend" {
         value = google_cloud_run_v2_service.backend.uri
       }
 
+      env {
+        name  = "AI_ENABLED"
+        value = tostring(var.ai_enabled)
+      }
+
       resources {
         limits = {
           cpu    = var.frontend_cpu
