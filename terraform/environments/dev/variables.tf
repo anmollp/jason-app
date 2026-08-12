@@ -139,3 +139,33 @@ variable "billing_account_id" {
   type        = string
   default     = ""
 }
+
+variable "firestore_location" {
+  description = "Firestore database location for anonymous quota ledgers."
+  type        = string
+  default     = "us-central1"
+}
+
+variable "ai_enabled" {
+  description = "Enable the hosted AI copilot after separate rollout approval."
+  type        = bool
+  default     = false
+}
+
+variable "openai_api_key_secret_version" {
+  description = "Pinned approved OpenAI key secret version; empty keeps it detached."
+  type        = string
+  default     = ""
+}
+
+variable "ai_identity_key_secret_version" {
+  description = "Pinned approved identity-key secret version; empty keeps it detached."
+  type        = string
+  default     = ""
+}
+
+variable "ai_daily_session_limit" {
+  description = "Hosted AI sessions per day: 10 for pilot or 20 after expansion approval."
+  type        = number
+  default     = 20
+}

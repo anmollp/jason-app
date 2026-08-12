@@ -73,7 +73,8 @@ Then edit `terraform.tfvars`.
 
 The dev module creates the first production-shaped resource set:
 
-- required GCP APIs for Artifact Registry, IAM, and Cloud Run.
+- required GCP APIs for Artifact Registry, IAM, Cloud Run, Firestore, Secret
+  Manager, and Logging.
 - an Artifact Registry Docker repository.
 - separate Cloud Run runtime service accounts for frontend and backend.
 - a public Cloud Run frontend service.
@@ -90,6 +91,38 @@ the backend URL out of the browser path, avoids granting `allUsers` invoke
 access to the backend, and removes the need for browser CORS on the deployed
 backend.
 
+## AskJason AI secure-backend resources
+
+The module provisions the AI backend in a disabled state by default:
+
+- Firestore Native in `us-central1`, with deletion protection, for anonymous
+  quota and spend ledgers.
+- Secret Manager containers for `OPENAI_API_KEY` and the base64-encoded 32-byte
+  `AI_IDENTITY_KEY`.
+- Least-privilege Firestore and secret-access roles for the private backend
+  service account.
+- A structured-log exclusion that drops accidental AI content fields while
+  preserving metadata-only audit events.
+- Cloud Run limits fixed at zero minimum and one maximum instance.
+
+Terraform creates no secret versions, so secret payloads never enter
+configuration or state. After separately approved secret creation, set the
+numeric `openai_api_key_secret_version` and `ai_identity_key_secret_version`
+values to attach pinned, rollback-safe versions. The `latest` alias is rejected.
+Keep `ai_enabled = false` until production rollout approval.
+
+Before any pilot is enabled, the OpenAI project owner must separately verify
+these provider-side controls in the OpenAI dashboard:
+
+1. A dedicated AskJason project with alerts at $4, $6, and $7.20.
+2. An enforced $8 monthly project spend limit.
+3. No API keys outside Secret Manager.
+
+Those settings are deliberately not represented as Terraform resources because
+the Google provider cannot enforce OpenAI project controls. Record screenshots
+or exported project settings in the release-readiness evidence; do not commit
+keys or secret payloads.
+
 ## IAM Model
 
 The first deployment keeps permissions intentionally narrow:
@@ -98,13 +131,15 @@ The first deployment keeps permissions intentionally narrow:
   portfolio site is public.
 - the frontend runtime service account receives `roles/run.invoker` on the
   backend service, so only frontend server-side code can call the backend.
-- the backend runtime service account has no project-level roles in this PR
-  because it only executes the packaged Jason CLI.
+- the backend runtime service account receives `roles/datastore.user` and
+  per-secret `roles/secretmanager.secretAccessor`; it remains the only runtime
+  identity with AI state and credential access.
 - the GitHub Actions publisher service account receives Artifact Registry writer
   access only on the Jason container repository.
 - the GitHub Actions Terraform deployer service account receives the project
-  roles needed to plan/apply the Cloud Run, Artifact Registry, service account,
-  Workload Identity, IAM, and service API resources in this module.
+  roles needed to plan/apply Cloud Run, Artifact Registry, Firestore, Logging,
+  Secret Manager, service account, Workload Identity, IAM, and service API
+  resources in this module.
 - when budget alerts are enabled, the deployer also receives
   `roles/billing.costsManager` on the configured billing account.
 - GitHub Actions can impersonate these service accounts only through the

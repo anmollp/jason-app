@@ -81,6 +81,40 @@ describe('AppController (e2e)', () => {
       });
   });
 
+  it('/api/agent/message (POST) enforces the separate 32 KiB parser limit', () => {
+    return request(app.getHttpServer())
+      .post('/api/agent/message')
+      .send({ payload: 'x'.repeat(33 * 1024) })
+      .expect(413);
+  });
+
+  it('/api/agent/session (POST) remains fail-closed while the feature is disabled', () => {
+    return request(app.getHttpServer())
+      .post('/api/agent/session')
+      .set('x-askjason-client-ip', '203.0.113.7')
+      .send({})
+      .expect(503);
+  });
+
+  it('/api/agent/message (POST) returns a safe SSE failure while disabled', () => {
+    return request(app.getHttpServer())
+      .post('/api/agent/message')
+      .send({
+        sessionId: 's'.repeat(32),
+        selectedTool: 'formatter',
+        instruction: 'Format this JSON.',
+        context: { input: '{}' },
+        visibleMessages: [],
+      })
+      .expect('Content-Type', /text\/event-stream/)
+      .expect(200)
+      .expect(({ text }) => {
+        expect(text).toContain('event: error');
+        expect(text).toContain('"code":"feature_disabled"');
+        expect(text).toContain('event: done');
+      });
+  });
+
   it('/diff (POST) accepts request bodies larger than the default body limit', () => {
     const before = createInputAtSizeLimit();
     const after = createInputAtSizeLimit();

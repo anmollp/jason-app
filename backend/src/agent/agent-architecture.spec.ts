@@ -9,19 +9,19 @@ describe('agent architecture boundaries', () => {
       .filter((file) => readFileSync(file, 'utf8').includes("from 'openai"))
       .map((file) => file.slice(agentRoot.length + 1));
 
-    expect(vendorImports).toEqual(['providers/openai-responses.provider.ts']);
+    expect(vendorImports).toEqual([
+      'providers/openai-moderation.client.ts',
+      'providers/openai-responses.provider.ts',
+    ]);
   });
 
-  it('keeps PR 1 internal with no agent controllers or routes', () => {
-    const productionSources = walkTypeScriptFiles(join(__dirname)).filter(
-      (file) => !file.endsWith('.spec.ts'),
-    );
-    const combinedSource = productionSources
-      .map((file) => readFileSync(file, 'utf8'))
-      .join('\n');
+  it('exposes only the approved session and message routes', () => {
+    const source = readFileSync(join(__dirname, 'agent.controller.ts'), 'utf8');
 
-    expect(combinedSource).not.toContain('@Controller');
-    expect(combinedSource).not.toContain("@Post('");
+    expect(source).toContain("@Controller('api/agent')");
+    expect(source.match(/@Post\(/g)).toHaveLength(2);
+    expect(source).toContain("@Post('session')");
+    expect(source).toContain("@Post('message')");
   });
 });
 

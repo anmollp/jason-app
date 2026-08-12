@@ -72,6 +72,8 @@ resource "google_cloud_run_v2_service" "frontend" {
 
   lifecycle {
     ignore_changes = [
+      client,
+      client_version,
       template[0].containers[0].image,
     ]
   }
@@ -129,6 +131,58 @@ resource "google_cloud_run_v2_service" "backend" {
         value = var.jason_cli_path
       }
 
+      env {
+        name  = "AI_ENABLED"
+        value = tostring(var.ai_enabled)
+      }
+
+      env {
+        name  = "AI_PROVIDER"
+        value = "openai"
+      }
+
+      env {
+        name  = "AI_MODEL"
+        value = "gpt-5.6-luna"
+      }
+
+      env {
+        name  = "AI_COOKIE_SECURE"
+        value = "true"
+      }
+
+      env {
+        name  = "AI_DAILY_SESSION_LIMIT"
+        value = tostring(var.ai_daily_session_limit)
+      }
+
+      env {
+        name  = "GOOGLE_CLOUD_PROJECT"
+        value = var.project_id
+      }
+
+      dynamic "env" {
+        for_each = var.openai_api_key_secret_version != "" && var.ai_identity_key_secret_version != "" ? {
+          OPENAI_API_KEY = {
+            secret  = google_secret_manager_secret.openai_api_key.secret_id
+            version = var.openai_api_key_secret_version
+          }
+          AI_IDENTITY_KEY = {
+            secret  = google_secret_manager_secret.ai_identity_key.secret_id
+            version = var.ai_identity_key_secret_version
+          }
+        } : {}
+        content {
+          name = env.key
+          value_source {
+            secret_key_ref {
+              secret  = env.value.secret
+              version = env.value.version
+            }
+          }
+        }
+      }
+
       resources {
         limits = {
           cpu    = var.backend_cpu
@@ -141,11 +195,16 @@ resource "google_cloud_run_v2_service" "backend" {
   }
 
   depends_on = [
+    google_project_iam_member.backend_firestore_user,
+    google_secret_manager_secret_iam_member.backend_ai_identity_key,
+    google_secret_manager_secret_iam_member.backend_openai_api_key,
     google_project_service.required["run.googleapis.com"],
   ]
 
   lifecycle {
     ignore_changes = [
+      client,
+      client_version,
       template[0].containers[0].image,
     ]
   }

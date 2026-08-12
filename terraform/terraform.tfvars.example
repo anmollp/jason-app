@@ -30,3 +30,11 @@ github_ref                       = "refs/heads/master"
 # Leave empty to skip budget alerts.
 budget_amount_usd = 10
 billing_account_id = ""
+
+# The AI infrastructure is created in a safe disabled state. Secret payloads,
+# Terraform apply, and feature enablement each require separate approval.
+firestore_location = "us-central1"
+openai_api_key_secret_version  = ""
+ai_identity_key_secret_version = ""
+ai_enabled                     = false
+ai_daily_session_limit = 20

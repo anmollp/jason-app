@@ -67,6 +67,17 @@ JASON_CLI_PATH=/usr/local/bin/jason
 - `FRONTEND_ORIGIN`: comma-separated allowed CORS origin list. Defaults to
   `http://localhost:3001`.
 - `JASON_CLI_PATH`: Jason CLI executable path. Defaults to `jason`.
+- `AI_ENABLED`: hosted copilot feature flag. Defaults to disabled.
+- `AI_PROVIDER`: generation provider. PR 2 allows only `openai`.
+- `AI_MODEL`: approved model. PR 2 allows only `gpt-5.6-luna`.
+- `OPENAI_API_KEY`: Secret Manager-backed provider credential; required only
+  when AI is enabled.
+- `AI_IDENTITY_KEY`: base64-encoded 32-byte HMAC root key from Secret Manager;
+  required only when AI is enabled.
+- `AI_COOKIE_SECURE`: keep `true` in hosted environments.
+- `AI_DAILY_SESSION_LIMIT`: `10` for the approved pilot or `20` for the full
+  release cap.
+- `GOOGLE_CLOUD_PROJECT`: Firestore project for quota and spend ledgers.
 
 ## Endpoints
 
@@ -76,6 +87,24 @@ JASON_CLI_PATH=/usr/local/bin/jason
 - `POST /diff`: compare two JSON strings and return JSON Patch operations.
 - `POST /patch`: apply JSON Patch operations to a JSON document.
 - `POST /pointer`: resolve a JSON Pointer path against a JSON document.
+- `POST /api/agent/session`: issue one anonymous guided session under the
+  visitor, network, daily, monthly, and spend caps.
+- `POST /api/agent/message`: stream an accepted copilot turn as Server-Sent
+  Events.
+
+The agent endpoints have an independent 32 KiB HTTP limit and a 16 KiB
+untrusted-context limit. The deterministic endpoints retain their existing
+5 MiB JSON-document behavior through the global 12 MiB parser.
+
+## AI privacy and retention
+
+Prompts, JSON documents, provider responses, raw IP addresses, and user-agent
+strings are never persisted. Structured audit logs contain only the HMAC'd
+session identity, selected tool, provider/model, latency, token usage,
+estimated cost, and outcome. Firestore stores quota/accounting metadata only.
+Session and daily-ledger cleanup begins after 32 days; aggregate month ledgers
+are retained for roughly 13 months. Cleanup is opportunistic and avoids paid
+TTL deletion.
 
 ## Useful scripts
 

@@ -20,9 +20,12 @@ locals {
     "billingbudgets.googleapis.com",
     "cloudbilling.googleapis.com",
     "cloudresourcemanager.googleapis.com",
+    "firestore.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
+    "logging.googleapis.com",
     "run.googleapis.com",
+    "secretmanager.googleapis.com",
   ])
 
   github_actions_deploy_project_roles = toset([
@@ -30,8 +33,11 @@ locals {
     "roles/iam.serviceAccountAdmin",
     "roles/iam.serviceAccountUser",
     "roles/iam.workloadIdentityPoolAdmin",
+    "roles/datastore.owner",
+    "roles/logging.configWriter",
     "roles/resourcemanager.projectIamAdmin",
     "roles/run.admin",
+    "roles/secretmanager.admin",
     "roles/serviceusage.serviceUsageAdmin",
   ])
 }

@@ -83,6 +83,10 @@ export type AgentTurnEvent =
   | ProviderEvent
   | { type: 'tool_result'; result: NormalizedToolResult };
 
+export type AgentTurnHooks = {
+  beforeToolCall?: (call: ProviderToolCall) => Promise<void>;
+};
+
 export interface AgentProvider {
   readonly id: GenerationProviderId;
   readonly capabilities: {
