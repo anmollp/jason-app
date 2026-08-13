@@ -132,7 +132,7 @@ function ratio(numerator: number, denominator: number): number {
   return denominator === 0 ? 0 : numerator / denominator;
 }
 
-function percentile(values: readonly number[], value: number): number {
+export function percentile(values: readonly number[], value: number): number {
   if (values.length === 0) return 0;
   const sorted = [...values].sort((left, right) => left - right);
   return sorted[Math.ceil(sorted.length * value) - 1] ?? 0;
