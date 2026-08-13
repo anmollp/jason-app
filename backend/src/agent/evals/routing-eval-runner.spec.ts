@@ -1,5 +1,12 @@
 import type { AgentToolExecutor } from '../agent-tool-executor.service';
 import { AgentTurnOrchestrator } from '../agent-turn-orchestrator.service';
+import type {
+  AgentProvider,
+  AgentProviderTurn,
+  NormalizedToolResult,
+  ProviderEvent,
+  ProviderTurnRequest,
+} from '../contracts/provider-contracts';
 import { FakeAgentProvider } from '../providers/fake-agent.provider';
 import { RoutingEvalRunner } from './routing-eval-runner';
 import type { RoutingFixture } from './routing-fixtures';
@@ -203,6 +210,75 @@ describe('RoutingEvalRunner', () => {
       usageEvidenceValid: true,
     });
   });
+
+  it('measures three-turn sessions with prior visible conversation context', async () => {
+    const provider = new SequentialTurnProvider([
+      completedTextRound('First response.', 100),
+      completedTextRound('Second response.', 200),
+      completedTextRound('Third response.', 300),
+    ]);
+    const executor = { execute: jest.fn() } as unknown as AgentToolExecutor;
+    const report = await new RoutingEvalRunner(
+      provider,
+      new AgentTurnOrchestrator(executor),
+      'gpt-5.6-luna',
+    ).run([clarifyFixture, clarifyFixture, clarifyFixture], {
+      turnsPerSession: 3,
+    });
+
+    expect(report.sessions).toEqual([
+      {
+        id: 'session-1',
+        caseIds: ['clarify-eval', 'clarify-eval', 'clarify-eval'],
+        turns: 3,
+        usageEvidenceValid: true,
+        estimatedCostMicroUsd: 156,
+      },
+    ]);
+    expect(report.sessionCost).toEqual({
+      sessions: 1,
+      p95SessionCostMicroUsd: 156,
+      belowThirtyMilliUsd: true,
+    });
+    expect(provider.requests[1].visibleMessages[0].content).toContain(
+      'First response.',
+    );
+    expect(provider.requests[2].visibleMessages[0].content).toContain(
+      'Second response.',
+    );
+  });
+
+  it('stops before another paid case after a configured systemic error', async () => {
+    const provider = new FakeAgentProvider([
+      [
+        {
+          type: 'provider_error',
+          retryable: false,
+          code: 'insufficient_quota',
+          safeMessage: 'Quota exhausted.',
+        },
+      ],
+    ]);
+    const executor = { execute: jest.fn() } as unknown as AgentToolExecutor;
+    const report = await new RoutingEvalRunner(
+      provider,
+      new AgentTurnOrchestrator(executor),
+      'gpt-5.6-luna',
+    ).run([patchFixture, patchFixture], {
+      turnsPerSession: 3,
+      stopOnError: (error) => error === 'insufficient_quota',
+    });
+
+    expect(report).toMatchObject({
+      fatalError: 'insufficient_quota',
+      cases: [{ error: 'insufficient_quota' }],
+    });
+    expect(provider.requests).toHaveLength(1);
+    expect(report.sessionCost).toMatchObject({
+      p95SessionCostMicroUsd: null,
+      belowThirtyMilliUsd: null,
+    });
+  });
 });
 
 const patchFixture: RoutingFixture = {
@@ -253,4 +329,40 @@ function usage(inputTokens: number, outputTokens = 10) {
     outputTokens,
     cachedInputTokens: 0,
   };
+}
+
+function completedTextRound(text: string, inputTokens: number) {
+  return [
+    { type: 'text_delta' as const, text },
+    usage(inputTokens),
+    { type: 'completed' as const, finishReason: 'stop' as const },
+  ];
+}
+
+class SequentialTurnProvider implements AgentProvider {
+  readonly id = 'openai' as const;
+  readonly capabilities = {
+    streaming: true,
+    strictTools: true,
+    lowReasoningProfile: true,
+    statelessMode: true,
+  } as const;
+  readonly requests: ProviderTurnRequest[] = [];
+
+  constructor(private readonly rounds: ProviderEvent[][]) {}
+
+  createTurn(request: ProviderTurnRequest): Promise<AgentProviderTurn> {
+    this.requests.push(request);
+    const events = this.rounds.shift() ?? [];
+    return Promise.resolve({
+      async *streamRound(
+        _toolResults: readonly NormalizedToolResult[],
+      ): AsyncIterable<ProviderEvent> {
+        await Promise.resolve();
+        void _toolResults;
+        for (const event of events) yield event;
+      },
+      close: () => Promise.resolve(),
+    });
+  }
 }
