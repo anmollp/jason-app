@@ -12,13 +12,13 @@ function createMockChild() {
   const child = new EventEmitter() as EventEmitter & {
     stdout: EventEmitter;
     stderr: EventEmitter;
-    stdin: { end: jest.Mock };
+    stdin: EventEmitter & { end: jest.Mock };
     kill: jest.Mock;
   };
 
   child.stdout = new EventEmitter();
   child.stderr = new EventEmitter();
-  child.stdin = { end: jest.fn() };
+  child.stdin = Object.assign(new EventEmitter(), { end: jest.fn() });
   child.kill = jest.fn();
 
   return child;
@@ -30,7 +30,7 @@ describe('JasonCliService', () => {
     delete process.env.JASON_CLI_PATH;
   });
 
-  it('streams large formatter output without an execFile maxBuffer limit', async () => {
+  it('keeps the deterministic website path free of the MCP output cap', async () => {
     const child = createMockChild();
     spawnMock.mockReturnValue(child as ReturnType<typeof spawn>);
     const service = new JasonCliService();
@@ -43,9 +43,15 @@ describe('JasonCliService', () => {
     child.emit('close', 0);
 
     await expect(result).resolves.toBe(`${largeChunk}done`);
-    expect(spawnMock).toHaveBeenCalledWith('jason', ['format', '--stdin'], {
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
+    expect(spawnMock).toHaveBeenCalledWith(
+      'jason',
+      ['format', '--stdin'],
+      expect.objectContaining({
+        env: process.env,
+        shell: false,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }),
+    );
     expect(child.stdin.end).toHaveBeenCalledWith('{"a":1}');
   });
 
@@ -62,7 +68,7 @@ describe('JasonCliService', () => {
     await expect(result).rejects.toThrow('expected value at line 1 column 1');
   });
 
-  it('returns a setup hint when the Jason CLI is missing', async () => {
+  it('returns a sanitized error when the Jason CLI is missing', async () => {
     process.env.JASON_CLI_PATH = '/tmp/missing-jason';
     const child = createMockChild();
     spawnMock.mockReturnValue(child as ReturnType<typeof spawn>);
@@ -75,7 +81,7 @@ describe('JasonCliService', () => {
     child.emit('error', error);
 
     await expect(result).rejects.toThrow(
-      'Jason CLI not found at "/tmp/missing-jason"',
+      'The Jason CLI executable could not be found.',
     );
   });
 });
