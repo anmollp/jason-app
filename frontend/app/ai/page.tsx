@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 const metrics = [
   { value: "4", label: "fixed tools" },
   { value: "3", label: "turns / 24h" },
-  { value: "60", label: "planned eval cases" },
+  { value: "60", label: "implemented eval cases" },
   { value: "< $0.03", label: "p95 session cost target" },
 ];
 
@@ -45,7 +45,7 @@ const chapters = [
   {
     label: "03 CONTRACTS",
     title: "Four shared tool schemas",
-    body: "format_json, diff_json, apply_json_patch, and resolve_json_pointer are schema-validated for web and the planned MCP package.",
+    body: "format_json, diff_json, apply_json_patch, and resolve_json_pointer are schema-validated for web and the private local MCP package.",
     detail: "One contract · two surfaces",
     tone: "border-emerald-500 text-emerald-400",
   },
@@ -65,8 +65,8 @@ const chapters = [
   },
   {
     label: "06 EVALS",
-    title: "60 adversarial cases",
-    body: "The release suite will cover every tool, ambiguity, and injection or abuse before production enablement.",
+    title: "60 routing and adversarial cases",
+    body: "The release suite covers all four tools plus ambiguity and injection or abuse cases; live model scoring remains gated before production enablement.",
     detail: "Target: ≥90% route · 100% valid",
     tone: "border-sky-400 text-sky-400",
   },
@@ -80,7 +80,7 @@ const chapters = [
   {
     label: "08 MCP",
     title: "Local stdio parity",
-    body: "The planned @anmollp/jason-mcp package will expose identical schemas and invoke the local jason binary with fixed arguments and stdin.",
+    body: "The private, client-neutral Jason MCP package exposes identical schemas and invokes the local jason binary with fixed arguments and stdin.",
     detail: "Caller model · caller budget",
     tone: "border-emerald-500 text-emerald-400",
   },
@@ -90,9 +90,9 @@ export default function AiCaseStudyPage() {
   return (
     <div className="min-h-screen bg-[#09090B] text-zinc-50">
       <header className="mx-auto flex max-w-[1320px] items-center justify-between px-5 py-6 sm:px-8 lg:px-12">
-        <Link href="/" className="flex items-center gap-3">
+        <Link href="/" aria-label="AskJason home" className="flex items-center gap-3">
           <JasonLogo size={34} />
-          <span className="font-mono text-xl font-semibold">AskJason</span>
+          <span className="hidden font-mono text-xl font-semibold sm:inline">AskJason</span>
         </Link>
         <div className="flex gap-3">
           <Button href="/" variant="secondary" className="h-10 rounded-lg px-4 text-xs">
@@ -183,11 +183,12 @@ export default function AiCaseStudyPage() {
         <section className="rounded-xl border border-amber-400 bg-zinc-900 p-5 text-amber-300">
           <p className="font-mono text-xs font-semibold">RELEASE STATUS</p>
           <h2 className="mt-2 text-2xl font-semibold text-zinc-50">
-            Measurements stay labeled until Gate 6
+            Evidence stays labeled through release
           </h2>
           <p className="mt-2 text-sm leading-6 text-zinc-300">
-            The 60-case eval result, measured p95 cost, load report, and production
-            pilot metrics will be published only after they are run and approved.
+            Local deterministic load smoke is recorded. Live-model routing,
+            measured p95 cost, controlled load, and production pilot metrics
+            will be published only after they are run and approved.
           </p>
         </section>
       </main>
