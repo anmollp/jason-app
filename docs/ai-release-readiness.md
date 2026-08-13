@@ -32,11 +32,11 @@ of the AI feature and retain their 5 MiB request support.
 | $7.20 local reservation ceiling and $8 provider hard limit                         | Firestore budget ledger plus provider project configuration                                                                         | Local ledger validated; provider configuration pending operator evidence |
 | No prompt, JSON, response, raw IP, or user-agent persistence                       | Metadata-only audit logger and private local eval reports                                                                           | Application behavior validated; production log inspection pending        |
 | OpenAI `store: false` and privacy-safe safety identifier                           | Provider adapter and session tests                                                                                                  | Validated locally and in CI                                              |
-| AI remains disabled by default                                                     | Application tests and Terraform policy definition                                                                                   | Application validated; Terraform test and plan pending                   |
+| AI remains disabled by default                                                     | Application tests and Terraform policy definition                                                                                   | Application and Terraform policy test validated; plan pending            |
 | Scale-to-zero and maximum one Cloud Run instance                                   | Terraform policy                                                                                                                    | Terraform plan and apply pending                                         |
 | Graceful deterministic operation when AI is unavailable or exhausted               | Browser coverage across failure and quota states                                                                                    | Validated locally and in CI                                              |
 | Local, client-neutral MCP parity                                                   | Private MCP package and contract tests                                                                                              | Implemented and merged; publication is out of scope                      |
-| Load and failure behavior under the one-instance cap                               | Controlled preproduction workload and hash-bound result record                                                                      | Procedure defined below; execution and thresholds pending approval       |
+| Load and failure behavior under the one-instance cap                               | Local real-Jason smoke plus controlled preproduction result                                                                         | Local deterministic smoke passed; preproduction run pending approval     |
 
 ## Threat model results
 
@@ -72,7 +72,11 @@ Validated on 2026-08-13 from the committed Gate 6 stack:
 - Backend TypeScript/Nest build: passed.
 - Git diff whitespace validation: passed.
 - Eval-stack GitHub CI: frontend and backend checks passed on all five stacked
-  draft PRs.
+  PRs, which are now merged.
+- Terraform 1.15.8 policy test: 1 passed, 0 failed against the pinned Google
+  7.39.0 provider; root and dev deployment configurations both validated.
+- Local deterministic load smoke: 40 of 40 real-Jason requests passed using
+  5,241,856-byte documents across Formatter, Diff, Patch, and Pointer.
 - Independent read-only review: no remaining findings.
 
 ### Reproducible evidence manifest
@@ -86,6 +90,26 @@ The committed Gate 6 stack and its successful GitHub Actions runs are:
 | Measured three-turn session cost | `ae5b5c8d2a43e976e7c1843f9818b0b70955d641` | [#107](https://github.com/anmollp/jason-app/pull/107) | [31721139134](https://github.com/anmollp/jason-app/actions/runs/31721139134) |
 | Hash-bound offline report        | `182f0ecccc47badaf6fc171c803ff76644b77d7c` | [#108](https://github.com/anmollp/jason-app/pull/108) | [31721137933](https://github.com/anmollp/jason-app/actions/runs/31721137933) |
 | Safe two-phase paid command      | `fad1862c3ebe246eaa0031a0dd7b5007020e2b0e` | [#109](https://github.com/anmollp/jason-app/pull/109) | [31721140065](https://github.com/anmollp/jason-app/actions/runs/31721140065) |
+
+Additional release-support evidence:
+
+| Evidence                         | Commit                                     | Pull request                                          | CI/deployment run                                                            |
+| -------------------------------- | ------------------------------------------ | ----------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Backend Docker workspace fix     | `1e244cf7112bad48ba0260fb1d34b4dd1324b474` | [#111](https://github.com/anmollp/jason-app/pull/111) | [31723609784](https://github.com/anmollp/jason-app/actions/runs/31723609784) |
+| Terraform policy CI              | `4940e4fe7b83700b48c6b8a87d77b82621e418ef` | [#114](https://github.com/anmollp/jason-app/pull/114) | [31723172390](https://github.com/anmollp/jason-app/actions/runs/31723172390) |
+| Local deterministic load harness | `ab1ac76a51e66be223fab455a6250624d88dd77b` | [#115](https://github.com/anmollp/jason-app/pull/115) | [31724426992](https://github.com/anmollp/jason-app/actions/runs/31724426992) |
+
+The backend recovery run built and pushed the image and updated Cloud Run
+successfully. This proves the Docker deployment failure is resolved; production
+health and user-flow smoke checks remain a separate approval boundary.
+
+The response-free local load report was generated on 2026-08-13 against
+`127.0.0.1` using the real Jason CLI. It passed 20/20 requests at concurrency
+one (p95 159.33 ms) and 20/20 at concurrency four (p95 201.18 ms). Its SHA-256
+is `7c940a5843d250554d5cf3152c842a573107669eeedeaa475a7f7e680a534d7c`.
+The artifact remains machine-local and contains only tool names, target and run
+metadata, counts, timings, and safe failure classifications. This is load-smoke
+evidence, not Cloud Run cold-start, CPU/memory, or capacity evidence.
 
 The local validation commands were run from `backend/`:
 
@@ -107,9 +131,10 @@ provider streams, unknown and duplicate tools, invalid arguments, request and
 CLI timeouts, cancellation, accounting timeout, concurrency, session/turn/tool
 quotas, oversized context, secret-safe errors, and AI-disabled behavior.
 
-These tests prove control behavior, not production capacity. No claim is made
-yet about production throughput, cold-start latency, Firestore contention,
-provider latency, or real cost.
+These tests and the local load smoke prove control behavior and local
+deterministic execution, not production capacity. No claim is made yet about
+production throughput, cold-start latency, CPU/memory headroom, Firestore
+contention, provider latency, or real cost.
 
 ## Paid evaluation procedure
 
@@ -259,7 +284,7 @@ cost will be published only after a hash-bound paid-evaluation report passes.
 
 ## Remaining approval boundaries
 
-- Merge each approved PR.
+- Merge the remaining approved support PRs.
 - Approve provider credentials, project limits, and paid Luna/Terra evaluation.
 - Approve the exact Terraform plan and apply.
 - Approve production smoke testing with the feature disabled.
