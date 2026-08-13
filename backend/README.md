@@ -175,6 +175,13 @@ eval-only comparison; switching the hosted model still requires approval.
 - `pnpm run test`: run unit tests.
 - `pnpm run test:e2e`: run e2e tests.
 - `pnpm run eval:routing`: run the paid 60-case provider evaluation.
+- `pnpm run test:load-harness`: test the localhost-only load runner.
+- `pnpm run load:deterministic`: send 20 requests per phase using near-5 MiB
+  documents at concurrency one and four. Diff carries two documents, producing
+  a roughly 10 MiB request body. Set `LOAD_BASE_URL` to change the literal
+  `127.0.0.1` or `[::1]` port; hostnames, non-loopback targets, and redirects are
+  rejected. The response-free JSON report can be retained and SHA-256 hashed as
+  release evidence.
 - `pnpm run lint`: run ESLint with fixes.
 
 ## Deployment note

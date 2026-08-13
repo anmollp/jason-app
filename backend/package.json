@@ -18,7 +18,9 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "eval:routing": "ts-node src/agent/evals/run-routing-eval.ts",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "load:deterministic": "node scripts/deterministic-load.mjs",
+    "test:load-harness": "node --test test/deterministic-load.test.mjs"
   },
   "dependencies": {
     "@google-cloud/firestore": "^7.11.6",
