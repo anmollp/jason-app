@@ -1,6 +1,8 @@
 packages:
   - .
+  - mcp
 
 allowBuilds:
+  esbuild: true
   protobufjs: false
   unrs-resolver: false
