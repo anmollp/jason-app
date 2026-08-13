@@ -106,6 +106,67 @@ Session and daily-ledger cleanup begins after 32 days; aggregate month ledgers
 are retained for roughly 13 months. Cleanup is opportunistic and avoids paid
 TTL deletion.
 
+## AI routing evaluation
+
+The release eval uses 60 versioned cases: ten each for Formatter, Diff, Patch,
+Pointer, ambiguous requests, and injection or abuse attempts. It exercises the
+production prompt, provider adapter, strict tool schemas, two-round tool loop,
+and local Jason validation.
+
+The command has a paid `run` phase and an offline `finalize` phase. Private
+reports contain synthetic model responses, are mode `0600`, never overwrite an
+existing report, and live under the gitignored `eval-reports/` directory.
+
+Run Luna and Terra separately from the dedicated, spend-capped eval project,
+using a new path for each run:
+
+```bash
+export OPENAI_API_KEY=...
+export JASON_CLI_PATH=/absolute/path/to/jason
+AI_EVAL_MODE=run AI_EVAL_CONFIRM_PAID=true \
+  AI_EVAL_MODEL=gpt-5.6-luna \
+  AI_EVAL_REPORT_PATH="$PWD/eval-reports/luna.private.json" \
+  pnpm run eval:routing
+AI_EVAL_MODE=run AI_EVAL_CONFIRM_PAID=true \
+  AI_EVAL_MODEL=gpt-5.6-terra \
+  AI_EVAL_REPORT_PATH="$PWD/eval-reports/terra.private.json" \
+  pnpm run eval:routing
+```
+
+Before constructing the provider, the command exercises all four contracts with
+the local Jason binary. Each successful run may then make up to 120 paid model
+requests. It fails fast on systemic authentication, billing, quota, permission,
+or rate-limit errors. Model responses are not printed to the terminal.
+
+Review each private `cases[].responseText`, then create a judgment file whose
+keys are the 60 case IDs and whose hashes exactly match that report:
+
+```json
+{
+  "formatter-valid-object": {
+    "reviewHash": "copy from the matching private case",
+    "pass": true
+  }
+}
+```
+
+Finalize the same run offline; this phase does not require an API key or paid
+confirmation:
+
+```bash
+AI_EVAL_MODE=finalize \
+  AI_EVAL_REPORT_PATH="$PWD/eval-reports/luna.private.json" \
+  AI_EVAL_JUDGMENTS_PATH="$PWD/eval-reports/luna.judgments.json" \
+  AI_EVAL_FINAL_REPORT_PATH="$PWD/eval-reports/luna.final.json" \
+  pnpm run eval:routing
+```
+
+The final report excludes response text. It is ready only when all 60 semantic
+reviews pass, routing reaches 90%, every tool call is schema-valid, every Patch
+proposal is Jason-valid, every model round has usage evidence, and the measured
+p95 across twenty three-turn Luna sessions is below $0.03. Terra remains an
+eval-only comparison; switching the hosted model still requires approval.
+
 ## Useful scripts
 
 - `pnpm run start:dev`: run the API in watch mode.
@@ -113,6 +174,7 @@ TTL deletion.
 - `pnpm run start:prod`: run the compiled app.
 - `pnpm run test`: run unit tests.
 - `pnpm run test:e2e`: run e2e tests.
+- `pnpm run eval:routing`: run the paid 60-case provider evaluation.
 - `pnpm run lint`: run ESLint with fixes.
 
 ## Deployment note
