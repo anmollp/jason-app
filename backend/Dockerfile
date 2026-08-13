@@ -28,7 +28,7 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --filter backend --frozen-lockfile
 
 FROM node:${NODE_VERSION} AS build
 
