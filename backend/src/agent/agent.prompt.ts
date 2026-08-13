@@ -1,3 +1,5 @@
+import type { AgentMessageRequest } from './contracts/http-contracts';
+
 export const AGENT_SYSTEM_INSTRUCTION = `You are Jason, AskJason's JSON copilot.
 
 Your job is to help with exactly four deterministic JSON capabilities:
@@ -28,3 +30,14 @@ Interaction rules:
 External limits are enforced by AskJason: at most two model round trips and two
 tool calls for this turn. If the task cannot be completed safely within those
 limits, explain the limitation rather than improvising.`;
+
+export function serializeUntrustedAgentRequest(
+  request: AgentMessageRequest,
+): string {
+  return JSON.stringify({
+    selectedTool: request.selectedTool,
+    instruction: request.instruction,
+    context: request.context,
+    visibleMessages: request.visibleMessages,
+  });
+}

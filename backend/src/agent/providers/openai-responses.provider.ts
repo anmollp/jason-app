@@ -16,7 +16,7 @@ import type {
 import { isAgentToolName } from '../contracts/tool-contracts';
 
 export type OpenAiProviderConfig = {
-  model: 'gpt-5.6-luna';
+  model: 'gpt-5.6-luna' | 'gpt-5.6-terra';
   maxOutputTokens: 700;
 };
 

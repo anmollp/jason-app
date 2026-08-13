@@ -19,7 +19,10 @@ import {
 import { AgentProviderRegistry } from './agent-provider.registry';
 import { AgentStateRepository } from './agent-state.repository';
 import { AgentTurnOrchestrator } from './agent-turn-orchestrator.service';
-import { AGENT_SYSTEM_INSTRUCTION } from './agent.prompt';
+import {
+  AGENT_SYSTEM_INSTRUCTION,
+  serializeUntrustedAgentRequest,
+} from './agent.prompt';
 import { AGENT_CONFIG } from './agent.tokens';
 import type {
   AgentMessageRequest,
@@ -194,7 +197,7 @@ export class AgentSessionService {
         visibleMessages: [
           {
             role: 'user' as const,
-            content: serializeUntrustedRequest(request),
+            content: serializeUntrustedAgentRequest(request),
           },
         ],
         tools: AGENT_TOOL_DEFINITIONS,
@@ -315,15 +318,6 @@ export class AgentSessionService {
     }
     return this.config;
   }
-}
-
-function serializeUntrustedRequest(request: AgentMessageRequest): string {
-  return JSON.stringify({
-    selectedTool: request.selectedTool,
-    instruction: request.instruction,
-    context: request.context,
-    visibleMessages: request.visibleMessages,
-  });
 }
 
 function mapTurnEvent(
