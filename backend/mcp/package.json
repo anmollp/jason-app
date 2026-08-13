@@ -5,11 +5,19 @@
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
+  "bin": {
+    "jason-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "test": "node --import tsx --test test/server.test.ts",
+    "build": "tsc --noEmit && node scripts/build.mjs",
+    "test": "pnpm run build && node --import tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -19,6 +27,7 @@
   "devDependencies": {
     "@modelcontextprotocol/client": "2.0.0",
     "@types/node": "^24.0.0",
+    "esbuild": "^0.28.2",
     "tsx": "^4.20.0",
     "typescript": "^5.7.3"
   }

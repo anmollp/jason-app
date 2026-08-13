@@ -88,3 +88,23 @@ jobs:
 
       - name: Build
         run: pnpm run build
+
+      - name: MCP lint
+        run: pnpm exec eslint "mcp/{src,test}/**/*.ts"
+
+      - name: Checkout pinned Jason CLI
+        uses: actions/checkout@v4
+        with:
+          repository: anmollp/jason
+          ref: 1a889e66c1b702dc04181dcf24a24a8713cc5a5e # v1.7.0
+          path: .jason-cli
+          persist-credentials: false
+
+      - name: Build pinned Jason CLI
+        working-directory: ${{ github.workspace }}/.jason-cli
+        run: cargo build --locked
+
+      - name: MCP build, protocol, parity, and integration tests
+        env:
+          JASON_CLI_PATH: ${{ github.workspace }}/.jason-cli/target/debug/jason
+        run: pnpm --filter @anmollp/jason-mcp test
