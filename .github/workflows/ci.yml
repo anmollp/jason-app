@@ -10,6 +10,42 @@ permissions:
   contents: read
 
 jobs:
+  terraform:
+    name: Terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+
+      - name: Check formatting
+        run: terraform fmt -check -recursive terraform
+
+      - name: Initialize providers
+        working-directory: terraform
+        run: terraform init -backend=false -input=false -lockfile=readonly
+
+      - name: Validate configuration
+        working-directory: terraform
+        run: terraform validate -no-color
+
+      - name: Test security policy
+        working-directory: terraform
+        run: terraform test -no-color
+
+      - name: Initialize deployment environment
+        working-directory: terraform/environments/dev
+        run: terraform init -backend=false -input=false -lockfile=readonly
+
+      - name: Validate deployment environment
+        working-directory: terraform/environments/dev
+        run: terraform validate -no-color
+
   frontend:
     name: Frontend
     runs-on: ubuntu-latest
