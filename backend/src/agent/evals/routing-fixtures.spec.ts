@@ -1,3 +1,4 @@
+import { parseAgentMessageRequest } from '../contracts/http-contracts';
 import {
   AGENT_RUNTIME_LIMITS,
   isAgentToolName,
@@ -7,7 +8,7 @@ import {
   type RoutingFixtureCategory,
 } from './routing-fixtures';
 
-describe('initial routing eval fixtures', () => {
+describe('release routing eval fixtures', () => {
   const categories: RoutingFixtureCategory[] = [
     'formatter',
     'diff',
@@ -17,34 +18,76 @@ describe('initial routing eval fixtures', () => {
     'injection',
   ];
 
-  it('contains twelve unique cases with two per category', () => {
-    expect(ROUTING_FIXTURES).toHaveLength(12);
+  it('contains sixty unique cases with ten per approved category', () => {
+    expect(ROUTING_FIXTURES).toHaveLength(60);
     expect(new Set(ROUTING_FIXTURES.map((fixture) => fixture.id)).size).toBe(
-      12,
+      60,
     );
 
     for (const category of categories) {
       expect(
         ROUTING_FIXTURES.filter((fixture) => fixture.category === category),
-      ).toHaveLength(2);
+      ).toHaveLength(10);
     }
   });
 
-  it('uses only approved tools and stays within contract fixture limits', () => {
+  it('passes the production request parser and uses only approved tools', () => {
     for (const fixture of ROUTING_FIXTURES) {
+      expect(() =>
+        parseAgentMessageRequest({
+          sessionId: `eval-${fixture.id}`,
+          selectedTool: fixture.selectedTool,
+          instruction: fixture.instruction,
+          context: fixture.context,
+          visibleMessages: [],
+        }),
+      ).not.toThrow();
       expect(fixture.instruction.length).toBeLessThanOrEqual(
         AGENT_RUNTIME_LIMITS.instructionCharacters,
       );
-      expect(
-        Object.values(fixture.context).reduce(
-          (bytes, value) => bytes + Buffer.byteLength(value),
-          0,
-        ),
-      ).toBeLessThanOrEqual(AGENT_RUNTIME_LIMITS.untrustedContextBytes);
 
       if (fixture.expected.decision === 'tool') {
         expect(isAgentToolName(fixture.expected.tool)).toBe(true);
       }
     }
+  });
+
+  it('preserves the approved routing and adversarial decision distribution', () => {
+    const expectedTools = {
+      formatter: 'format_json',
+      diff: 'diff_json',
+      patch: 'apply_json_patch',
+      pointer: 'resolve_json_pointer',
+    } as const;
+
+    for (const [category, expectedTool] of Object.entries(expectedTools)) {
+      const fixtures = ROUTING_FIXTURES.filter(
+        (fixture) => fixture.category === category,
+      );
+      expect(
+        fixtures.every(
+          (fixture) =>
+            fixture.expected.decision === 'tool' &&
+            fixture.expected.tool === expectedTool,
+        ),
+      ).toBe(true);
+    }
+
+    const ambiguous = ROUTING_FIXTURES.filter(
+      (fixture) => fixture.category === 'ambiguous',
+    );
+    expect(
+      ambiguous.every((fixture) => fixture.expected.decision === 'clarify'),
+    ).toBe(true);
+
+    const injection = ROUTING_FIXTURES.filter(
+      (fixture) => fixture.category === 'injection',
+    );
+    expect(
+      injection.filter((fixture) => fixture.expected.decision === 'tool'),
+    ).toHaveLength(5);
+    expect(
+      injection.filter((fixture) => fixture.expected.decision === 'refuse'),
+    ).toHaveLength(5);
   });
 });
