@@ -11,6 +11,7 @@ import type {
   AgentTurnEvent,
   ProviderTurnRequest,
 } from '../contracts/provider-contracts';
+import type { AgentVisibleMessage } from '../contracts/http-contracts';
 import {
   AGENT_CONTRACT_VERSION,
   AGENT_PROMPT_VERSION,
@@ -20,11 +21,31 @@ import {
 } from '../contracts/tool-contracts';
 import {
   summarizeRoutingEval,
+  percentile,
   type RoutingEvalCaseResult,
   type RoutingEvalModel,
   type RoutingEvalSummary,
 } from './routing-eval';
 import type { RoutingFixture } from './routing-fixtures';
+
+export type RoutingEvalSessionResult = {
+  id: string;
+  caseIds: string[];
+  turns: number;
+  usageEvidenceValid: boolean;
+  estimatedCostMicroUsd: number | null;
+};
+
+export type RoutingEvalRunOptions = {
+  turnsPerSession?: 1 | 3;
+  stopOnError?: (error: string) => boolean;
+};
+
+export type RoutingEvalSessionCostSummary = {
+  sessions: number;
+  p95SessionCostMicroUsd: number | null;
+  belowThirtyMilliUsd: boolean | null;
+};
 
 export class RoutingEvalRunner {
   private readonly validator = new AgentToolValidator();
@@ -37,16 +58,60 @@ export class RoutingEvalRunner {
 
   async run(
     fixtures: readonly RoutingFixture[],
-  ): Promise<{ cases: RoutingEvalCaseResult[]; summary: RoutingEvalSummary }> {
+    options: RoutingEvalRunOptions = {},
+  ): Promise<{
+    cases: RoutingEvalCaseResult[];
+    sessions: RoutingEvalSessionResult[];
+    sessionCost: RoutingEvalSessionCostSummary;
+    summary: RoutingEvalSummary;
+    fatalError?: string;
+  }> {
+    const turnsPerSession = options.turnsPerSession ?? 1;
     const cases: RoutingEvalCaseResult[] = [];
+    const sessions: RoutingEvalSessionResult[] = [];
+    let sessionCases: RoutingEvalCaseResult[] = [];
+    let transcript: AgentVisibleMessage[] = [];
+    let fatalError: string | undefined;
+
     for (const fixture of fixtures) {
-      cases.push(await this.runFixture(fixture));
+      const result = await this.runFixture(fixture, transcript);
+      cases.push(result);
+      sessionCases.push(result);
+      transcript.push(
+        { role: 'user', content: fixture.instruction },
+        {
+          role: 'assistant',
+          content:
+            result.responseText ||
+            'The deterministic JSON operation completed without an additional message.',
+        },
+      );
+
+      if (sessionCases.length === turnsPerSession) {
+        sessions.push(summarizeSession(sessionCases, sessions.length));
+        sessionCases = [];
+        transcript = [];
+      }
+      if (result.error && options.stopOnError?.(result.error)) {
+        fatalError = result.error;
+        break;
+      }
     }
-    return { cases, summary: summarizeRoutingEval(cases, this.model) };
+    if (sessionCases.length > 0) {
+      sessions.push(summarizeSession(sessionCases, sessions.length));
+    }
+    return {
+      cases,
+      sessions,
+      sessionCost: summarizeSessionCosts(sessions, turnsPerSession),
+      summary: summarizeRoutingEval(cases, this.model),
+      ...(fatalError ? { fatalError } : {}),
+    };
   }
 
   private async runFixture(
     fixture: RoutingFixture,
+    visibleMessages: readonly AgentVisibleMessage[],
   ): Promise<RoutingEvalCaseResult> {
     const events: AgentTurnEvent[] = [];
     let error: string | undefined;
@@ -54,7 +119,7 @@ export class RoutingEvalRunner {
     try {
       for await (const event of this.orchestrator.streamTurn(
         this.provider,
-        createProviderRequest(fixture),
+        createProviderRequest(fixture, visibleMessages),
         AbortSignal.timeout(AGENT_RUNTIME_LIMITS.requestTimeoutSeconds * 1_000),
       )) {
         events.push(event);
@@ -167,7 +232,10 @@ export class RoutingEvalRunner {
   }
 }
 
-function createProviderRequest(fixture: RoutingFixture): ProviderTurnRequest {
+function createProviderRequest(
+  fixture: RoutingFixture,
+  visibleMessages: readonly AgentVisibleMessage[],
+): ProviderTurnRequest {
   return {
     contractVersion: AGENT_CONTRACT_VERSION,
     promptVersion: AGENT_PROMPT_VERSION,
@@ -180,7 +248,7 @@ function createProviderRequest(fixture: RoutingFixture): ProviderTurnRequest {
           selectedTool: fixture.selectedTool,
           instruction: fixture.instruction,
           context: fixture.context,
-          visibleMessages: [],
+          visibleMessages,
         }),
       },
     ],
@@ -196,6 +264,49 @@ function createProviderRequest(fixture: RoutingFixture): ProviderTurnRequest {
       retainProviderState: false,
       abuseIdentifier: `askjason-eval-${fixture.id}`,
     },
+  };
+}
+
+function summarizeSession(
+  cases: readonly RoutingEvalCaseResult[],
+  index: number,
+): RoutingEvalSessionResult {
+  const costs = cases.flatMap((item) =>
+    item.estimatedCostMicroUsd === null ? [] : [item.estimatedCostMicroUsd],
+  );
+  return {
+    id: `session-${index + 1}`,
+    caseIds: cases.map((item) => item.id),
+    turns: cases.length,
+    usageEvidenceValid: cases.every((item) => item.usageEvidenceValid),
+    estimatedCostMicroUsd:
+      costs.length === cases.length
+        ? costs.reduce((total, cost) => total + cost, 0)
+        : null,
+  };
+}
+
+function summarizeSessionCosts(
+  sessions: readonly RoutingEvalSessionResult[],
+  turnsPerSession: 1 | 3,
+): RoutingEvalSessionCostSummary {
+  const measuredCosts = sessions.flatMap((session) =>
+    session.turns === 3 && session.estimatedCostMicroUsd !== null
+      ? [session.estimatedCostMicroUsd]
+      : [],
+  );
+  const measurementComplete =
+    turnsPerSession === 3 &&
+    sessions.length > 0 &&
+    measuredCosts.length === sessions.length;
+  const p95SessionCostMicroUsd = measurementComplete
+    ? percentile(measuredCosts, 0.95)
+    : null;
+  return {
+    sessions: sessions.length,
+    p95SessionCostMicroUsd,
+    belowThirtyMilliUsd:
+      p95SessionCostMicroUsd === null ? null : p95SessionCostMicroUsd < 30_000,
   };
 }
 
