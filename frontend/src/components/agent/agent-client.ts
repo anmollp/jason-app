@@ -13,6 +13,33 @@ export type AgentVisibleMessage = {
   content: string;
 };
 
+export type AgentJsonPatchOperation =
+  | { op: "add" | "replace" | "test"; path: string; value: unknown }
+  | { op: "remove"; path: string }
+  | { op: "move" | "copy"; from: string; path: string };
+
+export type AgentProposalDataMap = {
+  formatter: { output: string };
+  diff: {
+    operations: AgentJsonPatchOperation[];
+    summary: { changes: number; added: number; removed: number; replaced: number };
+  };
+  patch: {
+    output: string;
+    summary: { operations: number; added: number; removed: number; replaced: number };
+  };
+  pointer: {
+    output: string;
+    summary: {
+      depth: number;
+      found: boolean;
+      issues: number;
+      kind: string;
+      path: string;
+    };
+  };
+};
+
 export type AgentSession = {
   sessionId: string;
   expiresAt: string;
@@ -21,10 +48,12 @@ export type AgentSession = {
 };
 
 export type AgentProposal = {
-  tool: AgentSelectedTool;
-  data: unknown;
-  validation: "jason";
-};
+  [Tool in AgentSelectedTool]: {
+    tool: Tool;
+    data: AgentProposalDataMap[Tool];
+    validation: "jason";
+  };
+}[AgentSelectedTool];
 
 export type AgentEvent =
   | { type: "status"; phase: string; message: string }
@@ -149,18 +178,6 @@ export function measureAgentContextBytes(
   ).length;
 }
 
-export function patchProposalOutput(
-  proposal: AgentProposal | undefined,
-): string | undefined {
-  if (proposal?.tool !== "patch" || !isRecord(proposal.data)) {
-    return undefined;
-  }
-
-  return typeof proposal.data.output === "string"
-    ? proposal.data.output
-    : undefined;
-}
-
 export function parseSseEventBlock(block: string): AgentEvent | undefined {
   let eventName = "";
   const data: string[] = [];
@@ -260,9 +277,7 @@ function parseAgentEvent(value: unknown): AgentEvent {
       }
       return {
         type: value.type,
-        tool: value.tool,
-        data: value.data,
-        validation: value.validation,
+        ...parseProposal(value.tool, value.data),
       };
     case "usage": {
       if (
@@ -370,6 +385,145 @@ function isAgentToolName(value: unknown): value is AgentToolName {
     value === "apply_json_patch" ||
     value === "resolve_json_pointer"
   );
+}
+
+function parseProposal(
+  tool: AgentSelectedTool,
+  data: unknown,
+): AgentProposal {
+  if (!isRecord(data)) {
+    malformedStream();
+  }
+
+  switch (tool) {
+    case "formatter":
+      if (!hasOnlyKeys(data, ["output"]) || typeof data.output !== "string") {
+        malformedStream();
+      }
+      return { tool, data: { output: data.output }, validation: "jason" };
+    case "diff": {
+      const summary = parseCountSummary(data.summary, "changes");
+      if (
+        !hasOnlyKeys(data, ["operations", "summary"]) ||
+        !Array.isArray(data.operations) ||
+        !data.operations.every(isJsonPatchOperation)
+      ) {
+        malformedStream();
+      }
+      return {
+        tool,
+        data: { operations: data.operations, summary },
+        validation: "jason",
+      };
+    }
+    case "patch": {
+      const summary = parseCountSummary(data.summary, "operations");
+      if (
+        !hasOnlyKeys(data, ["output", "summary"]) ||
+        typeof data.output !== "string"
+      ) {
+        malformedStream();
+      }
+      return { tool, data: { output: data.output, summary }, validation: "jason" };
+    }
+    case "pointer":
+      if (
+        !hasOnlyKeys(data, ["output", "summary"]) ||
+        typeof data.output !== "string" ||
+        !isRecord(data.summary) ||
+        !hasOnlyKeys(data.summary, ["depth", "found", "issues", "kind", "path"]) ||
+        !isNonNegativeInteger(data.summary.depth) ||
+        typeof data.summary.found !== "boolean" ||
+        !isNonNegativeInteger(data.summary.issues) ||
+        typeof data.summary.kind !== "string" ||
+        typeof data.summary.path !== "string"
+      ) {
+        malformedStream();
+      }
+      return {
+        tool,
+        data: {
+          output: data.output,
+          summary: {
+            depth: data.summary.depth,
+            found: data.summary.found,
+            issues: data.summary.issues,
+            kind: data.summary.kind,
+            path: data.summary.path,
+          },
+        },
+        validation: "jason",
+      };
+  }
+}
+
+function parseCountSummary<TotalKey extends "changes" | "operations">(
+  value: unknown,
+  totalKey: TotalKey,
+): Record<TotalKey, number> & {
+  added: number;
+  removed: number;
+  replaced: number;
+} {
+  if (
+    !isRecord(value) ||
+    !hasOnlyKeys(value, [totalKey, "added", "removed", "replaced"]) ||
+    !isNonNegativeInteger(value[totalKey]) ||
+    !isNonNegativeInteger(value.added) ||
+    !isNonNegativeInteger(value.removed) ||
+    !isNonNegativeInteger(value.replaced)
+  ) {
+    malformedStream();
+  }
+
+  return {
+    [totalKey]: value[totalKey],
+    added: value.added,
+    removed: value.removed,
+    replaced: value.replaced,
+  } as Record<TotalKey, number> & {
+    added: number;
+    removed: number;
+    replaced: number;
+  };
+}
+
+function isJsonPatchOperation(value: unknown): value is AgentJsonPatchOperation {
+  if (
+    !isRecord(value) ||
+    typeof value.op !== "string" ||
+    typeof value.path !== "string"
+  ) {
+    return false;
+  }
+
+  switch (value.op) {
+    case "add":
+    case "replace":
+    case "test":
+      return (
+        hasOnlyKeys(value, ["op", "path", "value"]) &&
+        Object.hasOwn(value, "value")
+      );
+    case "remove":
+      return hasOnlyKeys(value, ["op", "path"]);
+    case "move":
+    case "copy":
+      return (
+        hasOnlyKeys(value, ["op", "from", "path"]) &&
+        typeof value.from === "string"
+      );
+    default:
+      return false;
+  }
+}
+
+function hasOnlyKeys(value: Record<string, unknown>, allowed: string[]): boolean {
+  return Object.keys(value).every((key) => allowed.includes(key));
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return isNonNegativeNumber(value) && Number.isInteger(value);
 }
 
 function malformedStream(): never {
