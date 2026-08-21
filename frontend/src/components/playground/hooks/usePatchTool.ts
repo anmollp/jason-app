@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { patchJson } from "../api";
 import { patchDocumentJson, patchOperationSample } from "../constants";
@@ -39,6 +39,7 @@ export function usePatchTool(resetCopyMessage: () => void) {
   const [patchResult, setPatchResult] = useState<PatchJsonResponse | null>(null);
   const [selectedPatchLine, setSelectedPatchLine] = useState<number | undefined>();
   const [selectedPatchPath, setSelectedPatchPath] = useState("");
+  const requestGeneration = useRef(0);
   const patchInput = JSON.stringify(patchOperations);
   const payloadSizeBytes = getJsonRequestByteLength({
     document: patchDocumentInput,
@@ -55,6 +56,7 @@ export function usePatchTool(resetCopyMessage: () => void) {
   }
 
   function resetPatchResult() {
+    requestGeneration.current += 1;
     setPatchOutput("");
     setPatchError("");
     setPatchErrorField(undefined);
@@ -116,6 +118,7 @@ export function usePatchTool(resetCopyMessage: () => void) {
   }
 
   async function handlePatch() {
+    const generation = ++requestGeneration.current;
     if (
       patchState === "thinking" ||
       !patchDocumentInput.trim() ||
@@ -155,6 +158,10 @@ export function usePatchTool(resetCopyMessage: () => void) {
         patchInput,
       );
 
+      if (generation !== requestGeneration.current) {
+        return;
+      }
+
       if (
         typeof patchResponse.output !== "string" ||
         typeof patchResponse.summary?.operations !== "number"
@@ -167,6 +174,9 @@ export function usePatchTool(resetCopyMessage: () => void) {
       setPatchErrorField(undefined);
       setPatchState("success");
     } catch (error) {
+      if (generation !== requestGeneration.current) {
+        return;
+      }
       const message =
         error instanceof Error ? error.message : "Jason could not apply this patch.";
       const field = errorField(error);
@@ -197,12 +207,20 @@ export function usePatchTool(resetCopyMessage: () => void) {
     resetPatchResult();
   }
 
-  function applyAgentProposal(output: string) {
+  function applyAgentProposal(result: PatchJsonResponse | string): boolean {
+    const output = typeof result === "string" ? result : result.output;
+    try {
+      JSON.parse(output);
+    } catch {
+      return false;
+    }
+
     setPatchDocumentInput(output);
     setPatchOperations([]);
     setSelectedPatchLine(undefined);
     setSelectedPatchPath("");
     resetPatchResult();
+    return true;
   }
 
   const patchErrorLine =
