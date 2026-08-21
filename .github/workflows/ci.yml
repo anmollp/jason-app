@@ -46,6 +46,10 @@ jobs:
         working-directory: terraform/environments/dev
         run: terraform validate -no-color
 
+      - name: Test deployment wrapper defaults
+        working-directory: terraform/environments/dev
+        run: terraform test -no-color
+
   frontend:
     name: Frontend
     runs-on: ubuntu-latest
