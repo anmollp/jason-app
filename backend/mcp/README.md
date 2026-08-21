@@ -9,11 +9,11 @@ Codex, OpenAI, or any model provider.
 - Node.js 22 or newer
 - Rust and Cargo to install Jason
 
-Install the v1.7.0 Jason CLI release by its immutable commit:
+Install the v1.7.1 Jason CLI release by its immutable commit:
 
 ```sh
 cargo install --git https://github.com/anmollp/jason \
-  --rev 1a889e66c1b702dc04181dcf24a24a8713cc5a5e --locked
+  --rev a47a1266567b57c00b18d6ff0447c90e63186cde --locked
 ```
 
 ## Build and run locally

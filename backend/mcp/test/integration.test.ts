@@ -22,7 +22,7 @@ import { createJasonMcpServer } from '../src/server.js';
 
 const cliPath = process.env.JASON_CLI_PATH;
 
-void describe('Jason v1.7.0 integration', { skip: !cliPath }, () => {
+void describe('Jason v1.7.1 integration', { skip: !cliPath }, () => {
   void it('executes all four tools through the generic MCP protocol', async () => {
     const server = createJasonMcpServer({
       commands: new JasonCliRunner({
