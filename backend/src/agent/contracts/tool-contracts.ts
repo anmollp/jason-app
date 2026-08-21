@@ -6,7 +6,7 @@ import type {
 } from '../../json-tools.types';
 
 export const AGENT_CONTRACT_VERSION = 'askjason.agent.v1' as const;
-export const AGENT_PROMPT_VERSION = 'askjason.agent-prompt.v2' as const;
+export const AGENT_PROMPT_VERSION = 'askjason.agent-prompt.v3' as const;
 export const AGENT_TOOL_CONTRACT_VERSION = 'askjason.agent-tools.v1' as const;
 
 export const AGENT_RUNTIME_LIMITS = {
