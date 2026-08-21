@@ -15,7 +15,10 @@ describe('agent system instruction', () => {
       'ask exactly one focused clarification',
     );
     expect(AGENT_SYSTEM_INSTRUCTION).toContain(
-      'a specific natural-language change plus a document is sufficient',
+      'each requested change uniquely determines its target, operation, and any',
+    );
+    expect(AGENT_SYSTEM_INSTRUCTION).toContain(
+      'requests every unresolved target, operation, and\n  required value; do not infer them',
     );
     const refusalRule = AGENT_SYSTEM_INSTRUCTION.indexOf(
       'Before considering selectedTool',
