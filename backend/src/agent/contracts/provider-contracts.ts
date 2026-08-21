@@ -1,4 +1,5 @@
 import type {
+  AGENT_PROMPT_VERSION,
   AgentToolName,
   ProviderNeutralToolDefinition,
 } from './tool-contracts';
@@ -12,7 +13,7 @@ export type NormalizedMessage = {
 
 export type ProviderTurnRequest = {
   contractVersion: 'askjason.agent.v1';
-  promptVersion: 'askjason.agent-prompt.v1';
+  promptVersion: typeof AGENT_PROMPT_VERSION;
   systemInstruction: string;
   visibleMessages: readonly NormalizedMessage[];
   tools: readonly ProviderNeutralToolDefinition[];
