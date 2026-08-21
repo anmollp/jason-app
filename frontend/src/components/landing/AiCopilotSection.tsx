@@ -23,7 +23,7 @@ export function AiCopilotSection() {
             </Button>
           </div>
           <p className="mt-5 font-mono text-xs leading-6 text-zinc-400 sm:text-sm">
-            Anonymous · 1 guided session / rolling 24h · 3 turns · 16 KB context
+            Account-free · 1 guided session / rolling 24h · 3 turns · 16 KB context
           </p>
         </div>
 
@@ -60,7 +60,7 @@ export function AiCopilotSection() {
       </div>
 
       <div className="mt-16 grid gap-6 rounded-xl border border-zinc-800 bg-zinc-900 p-6 sm:grid-cols-2 lg:grid-cols-4">
-        <TrustItem title="3 turns / 24h" detail="Anonymous guided session" />
+        <TrustItem title="3 turns / 24h" detail="Signed visitor session" />
         <TrustItem title="4 fixed tools" detail="No shell, network, or URLs" />
         <TrustItem title="Rust authoritative" detail="Proposal before apply" />
         <TrustItem title="$20 monthly target" detail="Planned $8 provider hard cap" />
