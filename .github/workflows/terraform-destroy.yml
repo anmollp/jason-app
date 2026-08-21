@@ -32,8 +32,10 @@ jobs:
 
     steps:
       - name: Validate confirmation
+        env:
+          DESTROY_CONFIRMATION: ${{ inputs.confirmation }}
         run: |
-          if [ "${{ inputs.confirmation }}" != "destroy" ]; then
+          if [ "$DESTROY_CONFIRMATION" != "destroy" ]; then
             echo "::error::Type destroy in the confirmation input."
             exit 1
           fi
@@ -136,6 +138,7 @@ jobs:
 
           Comment `yes`, `lgtm`, `done`, `approve`, or `approved` to apply this destroy plan.
           Comment `no`, `stop`, `deny`, `denied`, or `cancel` to stop this run.
+          Only @${{ github.repository_owner }} can approve or deny this destruction.
           EOF
 
           issue_url=$(gh issue create \
@@ -152,12 +155,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.approval_issue.outputs.issue_number }}
+          APPROVER_LOGIN: ${{ github.repository_owner }}
         run: |
           approve_pattern='^(yes|y|lgtm|done|approve|approved)$'
           deny_pattern='^(no|n|stop|deny|denied|cancel)$'
 
           for attempt in $(seq 1 60); do
-            comments=$(gh api "repos/${{ github.repository }}/issues/${ISSUE_NUMBER}/comments" --jq '.[].body')
+            comments=$(gh api --paginate \
+              "repos/${{ github.repository }}/issues/${ISSUE_NUMBER}/comments?per_page=100" \
+              --jq ".[] | select(.user.login == \"${APPROVER_LOGIN}\") | .body")
             decision=$(printf '%s\n' "$comments" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | awk -v approve="$approve_pattern" -v deny="$deny_pattern" '
               {
                 token=$1

@@ -189,6 +189,13 @@ terraform apply -auto-approve tfplan
 
 Approve by commenting `yes`, `lgtm`, `done`, `approve`, or `approved` on the
 issue. Deny by commenting `no`, `stop`, `deny`, `denied`, or `cancel`.
+Only comments from the repository owner are considered; other commenters cannot
+approve or deny either Terraform workflow.
+
+The deploy workflow keeps `ai_enabled` false by default. Its optional AI inputs
+accept the two pinned numeric Secret Manager versions as a pair. Enabling AI
+without both versions fails before planning, and the selected values are bound
+into the saved plan that the apply job later consumes.
 
 Terraform deploy and destroy workflows use
 `GCP_TERRAFORM_SERVICE_ACCOUNT`, which should be set from the
