@@ -6,12 +6,10 @@ enablement, quota changes, or release.
 
 ## Current verdict
 
-**Not ready for production enablement.** The implementation, local failure
-controls, and paid Luna evaluation are complete. All automatic model gates
-passed, but one of 60 human semantic judgments failed because an ambiguous
-Patch request did not clarify both the field and value. The infrastructure plan
-and apply, production smoke test, pilot observation, and final rollout
-approvals also remain outstanding.
+**Model-ready, not ready for production enablement.** The implementation, local
+failure controls, and paid Luna evaluation are complete, and all automatic and
+semantic model gates pass. The infrastructure plan and apply, production smoke
+test, pilot observation, and final rollout approvals remain outstanding.
 
 The deterministic Formatter, Diff, Patch, and Pointer paths remain independent
 of the AI feature and retain their 5 MiB request support.
@@ -25,7 +23,7 @@ of the AI feature and retain their 5 MiB request support.
 | 100% schema-valid tool calls                                                       | Fail-closed scorer and final Luna report                                                                                            | 100% on the final paid run                                             |
 | 100% Jason-valid Patch proposals                                                   | Every Patch call matched by call ID to a successful Jason result                                                                    | 100% on the final paid run                                             |
 | Zero unapproved workspace changes                                                  | Proposal-only backend plus explicit frontend Apply/Discard tests                                                                    | Validated locally and in CI                                            |
-| Measured p95 Luna session cost below $0.03                                         | Twenty measured three-turn sessions with prior transcript context                                                                   | $0.001512 on the final paid run                                        |
+| Measured p95 Luna session cost below $0.03                                         | Twenty measured three-turn sessions with prior transcript context                                                                   | $0.000918 on the final paid run                                        |
 | Three turns, two model rounds per turn, two tools per turn, four tools per session | Contract, orchestrator, state repository, and focused tests                                                                         | Validated locally and in CI                                            |
 | One concurrent request                                                             | Firestore lease transaction and concurrency test                                                                                    | Validated locally and in CI                                            |
 | 60-second request timeout                                                          | Session timeout tests, provider cancellation, five-second accounting bound                                                          | Validated locally and in CI                                            |
@@ -84,22 +82,26 @@ Validated on 2026-08-13 from the committed Gate 6 stack:
 
 ### Paid Luna evaluation
 
-Three explicitly approved Luna runs were completed with no Terra run. The
-third run was a one-time exception to the normal two-iteration limit after the
-second run's semantic review exposed a narrow clarification/refusal gap.
+Four explicitly approved Luna runs were completed with no Terra run. The third
+and fourth runs were one-time exceptions to the normal two-iteration limit to
+resolve two narrow semantic clarification failures.
 
 | Iteration | Prompt | Jason CLI             | Routing | Schema | Jason-valid Patch | p95 three-turn session | Human semantic review | Ready |
 | --------- | ------ | --------------------- | ------- | ------ | ----------------- | ---------------------- | --------------------- | ----- |
 | 1         | v1     | `1a889e66`            | 85%     | 100%   | 85.714%           | $0.001797              | Not finalized         | No    |
 | 2         | v2     | `1a889e66`            | 93.333% | 100%   | 100%              | $0.001653              | 54/60                 | No    |
 | 3         | v3     | `a47a1266` (`v1.7.1`) | 100%    | 100%   | 100%              | $0.001512              | 59/60                 | No    |
+| 4         | v4     | `a47a1266` (`v1.7.1`) | 100%    | 100%   | 100%              | $0.000918              | 60/60                 | Yes   |
 
-The final run passed all automatic gates across 60 cases and twenty measured
-three-turn sessions. Its only semantic failure was `ambiguous-patch-date`: the
-model asked for the date but assumed the `updated` field even though both
-`created` and `updated` were plausible. The response-free final report therefore
-correctly remains `ready: false`. Estimated model spend was $0.027194,
-$0.026173, and $0.025238 respectively, or $0.078605 combined.
+The final run passed all automatic and semantic gates across 60 cases and twenty
+measured three-turn sessions. In particular, `ambiguous-patch-date` requested
+the unresolved target, operation, and value without assuming a field. The
+response-free final report is `ready: true`. Estimated full-run model spend was
+$0.027194, $0.026173, $0.025238, and $0.012710 respectively, or $0.091315
+combined. Two initial iteration-four attempts stopped on provider HTTP 500s
+with zero tokens and usage records. A bounded diagnostic opened a stream and
+was aborted at `response.created`; the conservative iteration-four upper bound,
+including that diagnostic, is $0.014001 against the approved $0.03 cap.
 
 The private reports and judgments remain local with mode `0600`; no response
 text or credential is committed. Evidence hashes:
@@ -112,6 +114,10 @@ text or credential is committed. Evidence hashes:
 - Iteration 3 judgments SHA-256: `79391830f71c14c3ab5735d620603dce1d093ed5e393b4ec0cd719032ea0f292`.
 - Iteration 3 response-free final report SHA-256: `593616ffc7863ddd68a0ad40e747b8b05d2085eb6003e6e9e9640c8b4eb93916`.
 - Iteration 3 completed manifest SHA-256: `880aa29d9d18ea4d8b0ff1c69bd0550bd525a358e13072cdfb1e4a4b6510c6ca`.
+- Iteration 4 private report SHA-256: `4c07f33f61233a9b4dda377455536f8024277b3dc0d242f0cac975ca5decaf80`.
+- Iteration 4 judgments SHA-256: `589896a56ffc07f450c0c16c79126af47227e51981d4a3eeb7a2040387801c22`.
+- Iteration 4 response-free final report SHA-256: `0fb02f3d1609cda36f22c4e7213061deb1e3608c53248b68fe7fe5a8b3aca2d6`.
+- Iteration 4 completed manifest SHA-256: `3a1a54470f08baf5f6140a7009d18fbbd688b1720e6991dfcfdb0b3661d89da3`.
 
 The dedicated provider project has auto-reload disabled, an enforced $8 hard
 limit, and alerts at $4, $6, and $7.20. No secret value is part of this evidence.
@@ -191,8 +197,8 @@ and model spend has been approved.
    private report's SHA-256 hash and hash the completed manifest. The report
    schema records `promptVersion`; the manifest supplies the iteration audit.
    Do not normally exceed two prompt iterations. The 2026-08-21 Luna evaluation
-   used one explicitly approved third iteration; this exception does not change
-   the default policy for future evaluations.
+   used explicitly approved third and fourth iterations; these exceptions do
+   not change the default policy for future evaluations.
 7. Repeat for Terra only for the approved model comparison.
 8. Keep Luna if it reaches at least 90% routing accuracy. If only Terra reaches
    90%, request approval both to switch the hosted model and to reduce the
@@ -322,14 +328,13 @@ available.
 
 The release also documents its provider-neutral agent contract, strict tool
 schemas, privacy boundaries, moderation, transactional quotas, budget controls,
-evaluation method, and local client-neutral MCP server. The measured session
-cost remains internal release evidence until a hash-bound paid-evaluation
-report passes every automatic and semantic gate.
+evaluation method, and local client-neutral MCP server. A hash-bound paid Luna
+report now passes every automatic and semantic gate; its measured cost remains
+internal release evidence pending the production pilot.
 
 ## Remaining approval boundaries
 
-- Decide whether to remediate and re-evaluate the one remaining semantic miss
-  or explicitly accept a change to the semantic readiness criterion.
+- Merge the prompt-v4 and response-free evidence changes after review.
 - Approve the exact Terraform plan and apply.
 - Approve production smoke testing with the feature disabled.
 - Approve the 10-session-per-day pilot enablement.
