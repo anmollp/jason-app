@@ -53,7 +53,6 @@ export function PlaygroundShell({ aiEnabled = false }: { aiEnabled?: boolean }) 
     payloadLimitLabel: diffPayloadLimitLabel,
   } = diff;
   const {
-    applyAgentProposal,
     handlePatch,
     isOverPayloadLimit: isOverPatchPayloadLimit,
     isThinking: isPatching,
@@ -420,27 +419,41 @@ export function PlaygroundShell({ aiEnabled = false }: { aiEnabled?: boolean }) 
             <span className="font-mono text-xl font-semibold">AskJason</span>
           </Link>
           <nav className="flex items-center gap-3">
-            <Button
-              href="/"
-              variant="secondary"
-              className="hidden h-10 rounded-lg px-4 text-xs sm:inline-flex"
-            >
-              Landing
-            </Button>
-            <Button
-              href="https://github.com/anmollp/jason"
-              variant="secondary"
-              className="hidden h-10 rounded-lg px-4 text-xs sm:inline-flex"
-            >
-              GitHub
-            </Button>
+            <span className="hidden sm:contents">
+              <Button
+                href="/"
+                variant="secondary"
+                className="h-10 rounded-lg px-4 text-xs"
+              >
+                Landing
+              </Button>
+              <Button
+                href="https://github.com/anmollp/jason"
+                variant="secondary"
+                className="h-10 rounded-lg px-4 text-xs"
+              >
+                GitHub
+              </Button>
+            </span>
             {aiEnabled ? (
               <AgentCopilot
                 selectedTool={agentTool}
                 context={agentContext}
-                onApplyPatchProposal={(output) => {
-                  setActiveTool("Patch");
-                  applyAgentProposal(output);
+                onApplyProposal={(proposal) => {
+                  switch (proposal.tool) {
+                    case "formatter":
+                      setActiveTool("Formatter");
+                      return formatter.applyAgentProposal(proposal.data);
+                    case "diff":
+                      setActiveTool("Diff");
+                      return diff.applyAgentProposal(proposal.data);
+                    case "patch":
+                      setActiveTool("Patch");
+                      return patch.applyAgentProposal(proposal.data);
+                    case "pointer":
+                      setActiveTool("Pointer");
+                      return pointer.applyAgentProposal(proposal.data);
+                  }
                 }}
               />
             ) : null}
