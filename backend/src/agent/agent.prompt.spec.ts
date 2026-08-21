@@ -17,6 +17,16 @@ describe('agent system instruction', () => {
     expect(AGENT_SYSTEM_INSTRUCTION).toContain(
       'a specific natural-language change plus a document is sufficient',
     );
-    expect(AGENT_SYSTEM_INSTRUCTION).toContain('refuse concisely and call no');
+    const refusalRule = AGENT_SYSTEM_INSTRUCTION.indexOf(
+      'Before considering selectedTool',
+    );
+    const selectedToolRule = AGENT_SYSTEM_INSTRUCTION.indexOf(
+      'Otherwise the selectedTool',
+    );
+    expect(refusalRule).toBeGreaterThan(-1);
+    expect(selectedToolRule).toBeGreaterThan(refusalRule);
+    expect(AGENT_SYSTEM_INSTRUCTION).toContain(
+      'only when exactly one\n  collection is a plausible target',
+    );
   });
 });
