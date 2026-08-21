@@ -167,5 +167,5 @@ variable "ai_identity_key_secret_version" {
 variable "ai_daily_session_limit" {
   description = "Hosted AI sessions per day: 10 for pilot or 20 after expansion approval."
   type        = number
-  default     = 20
+  default     = 10
 }
