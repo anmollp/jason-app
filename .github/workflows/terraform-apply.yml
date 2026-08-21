@@ -10,6 +10,21 @@ on:
         type: choice
         options:
           - dev
+      ai_enabled:
+        description: "Enable the hosted AI copilot after release approval."
+        required: true
+        default: false
+        type: boolean
+      openai_api_key_secret_version:
+        description: "Pinned numeric OpenAI Secret Manager version; leave empty to detach."
+        required: false
+        default: ""
+        type: string
+      ai_identity_key_secret_version:
+        description: "Pinned numeric identity-key Secret Manager version; leave empty to detach."
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -58,6 +73,22 @@ jobs:
             exit 1
           fi
 
+      - name: Validate AI rollout inputs
+        env:
+          AI_ENABLED_INPUT: ${{ inputs.ai_enabled }}
+          OPENAI_SECRET_VERSION_INPUT: ${{ inputs.openai_api_key_secret_version }}
+          IDENTITY_SECRET_VERSION_INPUT: ${{ inputs.ai_identity_key_secret_version }}
+        run: |
+          if { [ -n "$OPENAI_SECRET_VERSION_INPUT" ] && [ -z "$IDENTITY_SECRET_VERSION_INPUT" ]; } || \
+             { [ -z "$OPENAI_SECRET_VERSION_INPUT" ] && [ -n "$IDENTITY_SECRET_VERSION_INPUT" ]; }; then
+            echo "::error::Supply both pinned AI secret versions or leave both detached."
+            exit 1
+          fi
+          if [ "$AI_ENABLED_INPUT" = "true" ] && [ -z "$OPENAI_SECRET_VERSION_INPUT" ]; then
+            echo "::error::Both pinned AI secret versions are required before enablement."
+            exit 1
+          fi
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -87,6 +118,10 @@ jobs:
 
       - name: Terraform plan
         working-directory: ${{ env.TF_WORKING_DIR }}
+        env:
+          TF_VAR_ai_enabled: ${{ inputs.ai_enabled }}
+          TF_VAR_openai_api_key_secret_version: ${{ inputs.openai_api_key_secret_version }}
+          TF_VAR_ai_identity_key_secret_version: ${{ inputs.ai_identity_key_secret_version }}
         run: |
           terraform plan \
             -var="project_id=${{ vars.GCP_PROJECT_ID }}" \
@@ -124,9 +159,11 @@ jobs:
 
           Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           Branch: `${{ github.ref_name }}`
+          AI enabled: `${{ inputs.ai_enabled }}`
 
           Comment `yes`, `lgtm`, `done`, `approve`, or `approved` to apply this plan.
           Comment `no`, `stop`, `deny`, `denied`, or `cancel` to stop this run.
+          Only @${{ github.repository_owner }} can approve or deny this deployment.
           EOF
 
           issue_url=$(gh issue create \
@@ -143,12 +180,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.approval_issue.outputs.issue_number }}
+          APPROVER_LOGIN: ${{ github.repository_owner }}
         run: |
           approve_pattern='^(yes|y|lgtm|done|approve|approved)$'
           deny_pattern='^(no|n|stop|deny|denied|cancel)$'
 
           for attempt in $(seq 1 60); do
-            comments=$(gh api "repos/${{ github.repository }}/issues/${ISSUE_NUMBER}/comments" --jq '.[].body')
+            comments=$(gh api --paginate \
+              "repos/${{ github.repository }}/issues/${ISSUE_NUMBER}/comments?per_page=100" \
+              --jq ".[] | select(.user.login == \"${APPROVER_LOGIN}\") | .body")
             decision=$(printf '%s\n' "$comments" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | awk -v approve="$approve_pattern" -v deny="$deny_pattern" '
               {
                 token=$1

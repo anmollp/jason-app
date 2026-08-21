@@ -141,11 +141,11 @@ handled by the app deploy workflows.
 
 Terraform destroys are manual through the `Terraform Destroy` workflow. Its graph
 is also `Plan -> Approval -> Apply`, and the apply job uses the exact saved
-destroy plan only after approval.
+destroy plan only after repository-owner approval.
 
 Terraform deploys are manual through the `Terraform Deploy` workflow. Its graph
 is `Plan -> Approval -> Apply`, and the apply job uses the exact saved plan only
-after an approval comment such as `yes`, `lgtm`, or `done`.
+after a repository-owner approval comment such as `yes`, `lgtm`, or `done`.
 
 Use a GCS bucket for Terraform state before the first real GitHub Actions apply.
 
