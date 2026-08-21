@@ -328,7 +328,6 @@ report passes every automatic and semantic gate.
 
 ## Remaining approval boundaries
 
-- Merge the Jason `v1.7.1` pin, prompt-v3, and evaluation-evidence PRs.
 - Decide whether to remediate and re-evaluate the one remaining semantic miss
   or explicitly accept a change to the semantic readiness criterion.
 - Approve the exact Terraform plan and apply.
