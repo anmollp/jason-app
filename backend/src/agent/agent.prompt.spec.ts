@@ -14,5 +14,9 @@ describe('agent system instruction', () => {
     expect(AGENT_SYSTEM_INSTRUCTION).toContain(
       'ask exactly one focused clarification',
     );
+    expect(AGENT_SYSTEM_INSTRUCTION).toContain(
+      'a specific natural-language change plus a document is sufficient',
+    );
+    expect(AGENT_SYSTEM_INSTRUCTION).toContain('refuse concisely and call no');
   });
 });
