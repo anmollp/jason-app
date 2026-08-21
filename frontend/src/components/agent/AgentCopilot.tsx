@@ -450,22 +450,25 @@ function validPatchOutput(proposal: AgentProposal | undefined) {
 }
 
 function proposalOperationCount(proposal: AgentProposal): number | undefined {
-  if (!isRecord(proposal.data) || !isRecord(proposal.data.summary)) {
-    return undefined;
+  switch (proposal.tool) {
+    case "patch":
+      return proposal.data.summary.operations;
+    case "formatter":
+    case "diff":
+    case "pointer":
+      return undefined;
   }
-  const value = proposal.data.summary.operations;
-  return typeof value === "number" && value >= 0 ? value : undefined;
 }
 
 function proposalPreview(proposal: AgentProposal): string {
-  if (isRecord(proposal.data) && typeof proposal.data.output === "string") {
-    return proposal.data.output;
+  switch (proposal.tool) {
+    case "formatter":
+    case "patch":
+    case "pointer":
+      return proposal.data.output;
+    case "diff":
+      return JSON.stringify(proposal.data, null, 2);
   }
-  return JSON.stringify(proposal.data, null, 2);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function formatContextSize(bytes: number) {

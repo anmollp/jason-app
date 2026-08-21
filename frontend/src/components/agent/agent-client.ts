@@ -178,6 +178,12 @@ export function measureAgentContextBytes(
   ).length;
 }
 
+export function patchProposalOutput(
+  proposal: AgentProposal | undefined,
+): string | undefined {
+  return proposal?.tool === "patch" ? proposal.data.output : undefined;
+}
+
 export function parseSseEventBlock(block: string): AgentEvent | undefined {
   let eventName = "";
   const data: string[] = [];
