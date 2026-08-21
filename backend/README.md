@@ -87,7 +87,7 @@ JASON_CLI_PATH=/usr/local/bin/jason
 - `POST /diff`: compare two JSON strings and return JSON Patch operations.
 - `POST /patch`: apply JSON Patch operations to a JSON document.
 - `POST /pointer`: resolve a JSON Pointer path against a JSON document.
-- `POST /api/agent/session`: issue one anonymous guided session under the
+- `POST /api/agent/session`: issue one account-free guided session under the
   visitor, network, daily, monthly, and spend caps.
 - `POST /api/agent/message`: stream an accepted copilot turn as Server-Sent
   Events.
@@ -98,13 +98,16 @@ untrusted-context limit. The deterministic endpoints retain their existing
 
 ## AI privacy and retention
 
-Prompts, JSON documents, provider responses, raw IP addresses, and user-agent
-strings are never persisted. Structured audit logs contain only the HMAC'd
-session identity, selected tool, provider/model, latency, token usage,
-estimated cost, and outcome. Firestore stores quota/accounting metadata only.
-Session and daily-ledger cleanup begins after 32 days; aggregate month ledgers
-are retained for roughly 13 months. Cleanup is opportunistic and avoids paid
-TTL deletion.
+The application does not persist prompts, JSON documents, or provider
+responses. Cloud Run request logs are retained for operations and may include
+raw IP addresses and user-agent strings under the project's Cloud Logging
+access and retention controls. The project's `_Default` log bucket retains logs
+for 30 days unless custom retention is configured on that bucket. Structured AI
+audit logs contain only the HMAC'd session identity, selected tool,
+provider/model, latency, token usage, estimated cost, and outcome. Firestore
+stores quota/accounting metadata only. Session and daily-ledger cleanup begins
+after 32 days; aggregate month ledgers are retained for roughly 13 months.
+Cleanup is opportunistic and avoids paid TTL deletion.
 
 ## AI routing evaluation
 

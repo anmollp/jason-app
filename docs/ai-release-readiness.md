@@ -27,10 +27,11 @@ of the AI feature and retain their 5 MiB request support.
 | Three turns, two model rounds per turn, two tools per turn, four tools per session | Contract, orchestrator, state repository, and focused tests                                                                         | Validated locally and in CI                                              |
 | One concurrent request                                                             | Firestore lease transaction and concurrency test                                                                                    | Validated locally and in CI                                              |
 | 60-second request timeout                                                          | Session timeout tests, provider cancellation, five-second accounting bound                                                          | Validated locally and in CI                                              |
-| One anonymous session per visitor or network per rolling 24 hours                  | Signed visitor token plus daily rotating IP HMAC guards                                                                             | Validated locally and in CI                                              |
+| One account-free session per visitor or network per rolling 24 hours               | Signed visitor token plus daily rotating IP HMAC guards                                                                             | Validated locally and in CI                                              |
 | 20 daily and 200 monthly global sessions                                           | Transactional Firestore ledgers                                                                                                     | Validated locally and in CI                                              |
 | $7.20 local reservation ceiling and $8 provider hard limit                         | Firestore budget ledger plus provider project configuration                                                                         | Local ledger validated; provider configuration pending operator evidence |
-| No prompt, JSON, response, raw IP, or user-agent persistence                       | Metadata-only audit logger and private local eval reports                                                                           | Application behavior validated; production log inspection pending        |
+| No application persistence of prompts, JSON, or provider responses                 | Content-field log exclusion, metadata-only AI audit logger, and private local eval reports                                          | Application behavior validated; production log inspection pending        |
+| Standard Cloud Run request metadata retained for operations                        | Platform request logs may include raw IP and user-agent fields under project logging access and retention controls                  | Retention approved; production configuration inspection pending          |
 | OpenAI `store: false` and privacy-safe safety identifier                           | Provider adapter and session tests                                                                                                  | Validated locally and in CI                                              |
 | AI remains disabled by default                                                     | Application tests and Terraform policy definition                                                                                   | Application and Terraform policy test validated; plan pending            |
 | Scale-to-zero and maximum one Cloud Run instance                                   | Terraform policy                                                                                                                    | Terraform plan and apply pending                                         |
@@ -51,7 +52,7 @@ of the AI feature and retain their 5 MiB request support.
 | Concurrent quota races                                        | Session issuance, turn reservation, tool reservation, and completion use Firestore transactions and leases                   | State repository concurrency and limit tests                                   | Production Firestore contention and retry latency require pilot observation                                                  |
 | Provider or state outage causing unaccounted spend            | Quota reservation precedes moderation/provider access; state, moderation, and spend failures fail closed                     | Session service failure tests                                                  | A provider request accepted immediately before a network partition can still bill; provider hard limit is the final backstop |
 | Provider billing or quota exhaustion                          | Local session reservation ceiling, provider spend-limit mapping, and paid-eval circuit breaker                               | State, session, and eval policy tests                                          | Provider hard-limit configuration must be evidenced outside the repository                                                   |
-| Secret or untrusted-content leakage in logs/errors            | Metadata-only structured audit records and normalized public errors; eval status is JSON-escaped                             | Audit, executor, session, HTTP-contract, and command tests                     | Production log sinks and access policy must be inspected after deployment                                                    |
+| Secret or untrusted-content leakage in logs/errors            | Metadata-only AI audit records, content-field exclusion, and normalized public errors; eval status is JSON-escaped           | Audit, executor, session, HTTP-contract, and command tests                     | Cloud Run request logs intentionally retain standard request metadata; access and retention require production inspection    |
 | Oversized payload denial of service                           | AI context is capped at 16 KiB and instructions at 500 characters; deterministic path has its separate 5 MiB contract        | HTTP-contract, frontend, and backend E2E tests                                 | Cloud Run memory/latency under 5 MiB deterministic traffic requires production observation                                   |
 | Stalled provider, moderation, state, or CLI operation         | Abort propagation, 60-second request deadline, five-second final accounting bound, and CLI kill backstop                     | Session, provider, orchestrator, and CLI runner tests                          | A pathological OS process that never closes intentionally holds the MCP lease fail-closed                                    |
 | Eval evidence approved for a different response               | Paid run reserves a private report before spend; response/result and full evidence hashes bind offline judgments             | Eval report and command tests                                                  | SHA-256 detects mismatch, not a malicious same-user rewrite and re-hash                                                      |
@@ -181,7 +182,8 @@ the live provider to manufacture failure states.
    one session and verify exactly one is accepted.
 5. Exercise moderation, Firestore, provider 429/5xx, timeout, malformed stream,
    and spend-limit failures through test doubles or an approved preproduction
-   fault hook. Verify fail-closed responses and metadata-only logs.
+   fault hook. Verify fail-closed responses, content-free AI audit logs,
+   and the approved standard Cloud Run request metadata.
 6. Record request counts, status distribution, p50/p95 latency, cold-start
    latency, peak memory/CPU, instance count, restarts, Firestore retries, and
    quota/accounting reconciliation. Attach the command, build SHA, environment,
@@ -224,7 +226,9 @@ cost are measured by the separately approved evaluation and ten-session pilot.
 - [ ] Verify Formatter, Diff, Patch, and Pointer with AI disabled.
 - [ ] Verify a deterministic payload near 5 MiB succeeds.
 - [ ] Verify `/api/agent/session` fails safely while disabled.
-- [ ] Inspect logs for secret values, prompts, JSON, responses, raw IPs, and user agents.
+- [ ] Inspect logs for secret values, prompts, JSON, and provider responses.
+- [ ] Confirm Cloud Run request logs retain the expected IP and user-agent
+      metadata and verify the configured access and retention controls.
 - [ ] Confirm no unexpected minimum instances or additional Cloud Run revisions serve traffic.
 
 ### Ten-session pilot
@@ -239,7 +243,8 @@ cost are measured by the separately approved evaluation and ten-session pilot.
 - [ ] Attempt a second visitor session and a second IP-bound session inside 24 hours.
 - [ ] Send concurrent turns and confirm one is rejected.
 - [ ] Confirm remaining turns and tools decrement correctly.
-- [ ] Confirm audit logs contain only the approved metadata fields.
+- [ ] Confirm AI audit logs contain only the approved metadata fields and that
+      standard Cloud Run request metadata is retained separately.
 - [ ] Confirm Firestore daily/monthly/reserved/actual counters reconcile with usage.
 - [ ] Confirm provider usage and estimated local cost reconcile within the documented pricing model.
 
@@ -273,7 +278,7 @@ AskJason adds an optional AI-guided drawer to Formatter, Diff, Patch, and
 Pointer. Jason can explain formatting errors, summarize diffs, propose JSON
 Patch operations, and resolve JSON Pointers through the same deterministic Rust
 engine used by the existing tools. AI changes are previews and require an
-explicit Apply action. Anonymous guided sessions are intentionally limited;
+explicit Apply action. Account-free guided sessions are intentionally limited;
 when AI is unavailable or exhausted, every deterministic JSON tool remains
 available.
 

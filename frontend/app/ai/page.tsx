@@ -58,7 +58,7 @@ const chapters = [
   },
   {
     label: "05 IDENTITY + QUOTA",
-    title: "Anonymous, signed, bounded",
+    title: "Account-free, signed, bounded",
     body: "A signed HttpOnly visitor identity, rotating IP HMAC, and Firestore transactions enforce every hosted quota.",
     detail: "1 session/24h · 3 turns",
     tone: "border-amber-400 text-amber-300",

@@ -95,7 +95,7 @@ backend.
 
 The module provisions the AI backend in a disabled state by default:
 
-- Firestore Native in `us-central1`, with deletion protection, for anonymous
+- Firestore Native in `us-central1`, with deletion protection, for account-free
   quota and spend ledgers.
 - Secret Manager containers for `OPENAI_API_KEY` and the base64-encoded 32-byte
   `AI_IDENTITY_KEY`.
@@ -103,6 +103,9 @@ The module provisions the AI backend in a disabled state by default:
   service account.
 - A structured-log exclusion that drops accidental AI content fields while
   preserving metadata-only audit events.
+- Automatic Cloud Run request logs remain enabled for operations and may include
+  raw IP addresses and user-agent strings. They follow the project's Cloud
+  Logging access controls and `_Default` bucket retention.
 - Cloud Run limits fixed at zero minimum and one maximum instance.
 
 Terraform creates no secret versions, so secret payloads never enter
