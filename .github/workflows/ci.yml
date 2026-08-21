@@ -136,7 +136,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: anmollp/jason
-          ref: 1a889e66c1b702dc04181dcf24a24a8713cc5a5e # v1.7.0
+          ref: a47a1266567b57c00b18d6ff0447c90e63186cde # v1.7.1
           path: .jason-cli
           persist-credentials: false
 
