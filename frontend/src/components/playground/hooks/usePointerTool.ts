@@ -152,12 +152,6 @@ export function usePointerTool(resetCopyMessage: () => void) {
   }
 
   function applyAgentProposal(result: PointerJsonResponse): boolean {
-    try {
-      JSON.parse(result.output);
-    } catch {
-      return false;
-    }
-
     requestGeneration.current += 1;
     setPointerPath(result.summary.path);
     setPointerOutput(result.output);

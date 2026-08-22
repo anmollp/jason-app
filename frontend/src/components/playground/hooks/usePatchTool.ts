@@ -209,12 +209,6 @@ export function usePatchTool(resetCopyMessage: () => void) {
 
   function applyAgentProposal(result: PatchJsonResponse | string): boolean {
     const output = typeof result === "string" ? result : result.output;
-    try {
-      JSON.parse(output);
-    } catch {
-      return false;
-    }
-
     setPatchDocumentInput(output);
     setPatchOperations([]);
     setSelectedPatchLine(undefined);
