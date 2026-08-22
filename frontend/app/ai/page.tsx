@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 
 const metrics = [
   { value: "4", label: "fixed tools" },
-  { value: "3", label: "turns / 24h" },
-  { value: "60", label: "implemented eval cases" },
-  { value: "< $0.03", label: "p95 session cost target" },
+  { value: "3", label: "turns / session" },
+  { value: "100%", label: "final routing score" },
+  { value: "$0.000918", label: "p95 eval session" },
 ];
 
 const flow = [
@@ -23,16 +23,16 @@ const flow = [
   "Route",
   "Fixed-schema tool",
   "Rust validate",
-  "Stream proposal",
-  "Explicit Apply",
+  "Safe summary",
+  "Apply to workspace",
 ];
 
 const chapters = [
   {
     label: "01 PRODUCT",
     title: "Contextual Copilot drawer",
-    body: "Available from Formatter, Diff, Patch, and Pointer with selected context, prompts, turns, trace, and result.",
-    detail: "Welcome · clarify · trace · proposal",
+    body: "Available from Formatter, Diff, Patch, and Pointer with selected context, prompts, turns, a safe summary, and explicit workspace approval.",
+    detail: "Welcome · clarify · trace · summary → Apply",
     tone: "border-sky-400 text-sky-400",
   },
   {
@@ -66,15 +66,15 @@ const chapters = [
   {
     label: "06 EVALS",
     title: "60 routing and adversarial cases",
-    body: "The release suite covers all four tools plus ambiguity and injection or abuse cases; live model scoring remains gated before production enablement.",
-    detail: "Target: ≥90% route · 100% valid",
+    body: "The final paid Luna run passed all 60 routing, ambiguity, injection, and abuse cases with schema-valid calls and Jason-valid Patch proposals.",
+    detail: "100% route · 100% valid",
     tone: "border-sky-400 text-sky-400",
   },
   {
     label: "07 COST + ROLLOUT",
     title: "$20 combined target",
-    body: "Scale-to-zero, a planned $8 provider hard cap, p95 measurement, and a 10→20/day pilot limit surprise spend.",
-    detail: "No automatic limit increase",
+    body: "Scale-to-zero, an enforced $8 provider hard cap, measured p95 cost, and an approved 10-session daily pilot limit surprise spend.",
+    detail: "10/day pilot · no automatic increase",
     tone: "border-amber-400 text-amber-300",
   },
   {
@@ -186,9 +186,10 @@ export default function AiCaseStudyPage() {
             Evidence stays labeled through release
           </h2>
           <p className="mt-2 text-sm leading-6 text-zinc-300">
-            Local deterministic load smoke is recorded. Live-model routing,
-            measured p95 cost, controlled load, and production pilot metrics
-            will be published only after they are run and approved.
+            The final Luna evaluation reached 100% routing with a $0.000918 p95
+            session estimate. The first production Formatter smoke recorded a
+            $0.000498 estimate. The 10-session daily pilot is active, while its
+            seven-day review and all-tool production re-smoke remain open.
           </p>
         </section>
       </main>
