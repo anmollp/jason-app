@@ -151,8 +151,8 @@ stacked PR sequence:
 | Slice                       | Commit                                     | Pull request                                          | CI run                                                                       |
 | --------------------------- | ------------------------------------------ | ----------------------------------------------------- | ---------------------------------------------------------------------------- |
 | Proposal payload validation | `4440435bf564525fe0a6d218aad88846b239be1c` | [#135](https://github.com/anmollp/jason-app/pull/135) | [32499334031](https://github.com/anmollp/jason-app/actions/runs/32499334031) |
-| Workspace result adapters   | `93dcdf5470c67570b17d6163245a23a0968b41cc` | [#136](https://github.com/anmollp/jason-app/pull/136) | [32499513552](https://github.com/anmollp/jason-app/actions/runs/32499513552) |
-| Apply/Discard result flow   | `7b9a0cc318aa6cbf40720137bb6e573ab69986ec` | [#137](https://github.com/anmollp/jason-app/pull/137) | [32499539139](https://github.com/anmollp/jason-app/actions/runs/32499539139) |
+| Workspace result adapters   | `87d650d8e653bd4d706f6faa29db3d91ab46de29` | [#136](https://github.com/anmollp/jason-app/pull/136) | [32574751372](https://github.com/anmollp/jason-app/actions/runs/32574751372) |
+| Apply/Discard result flow   | `03636dd91b4feafdb785f59e5ea183bb9ad9352e` | [#137](https://github.com/anmollp/jason-app/pull/137) | [32574807532](https://github.com/anmollp/jason-app/actions/runs/32574807532) |
 
 The backend recovery run built and pushed the image and updated Cloud Run
 successfully. This proves the Docker deployment failure is resolved; production
@@ -189,10 +189,10 @@ quotas, oversized context, secret-safe errors, and AI-disabled behavior.
 These tests and the local load smoke prove control behavior and local
 deterministic execution, not production capacity. No representative or p95
 production claim is made about throughput, cold-start latency, CPU/memory
-headroom, Firestore contention, provider latency, or cost beyond the single
-smoke observation below.
+headroom, Firestore contention, provider latency, or cost beyond the bounded
+pilot observations below.
 
-## Pilot day 1 evidence
+## Pilot observations
 
 Read-only production inspection on 2026-08-21 confirmed:
 
@@ -203,23 +203,34 @@ Read-only production inspection on 2026-08-21 confirmed:
 - The backend and frontend revisions were healthy with AI enabled for the
   approved 10-session-per-day pilot.
 - Cloud Run remained configured for zero minimum and one maximum instance.
-- One Formatter session completed through the live provider in 7,235 ms using
-  2,456 input, 1,120 cached-input, and 173 output tokens. The local pricing
-  estimator recorded $0.000498.
-- Firestore reconciled one session, one turn, one tool call, a $0.03 reserved
-  allowance, and $0.000498 of locally estimated usage.
-- Four later session attempts from the same visitor or network returned the
-  expected HTTP 429 without increasing counters or contacting the provider.
-- No application warning-or-higher log was found outside expected Cloud Run
-  request metadata. The observed request warnings were the four expected 429s
-  and unrelated favicon 404s.
+- The first Formatter request completed through the live provider in 7,235 ms
+  using 2,456 input, 1,120 cached-input, and 173 output tokens. The local
+  pricing estimator recorded $0.000498.
+- A second session recorded completed turns with Formatter, Diff, and Patch
+  selected. Across both sessions, metadata-only audit records contain four
+  completed turns and no failed model request.
+- Firestore reconciled two sessions, four accepted turns, three deterministic
+  tool calls, 8,926 input, 5,514 cached-input, and 751 output tokens. It records
+  a $0.06 reserved allowance and $0.001697 of locally estimated usage.
+- Six later session attempts from an identity or network with an active guard
+  returned the expected HTTP 429 without increasing counters or contacting the
+  provider.
+- The current serving backend revision had no warning-or-higher application
+  log. Its request warnings were the six expected 429s; unrelated frontend
+  requests included favicon 404s.
 
-This verifies the live Formatter provider path, the rolling visitor/network
-guard, and confirms that the deployed services are configured for 10 sessions
-per day and zero-to-one scaling. It does not prove the global ten-session cap
-under load, instance saturation behavior, or representative production
-latency. No prompt, JSON document, model response, secret, raw IP address, or
-user-agent string is included in this evidence.
+Read-only inspection on 2026-08-22 found no additional session in Firestore and
+no Aug 22 model request in the metadata-only audit log. Both services remained
+healthy on the same revisions, configured for the approved 10-session daily
+pilot and zero-to-one scaling. The current backend revision had no
+warning-or-higher application log.
+
+Together, these observations verify live provider requests, the rolling
+visitor/network guard, and counter reconciliation. They do not prove the global
+ten-session cap under load, instance saturation behavior, or representative
+production latency. No prompt, JSON document, model response, secret, raw IP
+address, user-agent string, cookie, or session identifier is included in this
+evidence.
 
 ## Paid evaluation procedure
 
