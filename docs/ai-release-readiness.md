@@ -6,10 +6,12 @@ enablement, quota changes, or release.
 
 ## Current verdict
 
-**Model-ready, not ready for production enablement.** The implementation, local
-failure controls, and paid Luna evaluation are complete, and all automatic and
-semantic model gates pass. The infrastructure plan and apply, production smoke
-test, pilot observation, and final rollout approvals remain outstanding.
+**Ten-session pilot active; seven-day review in progress.** The implementation,
+local failure controls, paid Luna evaluation, infrastructure apply, disabled
+smoke, and first enabled Formatter smoke are complete. The all-tool workspace
+approval correction is implemented and CI-validated in PRs #135–#137 but is not
+deployed. It must be visually approved, merged, deployed, and re-smoked before
+the product behavior is considered release-ready.
 
 The deterministic Formatter, Diff, Patch, and Pointer paths remain independent
 of the AI feature and retain their 5 MiB request support.
@@ -22,22 +24,22 @@ of the AI feature and retain their 5 MiB request support.
 | At least 90% correct tool routing                                                  | Hash-bound final Luna report                                                                                                        | 100% on the final paid run                                             |
 | 100% schema-valid tool calls                                                       | Fail-closed scorer and final Luna report                                                                                            | 100% on the final paid run                                             |
 | 100% Jason-valid Patch proposals                                                   | Every Patch call matched by call ID to a successful Jason result                                                                    | 100% on the final paid run                                             |
-| Zero unapproved workspace changes                                                  | Proposal-only backend plus explicit frontend Apply/Discard tests                                                                    | Validated locally and in CI                                            |
+| Zero unapproved workspace changes                                                  | Proposal-only backend plus explicit Apply/Discard tests for all four tools                                                           | PR stack and CI validated; production re-smoke pending                 |
 | Measured p95 Luna session cost below $0.03                                         | Twenty measured three-turn sessions with prior transcript context                                                                   | $0.000918 on the final paid run                                        |
 | Three turns, two model rounds per turn, two tools per turn, four tools per session | Contract, orchestrator, state repository, and focused tests                                                                         | Validated locally and in CI                                            |
 | One concurrent request                                                             | Firestore lease transaction and concurrency test                                                                                    | Validated locally and in CI                                            |
 | 60-second request timeout                                                          | Session timeout tests, provider cancellation, five-second accounting bound                                                          | Validated locally and in CI                                            |
 | One account-free session per visitor or network per rolling 24 hours               | Signed visitor token plus daily rotating IP HMAC guards                                                                             | Validated locally and in CI                                            |
-| 20 daily and 200 monthly global sessions                                           | Transactional Firestore ledgers                                                                                                     | Validated locally and in CI                                            |
+| 10 daily pilot; 20 daily only after review; 200 monthly                            | Transactional Firestore ledgers                                                                                                     | 10/day deployed; 20/day remains unapproved; 200/month validated        |
 | $7.20 local reservation ceiling and $8 provider hard limit                         | Firestore budget ledger plus dedicated provider project configuration                                                               | Local ledger validated; $8 provider limit and alerts operator-verified |
 | No application persistence of prompts, JSON, or provider responses                 | Content-field log exclusion, metadata-only AI audit logger, and private local eval reports                                          | Application behavior validated; production log inspection pending      |
 | Standard Cloud Run request metadata retained for operations                        | Platform request logs may include raw IP and user-agent fields under project logging access and retention controls                  | Retention approved; production configuration inspection pending        |
 | OpenAI `store: false` and privacy-safe safety identifier                           | Provider adapter and session tests                                                                                                  | Validated locally and in CI                                            |
-| AI remains disabled by default                                                     | Application tests and Terraform policy definition                                                                                   | Application and Terraform policy test validated; plan pending          |
-| Scale-to-zero and maximum one Cloud Run instance                                   | Terraform policy                                                                                                                    | Terraform plan and apply pending                                       |
+| AI remains disabled by default                                                     | Application tests and Terraform policy definition                                                                                   | Default validated; approved 10/day pilot currently enabled             |
+| Scale-to-zero and maximum one Cloud Run instance                                   | Terraform policy and deployed Cloud Run configuration                                                                               | Deployed configuration inspected: minimum zero, maximum one            |
 | Graceful deterministic operation when AI is unavailable or exhausted               | Browser coverage across failure and quota states                                                                                    | Validated locally and in CI                                            |
 | Local, client-neutral MCP parity                                                   | Private MCP package and contract tests                                                                                              | Implemented and merged; publication is out of scope                    |
-| Load and failure behavior under the one-instance cap                               | Local real-Jason smoke plus controlled preproduction result                                                                         | Local deterministic smoke passed; preproduction run pending approval   |
+| Load and failure behavior under the one-instance cap                               | Local real-Jason smoke plus production pilot observation                                                                            | Local deterministic smoke passed; seven-day production review ongoing  |
 
 ## Threat model results
 
@@ -47,7 +49,7 @@ of the AI feature and retain their 5 MiB request support.
 | Instructions embedded in JSON                                 | JSON is serialized as untrusted request data and never placed in developer instructions                                      | Injection fixtures include delimiter, role, tool-result, and approval spoofing | Final paid run passed all ten injection and abuse cases                                                                      |
 | Arbitrary tool, shell, file, network, URL, or database access | AgentProvider receives exactly four static JSON tool definitions; Jason is invoked with fixed arguments and `shell: false`   | Architecture, orchestrator, runner, and MCP security tests                     | The trusted Jason executable inherits its OS permissions                                                                     |
 | Malformed or extra tool arguments                             | Strict schemas and shared validation reject unknown, missing, extra, and oversized fields without echoing input              | Tool-contract and eval scorer tests                                            | Provider SDK/schema regressions require continued contract testing                                                           |
-| Workspace mutation without consent                            | Tools return proposals only; the browser changes Patch workspace state only after Apply                                      | Patch Apply/Discard browser test                                               | Users can still deliberately apply an incorrect proposal after reviewing it                                                  |
+| Workspace mutation without consent                            | Tools return proposals only; the browser changes any tool workspace state only after Apply                                   | Formatter, Diff, Patch, and Pointer Apply/Discard browser tests                | Users can still deliberately apply an incorrect proposal after reviewing its deterministic summary                           |
 | Cookie editing or clearing to obtain more quota               | HMAC-signed visitor cookie plus daily rotating IP HMAC; either active guard rejects a second session                         | Identity and Firestore tests                                                   | Shared NATs can produce conservative false positives; distributed attackers remain bounded by global caps                    |
 | Concurrent quota races                                        | Session issuance, turn reservation, tool reservation, and completion use Firestore transactions and leases                   | State repository concurrency and limit tests                                   | Production Firestore contention and retry latency require pilot observation                                                  |
 | Provider or state outage causing unaccounted spend            | Quota reservation precedes moderation/provider access; state, moderation, and spend failures fail closed                     | Session service failure tests                                                  | A provider request accepted immediately before a network partition can still bill; provider hard limit is the final backstop |
@@ -59,8 +61,9 @@ of the AI feature and retain their 5 MiB request support.
 
 No unresolved high-severity finding remains from the independent read-only
 reviews performed on these implementation slices. This is not a substitute for
-production validation. Security/privacy risk acceptance is still required
-before infrastructure apply and production enablement.
+production validation. Security/privacy risk was accepted for the current
+10-session pilot; any material control change, subsequent infrastructure apply,
+or wider rollout requires renewed review and approval.
 
 ## Automated results
 
@@ -142,6 +145,15 @@ Additional release-support evidence:
 | Terraform policy CI              | `4940e4fe7b83700b48c6b8a87d77b82621e418ef` | [#114](https://github.com/anmollp/jason-app/pull/114) | [31723172390](https://github.com/anmollp/jason-app/actions/runs/31723172390) |
 | Local deterministic load harness | `ab1ac76a51e66be223fab455a6250624d88dd77b` | [#115](https://github.com/anmollp/jason-app/pull/115) | [31724426992](https://github.com/anmollp/jason-app/actions/runs/31724426992) |
 
+The all-tool workspace approval correction is implemented in this green,
+stacked PR sequence:
+
+| Slice                       | Commit                                     | Pull request                                          | CI run                                                                       |
+| --------------------------- | ------------------------------------------ | ----------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Proposal payload validation | `4440435bf564525fe0a6d218aad88846b239be1c` | [#135](https://github.com/anmollp/jason-app/pull/135) | [32499334031](https://github.com/anmollp/jason-app/actions/runs/32499334031) |
+| Workspace result adapters   | `93dcdf5470c67570b17d6163245a23a0968b41cc` | [#136](https://github.com/anmollp/jason-app/pull/136) | [32499513552](https://github.com/anmollp/jason-app/actions/runs/32499513552) |
+| Apply/Discard result flow   | `7b9a0cc318aa6cbf40720137bb6e573ab69986ec` | [#137](https://github.com/anmollp/jason-app/pull/137) | [32499539139](https://github.com/anmollp/jason-app/actions/runs/32499539139) |
+
 The backend recovery run built and pushed the image and updated Cloud Run
 successfully. This proves the Docker deployment failure is resolved; production
 health and user-flow smoke checks remain a separate approval boundary.
@@ -175,9 +187,39 @@ CLI timeouts, cancellation, accounting timeout, concurrency, session/turn/tool
 quotas, oversized context, secret-safe errors, and AI-disabled behavior.
 
 These tests and the local load smoke prove control behavior and local
-deterministic execution, not production capacity. No claim is made yet about
-production throughput, cold-start latency, CPU/memory headroom, Firestore
-contention, provider latency, or real cost.
+deterministic execution, not production capacity. No representative or p95
+production claim is made about throughput, cold-start latency, CPU/memory
+headroom, Firestore contention, provider latency, or cost beyond the single
+smoke observation below.
+
+## Pilot day 1 evidence
+
+Read-only production inspection on 2026-08-21 confirmed:
+
+- Evidence was inspected at `master` `f41aa02` after deployment run
+  [32494522470](https://github.com/anmollp/jason-app/actions/runs/32494522470),
+  with backend revision `jason-dev-backend-00020-kqw` and frontend revision
+  `jason-dev-frontend-00016-8dq` serving traffic.
+- The backend and frontend revisions were healthy with AI enabled for the
+  approved 10-session-per-day pilot.
+- Cloud Run remained configured for zero minimum and one maximum instance.
+- One Formatter session completed through the live provider in 7,235 ms using
+  2,456 input, 1,120 cached-input, and 173 output tokens. The local pricing
+  estimator recorded $0.000498.
+- Firestore reconciled one session, one turn, one tool call, a $0.03 reserved
+  allowance, and $0.000498 of locally estimated usage.
+- Four later session attempts from the same visitor or network returned the
+  expected HTTP 429 without increasing counters or contacting the provider.
+- No application warning-or-higher log was found outside expected Cloud Run
+  request metadata. The observed request warnings were the four expected 429s
+  and unrelated favicon 404s.
+
+This verifies the live Formatter provider path, the rolling visitor/network
+guard, and confirms that the deployed services are configured for 10 sessions
+per day and zero-to-one scaling. It does not prove the global ten-session cap
+under load, instance saturation behavior, or representative production
+latency. No prompt, JSON document, model response, secret, raw IP address, or
+user-agent string is included in this evidence.
 
 ## Paid evaluation procedure
 
@@ -248,9 +290,13 @@ before the run becomes release evidence:
 Do not run paid AI load as part of this procedure. Real provider latency and
 cost are measured by the separately approved evaluation and ten-session pilot.
 
-## Infrastructure and production smoke checklist
+## Next deployment and production smoke checklist
 
-### Before apply
+The initial apply and smoke established the live infrastructure. Run this
+checklist again after PRs #135–#137 are merged and before accepting their
+all-tool behavior as production evidence.
+
+### Before the next apply
 
 - [ ] Review an exact Terraform plan with `ai_enabled = false`.
 - [ ] Confirm Cloud Run minimum instances remain zero and maximum instances one.
@@ -264,7 +310,7 @@ cost are measured by the separately approved evaluation and ten-session pilot.
 - [ ] Confirm provider alerts at $4, $6, and $7.20 and the enforced $8 hard limit.
 - [ ] Confirm the existing $10 GCP alert is unchanged.
 
-### After apply, feature still disabled
+### After the next apply, feature still disabled
 
 - [ ] Verify frontend and backend health endpoints.
 - [ ] Verify Formatter, Diff, Patch, and Pointer with AI disabled.
@@ -275,11 +321,12 @@ cost are measured by the separately approved evaluation and ten-session pilot.
       metadata and verify the configured access and retention controls.
 - [ ] Confirm no unexpected minimum instances or additional Cloud Run revisions serve traffic.
 
-### Ten-session pilot
+### Ten-session pilot re-smoke
 
 - [ ] Enable only after explicit approval.
 - [ ] Issue one session and confirm the signed HttpOnly, SameSite, Secure cookie.
-- [ ] Exercise all four tools and verify proposal-only behavior.
+- [ ] Exercise all four tools and verify the chat shows only a deterministic
+      safe summary before Apply, never the full result body.
 - [ ] Verify Apply and Discard, clarification, quota exhaustion, and deterministic
       fallback states. Verify induced moderation, timeout, and provider failures
       only through the controlled preproduction procedure above; production smoke
@@ -312,8 +359,8 @@ finding, p95 Luna session cost at or above $0.03, any accounting/state write
 failure, or an OpenAI hard-limit event. Pause and review after the $4 provider
 alert, two provider/time-out failures in any ten consecutive sessions, or a
 provider-versus-local cost difference greater than the larger of 10% or $0.01.
-These proposed pilot thresholds require explicit approval before enablement. Do
-not increase to 20 sessions per day until the seven-day evidence is reviewed and
+These are the accepted stop and pause thresholds for the active pilot. Do not
+increase to 20 sessions per day until the seven-day evidence is reviewed and
 approved.
 
 ## Release notes draft
@@ -321,8 +368,10 @@ approved.
 AskJason adds an optional AI-guided drawer to Formatter, Diff, Patch, and
 Pointer. Jason can explain formatting errors, summarize diffs, propose JSON
 Patch operations, and resolve JSON Pointers through the same deterministic Rust
-engine used by the existing tools. AI changes are previews and require an
-explicit Apply action. Account-free guided sessions are intentionally limited;
+engine used by the existing tools. Each validated result remains a proposal:
+the chat presents a deterministic safe summary, and only an explicit Apply
+action changes the corresponding workspace. Discard leaves it unchanged.
+Account-free guided sessions are intentionally limited;
 when AI is unavailable or exhausted, every deterministic JSON tool remains
 available.
 
@@ -334,10 +383,9 @@ internal release evidence pending the production pilot.
 
 ## Remaining approval boundaries
 
-- Merge the prompt-v4 and response-free evidence changes after review.
-- Approve the exact Terraform plan and apply.
-- Approve production smoke testing with the feature disabled.
-- Approve the 10-session-per-day pilot enablement.
+- Visually approve and merge PRs #135–#137.
+- Approve the next exact Terraform plan and apply with the copilot disabled.
+- Approve production re-smoke of Formatter, Diff, Patch, and Pointer.
 - Review seven days of pilot evidence.
 - Approve any increase to 20 sessions per day.
 - Approve any hosted-model switch, quota/budget increase, release, or publication.
