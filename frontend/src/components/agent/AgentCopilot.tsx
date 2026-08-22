@@ -324,7 +324,7 @@ export function AgentCopilot({
               />
               <div className="mt-2 flex items-center justify-between gap-3">
                 <span className="font-mono text-xs text-zinc-400">
-                  {instruction.length} / {agentInstructionLimit} · turn {4 - copilot.remainingTurns} of 3
+                  {instruction.length} / {agentInstructionLimit} · turn {Math.min(3, 4 - copilot.remainingTurns)} of 3
                 </span>
                 <Button
                   type="submit"

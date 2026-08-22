@@ -105,6 +105,7 @@ test("last-turn proposal actions keep focus inside the dialog", async ({ page })
   });
   await page.goto("/playground");
   await askJason(page, "Prepare the formatter result.");
+  await expect(page.getByText("turn 3 of 3", { exact: false })).toBeVisible();
   await page.getByRole("button", { name: "Apply to workspace" }).click();
 
   await expect(page.getByRole("dialog", { name: "Jason" })).toBeFocused();
