@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { formatJson } from "../api";
 import { initialInputJson } from "../constants";
@@ -9,7 +9,7 @@ import {
   maxJsonPayloadLabel,
 } from "../payload-utils";
 import { countJsonKeys, countLines, parseErrorLine } from "../playground-utils";
-import type { FormatterState, InspectorStat } from "../types";
+import type { FormatJsonResponse, FormatterState, InspectorStat } from "../types";
 
 export function useFormatterTool(resetCopyMessage: () => void) {
   const [inputJson, setInputJson] = useState(initialInputJson);
@@ -17,11 +17,13 @@ export function useFormatterTool(resetCopyMessage: () => void) {
   const [parseError, setParseError] = useState("");
   const [keyCount, setKeyCount] = useState(0);
   const [state, setState] = useState<FormatterState>("idle");
+  const requestGeneration = useRef(0);
   const inputSizeBytes = getUtf8ByteLength(inputJson);
   const isOverPayloadLimit = inputSizeBytes > maxJsonPayloadBytes;
   const payloadSizeLabel = formatByteSize(inputSizeBytes);
 
   function handleInputChange(value: string) {
+    requestGeneration.current += 1;
     setInputJson(value);
     setOutputJson("");
     setParseError("");
@@ -31,6 +33,7 @@ export function useFormatterTool(resetCopyMessage: () => void) {
   }
 
   async function handleFormat() {
+    const generation = ++requestGeneration.current;
     if (!inputJson.trim() || state === "thinking") {
       setOutputJson("");
       setParseError("");
@@ -59,6 +62,10 @@ export function useFormatterTool(resetCopyMessage: () => void) {
 
       const { output: formattedOutput } = await formatJson(inputJson);
 
+      if (generation !== requestGeneration.current) {
+        return;
+      }
+
       if (typeof formattedOutput !== "string") {
         throw new Error("Formatter returned an unexpected response.");
       }
@@ -71,6 +78,9 @@ export function useFormatterTool(resetCopyMessage: () => void) {
       setKeyCount(countJsonKeys(parsed));
       setState("success");
     } catch (error) {
+      if (generation !== requestGeneration.current) {
+        return;
+      }
       const message =
         error instanceof Error ? error.message : "Jason could not parse this JSON.";
 
@@ -83,6 +93,7 @@ export function useFormatterTool(resetCopyMessage: () => void) {
   }
 
   function clear() {
+    requestGeneration.current += 1;
     setInputJson("");
     setOutputJson("");
     setParseError("");
@@ -91,12 +102,28 @@ export function useFormatterTool(resetCopyMessage: () => void) {
   }
 
   function loadSample() {
+    requestGeneration.current += 1;
     setInputJson(initialInputJson);
     setOutputJson("");
     setParseError("");
     resetCopyMessage();
     setKeyCount(0);
     setState("idle");
+  }
+
+  function applyAgentProposal(result: FormatJsonResponse): boolean {
+    try {
+      const parsed = JSON.parse(result.output) as unknown;
+      requestGeneration.current += 1;
+      setOutputJson(result.output);
+      setParseError("");
+      setKeyCount(countJsonKeys(parsed));
+      setState("success");
+      resetCopyMessage();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   const outputCode =
@@ -119,6 +146,7 @@ export function useFormatterTool(resetCopyMessage: () => void) {
   ] satisfies InspectorStat[];
 
   return {
+    applyAgentProposal,
     canCopy: Boolean(outputJson.trim()),
     canRun:
       inputJson.trim().length > 0 && state !== "thinking" && !isOverPayloadLimit,

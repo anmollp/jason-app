@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { pointerJson } from "../api";
 import { pointerDocumentJson, pointerPathInput } from "../constants";
@@ -30,6 +30,7 @@ export function usePointerTool(resetCopyMessage: () => void) {
   >();
   const [pointerResult, setPointerResult] =
     useState<PointerJsonResponse | null>(null);
+  const requestGeneration = useRef(0);
   const payloadSizeBytes = getJsonRequestByteLength({
     document: pointerDocumentInput,
     path: pointerPath,
@@ -38,6 +39,7 @@ export function usePointerTool(resetCopyMessage: () => void) {
   const payloadSizeLabel = formatByteSize(payloadSizeBytes);
 
   function handlePointerInputChange(side: "document" | "path", value: string) {
+    requestGeneration.current += 1;
     if (side === "document") {
       setPointerDocumentInput(value);
     } else {
@@ -53,6 +55,7 @@ export function usePointerTool(resetCopyMessage: () => void) {
   }
 
   async function handlePointer() {
+    const generation = ++requestGeneration.current;
     const path = primaryPointerPath(pointerPath);
 
     if (
@@ -90,6 +93,10 @@ export function usePointerTool(resetCopyMessage: () => void) {
 
       const pointerResponse = await pointerJson(pointerDocumentInput, path);
 
+      if (generation !== requestGeneration.current) {
+        return;
+      }
+
       if (
         typeof pointerResponse.output !== "string" ||
         typeof pointerResponse.summary?.kind !== "string"
@@ -102,6 +109,9 @@ export function usePointerTool(resetCopyMessage: () => void) {
       setPointerErrorField(undefined);
       setPointerState("success");
     } catch (error) {
+      if (generation !== requestGeneration.current) {
+        return;
+      }
       const message =
         error instanceof Error
           ? error.message
@@ -119,6 +129,7 @@ export function usePointerTool(resetCopyMessage: () => void) {
   }
 
   function clear() {
+    requestGeneration.current += 1;
     setPointerDocumentInput("");
     setPointerPath("");
     setPointerOutput("");
@@ -129,6 +140,7 @@ export function usePointerTool(resetCopyMessage: () => void) {
   }
 
   function loadSample() {
+    requestGeneration.current += 1;
     setPointerDocumentInput(pointerDocumentJson);
     setPointerPath(pointerPathInput);
     setPointerOutput("");
@@ -137,6 +149,18 @@ export function usePointerTool(resetCopyMessage: () => void) {
     setPointerResult(null);
     resetCopyMessage();
     setPointerState("idle");
+  }
+
+  function applyAgentProposal(result: PointerJsonResponse): boolean {
+    requestGeneration.current += 1;
+    setPointerPath(result.summary.path);
+    setPointerOutput(result.output);
+    setPointerResult(result);
+    setPointerError("");
+    setPointerErrorField(undefined);
+    setPointerState("success");
+    resetCopyMessage();
+    return true;
   }
 
   const selectedPointerPath = primaryPointerPath(pointerPath);
@@ -187,6 +211,7 @@ export function usePointerTool(resetCopyMessage: () => void) {
   ] satisfies InspectorStat[];
 
   return {
+    applyAgentProposal,
     canCopy: Boolean(pointerOutput.trim()),
     canRun:
       pointerState !== "thinking" &&

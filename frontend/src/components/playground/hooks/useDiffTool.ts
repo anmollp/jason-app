@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { diffJson } from "../api";
 import { diffAfterJson, diffBeforeJson } from "../constants";
@@ -26,6 +26,7 @@ export function useDiffTool(resetCopyMessage: () => void) {
     "after" | "before" | undefined
   >();
   const [diffResult, setDiffResult] = useState<DiffJsonResponse | null>(null);
+  const requestGeneration = useRef(0);
   const beforeSizeBytes = getUtf8ByteLength(diffBeforeInput);
   const afterSizeBytes = getUtf8ByteLength(diffAfterInput);
   const payloadSizeBytes = getJsonRequestByteLength({
@@ -47,6 +48,7 @@ export function useDiffTool(resetCopyMessage: () => void) {
     : "";
 
   function handleDiffInputChange(side: "before" | "after", value: string) {
+    requestGeneration.current += 1;
     if (side === "before") {
       setDiffBeforeInput(value);
     } else {
@@ -61,6 +63,7 @@ export function useDiffTool(resetCopyMessage: () => void) {
   }
 
   async function handleDiff() {
+    const generation = ++requestGeneration.current;
     if (
       diffState === "thinking" ||
       !diffBeforeInput.trim() ||
@@ -90,6 +93,10 @@ export function useDiffTool(resetCopyMessage: () => void) {
 
       const diffResponse = await diffJson(diffBeforeInput, diffAfterInput);
 
+      if (generation !== requestGeneration.current) {
+        return;
+      }
+
       if (
         !Array.isArray(diffResponse.operations) ||
         typeof diffResponse.summary?.changes !== "number"
@@ -101,6 +108,9 @@ export function useDiffTool(resetCopyMessage: () => void) {
       setDiffErrorField(undefined);
       setDiffState("success");
     } catch (error) {
+      if (generation !== requestGeneration.current) {
+        return;
+      }
       const message =
         error instanceof Error
           ? error.message
@@ -117,6 +127,7 @@ export function useDiffTool(resetCopyMessage: () => void) {
   }
 
   function clear() {
+    requestGeneration.current += 1;
     setDiffBeforeInput("");
     setDiffAfterInput("");
     setDiffError("");
@@ -126,6 +137,7 @@ export function useDiffTool(resetCopyMessage: () => void) {
   }
 
   function loadSample() {
+    requestGeneration.current += 1;
     setDiffBeforeInput(diffBeforeJson);
     setDiffAfterInput(diffAfterJson);
     setDiffError("");
@@ -133,6 +145,16 @@ export function useDiffTool(resetCopyMessage: () => void) {
     setDiffResult(null);
     resetCopyMessage();
     setDiffState("idle");
+  }
+
+  function applyAgentProposal(result: DiffJsonResponse): boolean {
+    requestGeneration.current += 1;
+    setDiffResult(result);
+    setDiffError("");
+    setDiffErrorField(undefined);
+    setDiffState("success");
+    resetCopyMessage();
+    return true;
   }
 
   const diffErrorLine =
@@ -173,6 +195,7 @@ export function useDiffTool(resetCopyMessage: () => void) {
   ] satisfies InspectorStat[];
 
   return {
+    applyAgentProposal,
     afterDiffErrorLine,
     afterDiffHighlights,
     beforeDiffErrorLine,
