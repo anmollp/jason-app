@@ -187,9 +187,10 @@ export default function AiCaseStudyPage() {
           </h2>
           <p className="mt-2 text-sm leading-6 text-zinc-300">
             The final Luna evaluation reached 100% routing with a $0.000918 p95
-            session estimate. The first production Formatter smoke recorded a
-            $0.000498 estimate. The 10-session daily pilot is active, while its
-            seven-day review and all-tool production re-smoke remain open.
+            session estimate. Production smoke now covers Formatter, Diff,
+            Patch, and Pointer with explicit workspace approval. Cumulative pilot
+            estimated usage is $0.003728. The 10-session daily pilot remains
+            active while its seven-day review continues.
           </p>
         </section>
       </main>
