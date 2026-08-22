@@ -77,6 +77,8 @@ export function useAgentCopilot({
   const [storedError, setStoredError] = useState<StoredError>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const activeRequest = useRef<AbortController | undefined>(undefined);
+  const assistantBuffer = useRef("");
+  const receivedProposal = useRef<AgentProposal | undefined>(undefined);
   const nextId = useRef(1);
   const contextKey = JSON.stringify(context);
   const contextBytes = new TextEncoder().encode(contextKey).length;
@@ -147,6 +149,8 @@ export function useAgentCopilot({
     const controller = new AbortController();
     activeRequest.current?.abort();
     activeRequest.current = controller;
+    assistantBuffer.current = "";
+    receivedProposal.current = undefined;
     setIsSubmitting(true);
     clearCurrentResult();
     appendMessage("user", instruction);
@@ -214,7 +218,7 @@ export function useAgentCopilot({
         });
         return;
       case "message":
-        appendAssistantDelta(event.delta);
+        assistantBuffer.current += event.delta;
         return;
       case "proposal":
         if (event.tool !== tool) {
@@ -223,11 +227,13 @@ export function useAgentCopilot({
             "Jason returned a proposal for the wrong workspace tool.",
           );
         }
+        const proposal = proposalFromEvent(event);
         setStoredProposal({
           contextKey,
           tool,
-          proposal: proposalFromEvent(event),
+          proposal,
         });
+        receivedProposal.current = proposal;
         return;
       case "usage":
         setSession((current) =>
@@ -241,6 +247,8 @@ export function useAgentCopilot({
         );
         return;
       case "error":
+        assistantBuffer.current = "";
+        receivedProposal.current = undefined;
         setStoredError({
           tool,
           error: {
@@ -252,6 +260,13 @@ export function useAgentCopilot({
         setStoredProposal(undefined);
         return;
       case "done":
+        if (receivedProposal.current) {
+          appendMessage("assistant", proposalSummary(receivedProposal.current));
+        } else if (assistantBuffer.current.trim()) {
+          appendMessage("assistant", assistantBuffer.current);
+        }
+        assistantBuffer.current = "";
+        receivedProposal.current = undefined;
         return;
     }
   }
@@ -261,28 +276,6 @@ export function useAgentCopilot({
       ...current,
       { id: nextId.current++, role, content, tool: selectedTool },
     ]);
-  }
-
-  function appendAssistantDelta(delta: string) {
-    setMessages((current) => {
-      const last = current.at(-1);
-      if (last?.role === "assistant" && last.tool === selectedTool) {
-        return current.map((message) =>
-          message.id === last.id
-            ? { ...message, content: message.content + delta }
-            : message,
-        );
-      }
-      return [
-        ...current,
-        {
-          id: nextId.current++,
-          role: "assistant",
-          content: delta,
-          tool: selectedTool,
-        },
-      ];
-    });
   }
 
   function appendTrace(item: Omit<AgentTraceItem, "id">) {
@@ -311,7 +304,7 @@ export function useAgentCopilot({
     setStoredProposal(undefined);
     appendMessage(
       "assistant",
-      "Applied after your approval. The deterministic Patch workflow remains available.",
+      "Applied after your approval. The workspace now contains the deterministic result.",
     );
   }
 
@@ -320,6 +313,8 @@ export function useAgentCopilot({
   }
 
   function clearCurrentResult() {
+    assistantBuffer.current = "";
+    receivedProposal.current = undefined;
     setTrace((current) =>
       current.filter((item) => item.tool !== selectedTool),
     );
@@ -354,6 +349,23 @@ function proposalFromEvent(
       return { tool: event.tool, data: event.data, validation: event.validation };
     case "pointer":
       return { tool: event.tool, data: event.data, validation: event.validation };
+  }
+}
+
+function proposalSummary(proposal: AgentProposal): string {
+  switch (proposal.tool) {
+    case "formatter":
+      return "Jason formatted the selected JSON, and the Rust engine validated the result.";
+    case "diff": {
+      const { added, changes, removed, replaced } = proposal.data.summary;
+      return `Jason generated ${changes} ${changes === 1 ? "change" : "changes"}: ${added} added, ${removed} removed, and ${replaced} replaced. The Rust engine validated the result.`;
+    }
+    case "patch": {
+      const { operations } = proposal.data.summary;
+      return `Jason generated and validated ${operations} JSON Patch ${operations === 1 ? "operation" : "operations"} with the Rust engine.`;
+    }
+    case "pointer":
+      return `Jason resolved ${proposal.data.summary.path} to a ${proposal.data.summary.kind} value, and the Rust engine validated the result.`;
   }
 }
 

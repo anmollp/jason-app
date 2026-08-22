@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/Button";
 
 import {
   agentInstructionLimit,
-  patchProposalOutput,
   type AgentProposal,
   type AgentSelectedTool,
 } from "./agent-client";
@@ -19,7 +18,7 @@ import {
 type AgentCopilotProps = {
   selectedTool: AgentSelectedTool;
   context: Record<string, string>;
-  onApplyPatchProposal: (output: string) => void;
+  onApplyProposal: (proposal: AgentProposal) => boolean;
 };
 
 const toolDetails: Record<
@@ -64,7 +63,7 @@ const toolDetails: Record<
 export function AgentCopilot({
   selectedTool,
   context,
-  onApplyPatchProposal,
+  onApplyProposal,
 }: AgentCopilotProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [instruction, setInstruction] = useState("");
@@ -73,7 +72,6 @@ export function AgentCopilot({
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const copilot = useAgentCopilot({ selectedTool, context });
   const details = toolDetails[selectedTool];
-  const patchOutput = validPatchOutput(copilot.proposal);
   const isQuotaExhausted = copilot.remainingTurns <= 0;
 
   useEffect(() => {
@@ -136,12 +134,28 @@ export function AgentCopilot({
     await copilot.submit(submitted);
   }
 
-  function applyPatchProposal() {
-    if (!patchOutput) {
+  function applyProposal() {
+    if (!copilot.proposal || !onApplyProposal(copilot.proposal)) {
       return;
     }
-    onApplyPatchProposal(patchOutput);
     copilot.markProposalApplied();
+    restoreComposerFocus();
+  }
+
+  function discardProposal() {
+    copilot.discardProposal();
+    restoreComposerFocus();
+  }
+
+  function restoreComposerFocus() {
+    window.requestAnimationFrame(() => {
+      const composer = composerRef.current;
+      if (composer && !composer.disabled) {
+        composer.focus();
+      } else {
+        dialogRef.current?.focus();
+      }
+    });
   }
 
   return (
@@ -170,6 +184,7 @@ export function AgentCopilot({
             role="dialog"
             aria-modal="true"
             aria-labelledby="jason-copilot-title"
+            tabIndex={-1}
             className="pointer-events-auto absolute inset-x-0 bottom-0 flex h-[min(78dvh,628px)] flex-col gap-4 rounded-t-2xl border-t border-zinc-700 bg-zinc-900 p-4 shadow-[0_28px_70px_rgba(0,0,0,0.42)] lg:inset-y-0 lg:left-auto lg:right-0 lg:h-dvh lg:w-[424px] lg:gap-6 lg:rounded-none lg:border-l lg:border-t-0 lg:p-6 lg:shadow-[-18px_0_60px_rgba(0,0,0,0.5)]"
             onKeyDown={handleDialogKeyDown}
           >
@@ -278,9 +293,9 @@ export function AgentCopilot({
               {copilot.proposal ? (
                 <ProposalCard
                   proposal={copilot.proposal}
-                  patchOutput={patchOutput}
-                  onApply={applyPatchProposal}
-                  onDiscard={copilot.discardProposal}
+                  isSubmitting={copilot.isSubmitting}
+                  onApply={applyProposal}
+                  onDiscard={discardProposal}
                 />
               ) : null}
             </div>
@@ -334,52 +349,51 @@ export function AgentCopilot({
 
 function ProposalCard({
   proposal,
-  patchOutput,
+  isSubmitting,
   onApply,
   onDiscard,
 }: {
   proposal: AgentProposal;
-  patchOutput: string | undefined;
+  isSubmitting: boolean;
   onApply: () => void;
   onDiscard: () => void;
 }) {
   const operationCount = proposalOperationCount(proposal);
+  const canApply = hasValidWorkspaceResult(proposal);
 
   return (
     <section className="rounded-xl border border-emerald-500 bg-zinc-950 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-2xl font-semibold">Proposal ready</h3>
         <span className="font-mono text-xs font-semibold text-emerald-400">
-          {operationCount ? `${operationCount} ops · ` : ""}Rust valid
+          {operationCount
+            ? `${operationCount} ${operationCount === 1 ? "op" : "ops"} · `
+            : ""}
+          Rust valid
         </span>
       </div>
-      <pre className="jason-scrollbar mt-3 max-h-52 overflow-auto whitespace-pre-wrap break-words font-mono text-xs leading-5 text-zinc-400">
-        {proposalPreview(proposal)}
-      </pre>
-      {proposal.tool === "patch" ? (
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <Button
-            type="button"
-            variant="secondary"
-            className="order-2 h-11 rounded-lg px-4 text-xs sm:order-1"
-            onClick={onDiscard}
-          >
-            Discard
-          </Button>
-          <Button
-            type="button"
-            disabled={!patchOutput}
-            className="order-1 h-11 rounded-lg px-4 text-xs sm:order-2"
-            onClick={onApply}
-          >
-            Apply to workspace
-          </Button>
-        </div>
-      ) : (
-        <p className="mt-4 font-mono text-xs text-emerald-400">
-          Read-only result · no workspace change
-        </p>
-      )}
+      <p className="mt-3 text-sm leading-6 text-zinc-400">
+        The deterministic result is ready for the {proposalLabel(proposal)} workspace.
+      </p>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={isSubmitting}
+          className="order-2 h-11 rounded-lg px-4 text-xs sm:order-1"
+          onClick={onDiscard}
+        >
+          Discard
+        </Button>
+        <Button
+          type="button"
+          disabled={isSubmitting || !canApply}
+          className="order-1 h-11 rounded-lg px-4 text-xs sm:order-2"
+          onClick={onApply}
+        >
+          Apply to workspace
+        </Button>
+      </div>
     </section>
   );
 }
@@ -436,38 +450,41 @@ function errorState(code: string) {
   };
 }
 
-function validPatchOutput(proposal: AgentProposal | undefined) {
-  const output = patchProposalOutput(proposal);
-  if (!output) {
-    return undefined;
-  }
-  try {
-    JSON.parse(output);
-    return output;
-  } catch {
-    return undefined;
-  }
-}
-
 function proposalOperationCount(proposal: AgentProposal): number | undefined {
   switch (proposal.tool) {
+    case "diff":
+      return proposal.data.summary.changes;
     case "patch":
       return proposal.data.summary.operations;
     case "formatter":
-    case "diff":
     case "pointer":
       return undefined;
   }
 }
 
-function proposalPreview(proposal: AgentProposal): string {
+function proposalLabel(proposal: AgentProposal): string {
   switch (proposal.tool) {
     case "formatter":
-    case "patch":
-    case "pointer":
-      return proposal.data.output;
+      return "Formatted Output";
     case "diff":
-      return JSON.stringify(proposal.data, null, 2);
+      return "Diff";
+    case "patch":
+      return "Patch";
+    case "pointer":
+      return "Pointer";
+  }
+}
+
+function hasValidWorkspaceResult(proposal: AgentProposal): boolean {
+  if (proposal.tool === "diff") {
+    return true;
+  }
+
+  try {
+    JSON.parse(proposal.data.output);
+    return true;
+  } catch {
+    return false;
   }
 }
 

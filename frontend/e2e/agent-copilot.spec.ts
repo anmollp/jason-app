@@ -42,31 +42,107 @@ test("sends only the selected bounded context for all four tools", async ({
   expect(requests.every((request) => request.visibleMessages.length === 0)).toBe(true);
 });
 
-test("Patch proposals require Apply and Discard never changes the workspace", async ({
+for (const tool of ["formatter", "diff", "patch", "pointer"] as const) {
+  test(`${titleCase(tool)} proposals stay out of chat and require workspace approval`, async ({
+    page,
+  }) => {
+    await mockAgent(page);
+    await page.goto("/playground");
+    if (tool !== "formatter") {
+      await page.getByRole("button", { name: titleCase(tool), exact: true }).click();
+    }
+
+    const originalWorkspace = await workspaceSnapshot(page, tool);
+    await askJason(page, `Prepare the ${tool} result.`);
+
+    const dialog = page.getByRole("dialog", { name: "Jason" });
+    await expect(page.getByRole("heading", { name: "Proposal ready" })).toBeVisible();
+    await expect(dialog).not.toContainText(proposalResultText(tool));
+    await expect(dialog).not.toContainText("Model result:");
+    await expect(dialog).toContainText(proposalSummaryText(tool));
+    expect(await workspaceSnapshot(page, tool)).toBe(originalWorkspace);
+
+    await page.getByRole("button", { name: "Discard" }).click();
+    await expect(page.getByRole("heading", { name: "Proposal ready" })).toHaveCount(0);
+    await expect(page.getByLabel("Ask Jason about the selected JSON")).toBeFocused();
+    expect(await workspaceSnapshot(page, tool)).toBe(originalWorkspace);
+
+    await askJason(page, `Prepare the ${tool} result.`);
+    await page.getByRole("button", { name: "Apply to workspace" }).click();
+    await expect(page.getByLabel("Ask Jason about the selected JSON")).toBeFocused();
+    await expectWorkspaceResult(page, tool);
+  });
+}
+
+test("malformed JSON proposals cannot change a workspace", async ({ page }) => {
+  for (const [index, tool] of (
+    ["formatter", "patch", "pointer"] as const
+  ).entries()) {
+    if (index > 0) {
+      await page.unrouteAll({ behavior: "wait" });
+    }
+    await mockAgent(page, {
+      events: proposalEvents(tool, { ...proposalData(tool), output: "not-json" }),
+    });
+    await page.goto("/playground");
+    if (tool !== "formatter") {
+      await page.getByRole("button", { name: titleCase(tool), exact: true }).click();
+    }
+
+    const originalWorkspace = await workspaceSnapshot(page, tool);
+    await askJason(page, `Prepare the ${tool} result.`);
+
+    await expect(page.getByRole("button", { name: "Apply to workspace" })).toBeDisabled();
+    expect(await workspaceSnapshot(page, tool)).toBe(originalWorkspace);
+  }
+});
+
+test("last-turn proposal actions keep focus inside the dialog", async ({ page }) => {
+  await mockAgent(page, {
+    events: successfulEvents("formatter").map((event) =>
+      event.type === "usage" ? { ...event, remainingTurns: 0 } : event,
+    ),
+  });
+  await page.goto("/playground");
+  await askJason(page, "Prepare the formatter result.");
+  await page.getByRole("button", { name: "Apply to workspace" }).click();
+
+  await expect(page.getByRole("dialog", { name: "Jason" })).toBeFocused();
+});
+
+test("an approved AI result is not overwritten by a stale tool request", async ({
   page,
 }) => {
-  const requests: AgentRequest[] = [];
-  await mockAgent(page, { requests });
+  let releaseFormat: () => void = () => undefined;
+  const formatMayFinish = new Promise<void>((resolve) => {
+    releaseFormat = resolve;
+  });
+  await page.route("**/api/format", async (route) => {
+    await formatMayFinish;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ output: '{"stale":true}' }),
+    });
+  });
+  await mockAgent(page);
   await page.goto("/playground");
-  await page.getByRole("button", { name: "Patch", exact: true }).click();
 
-  const documentEditor = page.getByLabel("Document JSON");
-  const originalDocument = await documentEditor.textContent();
-
-  await askJason(page, "Set retries to 5 and remove debug.");
-  await expect(page.getByRole("heading", { name: "Proposal ready" })).toBeVisible();
-  await expect(documentEditor).toHaveText(originalDocument ?? "");
-  await page.getByRole("button", { name: "Discard" }).click();
-  await expect(page.getByRole("heading", { name: "Proposal ready" })).toHaveCount(0);
-  await expect(documentEditor).toHaveText(originalDocument ?? "");
-
-  await askJason(page, "Set retries to 5 and remove debug.");
+  await page.getByRole("button", { name: "Format", exact: true }).click();
+  await askJason(page, "Prepare the formatter result.");
   await page.getByRole("button", { name: "Apply to workspace" }).click();
-  await expect(documentEditor).toContainText('"retries": 5');
-  await expect(documentEditor).not.toContainText('"debug"');
-  expect(JSON.stringify(requests.at(-1)?.visibleMessages)).not.toContain(
-    '"service"',
+  const staleResponse = page.waitForResponse("**/api/format");
+  releaseFormat();
+  await staleResponse;
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
+      }),
   );
+
+  await expect(page.getByLabel("Formatted Output")).toContainText('"ok": true');
+  await expect(page.getByLabel("Formatted Output")).not.toContainText("stale");
 });
 
 test("missing inputs and oversized AI context do not consume a session", async ({
@@ -194,6 +270,12 @@ test("uses an accessible mobile bottom sheet and restores launcher focus", async
   await mockAgent(page);
   await page.goto("/playground");
   const launcher = page.getByRole("button", { name: "Ask Jason" });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  const launcherBounds = await launcher.boundingBox();
+  expect(launcherBounds?.x).toBeGreaterThanOrEqual(0);
+  expect((launcherBounds?.x ?? 0) + (launcherBounds?.width ?? 0)).toBeLessThanOrEqual(
+    390,
+  );
   await launcher.click();
 
   const dialog = page.getByRole("dialog", { name: "Jason" });
@@ -279,6 +361,13 @@ async function mockAgent(
 }
 
 function successfulEvents(tool: AgentRequest["selectedTool"]) {
+  return proposalEvents(tool, proposalData(tool));
+}
+
+function proposalEvents(
+  tool: AgentRequest["selectedTool"],
+  data: Record<string, unknown>,
+) {
   const toolName = toolNames[tool];
   return [
     { type: "status", phase: "moderating", message: "Checking the instruction." },
@@ -287,13 +376,96 @@ function successfulEvents(tool: AgentRequest["selectedTool"]) {
     {
       type: "proposal",
       tool,
-      data: proposalData(tool),
+      data,
       validation: "jason",
     },
-    { type: "message", delta: "Jason prepared a Rust-valid result." },
+    {
+      type: "message",
+      delta: `Model result: ${JSON.stringify(data)}`,
+    },
     usageEvent(),
     { type: "done" },
   ];
+}
+
+async function workspaceSnapshot(
+  page: Page,
+  tool: AgentRequest["selectedTool"],
+): Promise<string> {
+  switch (tool) {
+    case "formatter":
+      return (await page.getByLabel("Formatted Output").textContent()) ?? "";
+    case "diff":
+      return (
+        (await page.getByText("Changes", { exact: true }).locator("..").textContent()) ??
+        ""
+      );
+    case "patch":
+      return (await page.getByLabel("Document JSON").textContent()) ?? "";
+    case "pointer":
+      return JSON.stringify({
+        path: await page.getByLabel("Search JSON Pointer path").inputValue(),
+        kind:
+          (await page.getByText("Kind", { exact: true }).locator("..").textContent()) ??
+          "",
+        found:
+          (await page.getByText("Found", { exact: true }).locator("..").textContent()) ??
+          "",
+      });
+  }
+}
+
+async function expectWorkspaceResult(
+  page: Page,
+  tool: AgentRequest["selectedTool"],
+) {
+  switch (tool) {
+    case "formatter":
+      await expect(page.getByLabel("Formatted Output")).toContainText('"ok": true');
+      return;
+    case "diff":
+      await expect(
+        page.getByText("Changes", { exact: true }).locator(".."),
+      ).toContainText("1");
+      return;
+    case "patch":
+      await expect(page.getByLabel("Document JSON")).toContainText('"retries": 5');
+      await expect(page.getByLabel("Document JSON")).not.toContainText('"debug"');
+      return;
+    case "pointer":
+      await expect(page.getByLabel("Search JSON Pointer path")).toHaveValue(
+        "/user/role",
+      );
+      await expect(page.getByText("Kind", { exact: true }).locator("..")).toContainText(
+        "string",
+      );
+  }
+}
+
+function proposalResultText(tool: AgentRequest["selectedTool"]): string {
+  switch (tool) {
+    case "formatter":
+      return '"ok": true';
+    case "diff":
+      return '"path": "/retries"';
+    case "patch":
+      return '"retries": 5';
+    case "pointer":
+      return '"Administrator"';
+  }
+}
+
+function proposalSummaryText(tool: AgentRequest["selectedTool"]): string {
+  switch (tool) {
+    case "formatter":
+      return "Jason formatted the selected JSON, and the Rust engine validated the result.";
+    case "diff":
+      return "Jason generated 1 change: 0 added, 0 removed, and 1 replaced. The Rust engine validated the result.";
+    case "patch":
+      return "Jason generated and validated 2 JSON Patch operations with the Rust engine.";
+    case "pointer":
+      return "Jason resolved /user/role to a string value, and the Rust engine validated the result.";
+  }
 }
 
 function proposalData(tool: AgentRequest["selectedTool"]) {
