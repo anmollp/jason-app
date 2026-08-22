@@ -226,11 +226,7 @@ export function useAgentCopilot({
         setStoredProposal({
           contextKey,
           tool,
-          proposal: {
-            tool: event.tool,
-            data: event.data,
-            validation: event.validation,
-          },
+          proposal: proposalFromEvent(event),
         });
         return;
       case "usage":
@@ -344,6 +340,21 @@ export function useAgentCopilot({
     submit,
     trace: displayTrace,
   };
+}
+
+function proposalFromEvent(
+  event: Extract<AgentEvent, { type: "proposal" }>,
+): AgentProposal {
+  switch (event.tool) {
+    case "formatter":
+      return { tool: event.tool, data: event.data, validation: event.validation };
+    case "diff":
+      return { tool: event.tool, data: event.data, validation: event.validation };
+    case "patch":
+      return { tool: event.tool, data: event.data, validation: event.validation };
+    case "pointer":
+      return { tool: event.tool, data: event.data, validation: event.validation };
+  }
 }
 
 function fitVisibleMessages(
