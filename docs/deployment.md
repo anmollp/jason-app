@@ -1,8 +1,9 @@
 # Deployment Runbook
 
-This runbook captures the production shape for Jason App. The frontend and
-backend can be hosted separately as long as their environment variables point at
-each other and the backend can execute the Jason Rust CLI.
+This runbook captures the production shape for AskJason. The public frontend and
+private backend run separately on Cloud Run. Deterministic tools require the
+Jason Rust CLI; the optional hosted copilot additionally requires an approved
+feature enablement, pinned secrets, Firestore state, and provider controls.
 
 ## Production shape
 
@@ -16,10 +17,12 @@ Cloud Run frontend
   | server-side proxy with Cloud Run identity token
   v
 private Cloud Run backend
+  |\
+  | \---- optional AI path ---> Moderation + OpenAI Responses
+  |                         \--> Firestore quota/accounting state
+  |                         \--> pinned Secret Manager versions
   |
-  | execs JASON_CLI_PATH
-  v
-Jason Rust CLI
+  `------ deterministic and validated tool calls ---> Jason Rust CLI
 ```
 
 ## Frontend checklist
@@ -27,8 +30,11 @@ Jason Rust CLI
 1. Build and deploy the `frontend/` container image with a Node-compatible container host.
 2. Set `JASON_API_BASE_URL` to the private backend Cloud Run service URL.
 3. Confirm the production site loads `/` and `/playground`.
-4. Open the browser network panel and verify playground requests go to the
+4. Confirm `/ai` renders the architecture case study.
+5. Open the browser network panel and verify playground requests go to the
    frontend `/api/*` proxy routes, not directly to the backend.
+6. Keep `AI_ENABLED=false` unless the exact backend revision, secret versions,
+   quota, and pilot or release approval have been reviewed together.
 
 ## Backend checklist
 
@@ -47,6 +53,11 @@ Jason Rust CLI
    ```
 
 6. Configure the host health check to call `GET /health`.
+7. For hosted AI, provision Firestore and Secret Manager through Terraform,
+   create secret payload versions outside Terraform, and attach only reviewed
+   numeric versions. Never use `latest`.
+8. Confirm the backend service account is the only runtime identity with
+   Firestore and provider/identity-secret access.
 
 ## Required environment variables
 
@@ -55,14 +66,32 @@ Frontend:
 ```text
 JASON_API_BASE_URL=https://your-backend.example.com
 JASON_API_AUDIENCE=https://your-backend.example.com
+AI_ENABLED=false
 ```
 
 Backend:
 
 ```text
 PORT=3000
-JASON_CLI_PATH=/app/bin/jason
+JASON_CLI_PATH=/usr/local/bin/jason
+AI_ENABLED=false
 ```
+
+For an approved hosted AI rollout, the backend additionally uses:
+
+```text
+AI_PROVIDER=openai
+AI_MODEL=gpt-5.6-luna
+AI_COOKIE_SECURE=true
+AI_DAILY_SESSION_LIMIT=10
+GOOGLE_CLOUD_PROJECT=your-project-id
+OPENAI_API_KEY=<pinned Secret Manager version>
+AI_IDENTITY_KEY=<pinned Secret Manager version>
+```
+
+`AI_DAILY_SESSION_LIMIT` is restricted to `10` or `20`; the active pilot uses
+`10`. `AI_IDENTITY_KEY` must decode to exactly 32 bytes. Terraform mounts the two
+secret values and does not place them in configuration or state.
 
 ## Health checks
 
@@ -97,6 +126,7 @@ pnpm run build
 ```bash
 cd frontend
 pnpm run lint
+pnpm run test
 pnpm run build
 ```
 
@@ -120,10 +150,17 @@ so infrastructure applies do not roll back app revisions.
 The app deploy workflows push both a short-SHA tag and `latest`, while Cloud Run
 is updated to the short-SHA image.
 
-Configure the workflow with:
+Configure the workflows with these repository variables:
 
-- `GCP_PROJECT_ID`, `GCP_REGION`, `GAR_REPOSITORY`, and `BILLING_ACCOUNT_ID`
-  repository variables.
+- `GCP_PROJECT_ID`
+- `GCP_REGION`
+- `GAR_REPOSITORY`
+- `BILLING_ACCOUNT_ID`
+- `GCS_STATE_BUCKET`
+- optional `FRONTEND_CUSTOM_DOMAIN`
+
+Configure these repository secrets:
+
 - `GCP_WORKLOAD_IDENTITY_PROVIDER` from the Terraform
   `github_actions_workload_identity_provider` output.
 - `GCP_PUBLISHER_SERVICE_ACCOUNT` from the Terraform
@@ -147,6 +184,11 @@ destroy workflows.
 
 Set `GCS_STATE_BUCKET` to the Terraform state bucket before running Terraform
 workflows in GitHub Actions.
+
+The deploy workflow keeps AI disabled unless `ai_enabled` is explicitly true.
+`openai_api_key_secret_version` and `ai_identity_key_secret_version` must be
+supplied together as pinned numeric versions. Enabling AI without both fails
+before planning, and the exact values are bound into the saved plan.
 
 ## Custom domain
 
@@ -189,9 +231,34 @@ After deploy, verify:
 4. Diff sample returns patch operations.
 5. Patch sample returns patched JSON.
 6. Pointer sample returns the selected value.
+7. `/api/agent/session` fails safely when `AI_ENABLED=false`, with no effect on
+   deterministic tools.
 
-## Known production risk
+For an explicitly approved enabled pilot, additionally verify:
+
+1. The frontend and backend revisions both expose the feature.
+2. One signed HttpOnly, Secure, SameSite visitor session is issued.
+3. Formatter, Diff, Patch, and Pointer each return a proposal and deterministic
+   safe summary before Apply.
+4. Apply changes only the selected workspace; Discard leaves it unchanged.
+5. A second visitor or network-bound session inside 24 hours is rejected.
+6. Firestore daily, monthly, reserved, and actual counters reconcile with
+   metadata-only audit logs and provider usage.
+7. Application logs contain no prompt, JSON document, provider response, cookie,
+   secret, or raw session identifier.
+
+Use the complete procedures and stop conditions in
+[AI release readiness](ai-release-readiness.md); do not manufacture provider or
+state failures in production.
+
+## Known production risks
 
 The backend depends on the Jason Rust CLI. A deployment can pass Node.js build
 checks but still fail JSON operations if the CLI binary is missing or not
 executable. Treat `JASON_CLI_PATH` as the critical production dependency.
+
+The optional AI path adds Firestore, Secret Manager, moderation, provider, and
+quota-accounting dependencies. Those failures must remain fail closed while the
+four deterministic endpoints stay available. Cloud Run request logs retain
+standard operational metadata, including possible IP and user-agent fields,
+under the project's logging access and retention controls.

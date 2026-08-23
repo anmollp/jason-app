@@ -2,8 +2,8 @@
 
 This directory contains the Terraform plan for deploying Jason on GCP Cloud Run.
 
-The first target is a low-cost `dev` environment that can become the public
-portfolio deployment once the container images are ready.
+The current target is the low-cost public `dev` environment used by the deployed
+portfolio application and bounded AskJason pilot.
 
 ## Target Architecture
 
@@ -148,10 +148,16 @@ The first deployment keeps permissions intentionally narrow:
 - GitHub Actions can impersonate these service accounts only through the
   Workload Identity provider restricted to `github_repository` and `github_ref`.
 
-## Planned Resource PRs
+## Deliberate boundaries
 
-1. Add IAM tightening.
-2. Add custom domain and DNS after the basic deployment is stable.
+- Terraform creates Secret Manager containers but never secret payloads or
+  versions.
+- The hosted AI feature remains disabled unless an approved apply supplies both
+  pinned secret versions and explicitly enables it.
+- Cloud Run services keep zero minimum and one maximum instance.
+- The frontend is public; the backend remains private behind service-account
+  invocation.
+- Custom-domain verification and DNS ownership remain external operator steps.
 
 ## Budget Alerts
 

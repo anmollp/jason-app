@@ -68,8 +68,8 @@ JASON_CLI_PATH=/usr/local/bin/jason
   `http://localhost:3001`.
 - `JASON_CLI_PATH`: Jason CLI executable path. Defaults to `jason`.
 - `AI_ENABLED`: hosted copilot feature flag. Defaults to disabled.
-- `AI_PROVIDER`: generation provider. PR 2 allows only `openai`.
-- `AI_MODEL`: approved model. PR 2 allows only `gpt-5.6-luna`.
+- `AI_PROVIDER`: generation provider. The current release allows only `openai`.
+- `AI_MODEL`: approved model. The current release allows only `gpt-5.6-luna`.
 - `OPENAI_API_KEY`: Secret Manager-backed provider credential; required only
   when AI is enabled.
 - `AI_IDENTITY_KEY`: base64-encoded 32-byte HMAC root key from Secret Manager;
@@ -190,4 +190,7 @@ eval-only comparison; switching the hosted model still requires approval.
 ## Deployment note
 
 Production hosting must include both the Node API and the Jason CLI binary.
-The frontend also needs `NEXT_PUBLIC_API_BASE_URL` set to this API's public URL.
+The frontend server needs `JASON_API_BASE_URL` set to the backend URL and, for a
+private Cloud Run backend, `JASON_API_AUDIENCE` set to the identity-token
+audience. Hosted AI additionally requires the approved Secret Manager versions,
+Firestore access, and matching `AI_ENABLED` flags on both services.

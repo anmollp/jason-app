@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Accepted; amended by
+[ADR 0002](0002-approval-gated-ai-backend.md) for the optional hosted AI
+backend and its Firestore and Secret Manager resources.
 
 ## Context
 
@@ -86,7 +88,7 @@ The Terraform plan should default to:
 - Cloud Run `min_instances = 0`.
 - Cloud Run `max_instance_count = 1` for dev.
 - request-based billing.
-- no database.
+- no application database in the initial deterministic deployment.
 - no VPC connector.
 - modest memory and CPU.
 - budget alert variables included from the beginning.
@@ -108,6 +110,9 @@ Tradeoffs:
 - Custom domains and CI/CD deploys should be added in later PRs.
 
 ## Next Steps
+
+These steps were the original rollout plan and are now complete. Later AI
+infrastructure is recorded separately in ADR 0002.
 
 1. Scaffold Terraform project and dev environment.
 2. Add backend Dockerfile that includes the Jason CLI binary.

@@ -1,8 +1,11 @@
-# Jason App
+# AskJason
 
-Jason is a focused JSON workspace for formatting, diffing, patching, and
+AskJason is a focused JSON workspace for formatting, diffing, patching, and
 inspecting structured data. The project pairs a polished Next.js playground
 with a NestJS API that delegates the core JSON operations to the Jason Rust CLI.
+An optional approval-gated AI copilot can route natural-language requests to
+the same four deterministic tools without changing the workspace until the
+user explicitly applies a validated proposal.
 
 The goal is intentionally small: make common JSON chores feel fast, readable,
 and safe enough for real use while showcasing a full-stack product build.
@@ -10,7 +13,7 @@ and safe enough for real use while showcasing a full-stack product build.
 ## Why this exists
 
 Developers spend a surprising amount of time staring at API payloads, config
-files, webhook bodies, and snapshots. Jason brings the common operations into
+files, webhook bodies, and snapshots. AskJason brings the common operations into
 one interface:
 
 - Format pasted JSON into clean, readable output.
@@ -25,23 +28,37 @@ one interface:
   tools.
 - Backend API: validates requests, calls the Jason CLI, and returns UI-friendly
   summaries.
+- AskJason copilot: offers constrained, proposal-only guidance through four
+  fixed-schema tools while preserving explicit Apply/Discard control.
+- AI case study: documents the trust path, evaluation results, privacy boundary,
+  and rollout controls at `/ai`.
 - CLI boundary: keeps the Rust implementation reusable outside the web app.
+- Local MCP server: exposes the same deterministic tool contracts over stdio
+  without hosted AI access.
 
 ## Visual Tour
 
 ### Landing Page
 
-![Jason landing page](docs/assets/landing.png)
+![AskJason landing page](docs/assets/landing.png)
 
 ### Playground
 
-![Jason playground](docs/assets/playground.png)
+![AskJason playground](docs/assets/playground.png)
+
+### AI Architecture
+
+![AskJason AI architecture case study](docs/assets/ai-case-study.png)
 
 ## Tech stack
 
 - Frontend: Next.js, React, TypeScript, Tailwind CSS, CodeMirror.
-- Backend: NestJS, TypeScript.
+- Backend: NestJS, TypeScript, Firestore-backed AI quota/accounting state.
 - Core engine: Jason Rust CLI, exposed to the backend through `JASON_CLI_PATH`.
+- Hosted AI: OpenAI Responses and Moderation APIs behind provider-neutral
+  backend contracts.
+- Infrastructure: GCP Cloud Run, Artifact Registry, Secret Manager, Firestore,
+  and Terraform.
 
 ## Repository layout
 
@@ -49,8 +66,8 @@ one interface:
 .
 |-- backend/    # NestJS API for JSON operations
 |-- frontend/   # Next.js product site and playground
-|-- docs/       # Product and launch notes
-`-- terraform/  # Infrastructure experiments and deployment notes
+|-- docs/       # Architecture, operations, decisions, and release evidence
+`-- terraform/  # Production-shaped GCP infrastructure
 ```
 
 ## Local development
@@ -96,18 +113,37 @@ Frontend:
   Defaults to `http://localhost:3000`.
 - `JASON_API_AUDIENCE`: optional Cloud Run identity-token audience for private
   backend calls. Defaults to `JASON_API_BASE_URL`.
+- `AI_ENABLED`: exposes the AskJason copilot UI when `true`. The backend must be
+  enabled separately with its approved secrets and quota settings.
+
+Hosted AI backend:
+
+- `AI_ENABLED`: enables the hosted agent endpoints. Defaults to `false`.
+- `AI_PROVIDER` and `AI_MODEL`: currently restricted to `openai` and
+  `gpt-5.6-luna`.
+- `OPENAI_API_KEY`: provider credential, supplied from Secret Manager in hosted
+  environments.
+- `AI_IDENTITY_KEY`: base64-encoded 32-byte key used for signed visitor identity
+  and privacy-safe network guards.
+- `AI_DAILY_SESSION_LIMIT`: approved daily global cap, restricted to `10` or
+  `20`.
+- `GOOGLE_CLOUD_PROJECT`: Firestore project for quota and spend ledgers.
 
 ## API overview
 
-The backend exposes four JSON endpoints:
+The backend exposes health, deterministic JSON, and hosted-agent endpoints:
 
 - `GET /health` for deployment health checks.
 - `POST /format` with `{ "input": "..." }`
 - `POST /diff` with `{ "before": "...", "after": "..." }`
 - `POST /patch` with `{ "document": "...", "patch": "..." }`
 - `POST /pointer` with `{ "document": "...", "path": "..." }`
+- `POST /api/agent/session` to issue a bounded account-free copilot session.
+- `POST /api/agent/message` to stream an accepted copilot turn.
 
-All endpoints return structured responses designed for the playground UI.
+The deterministic endpoints return structured responses designed for the
+playground UI. The agent endpoints are separately bounded, fail closed, and
+return proposals rather than mutating workspace state.
 
 ## Performance smoke
 
@@ -124,13 +160,16 @@ options.
 ## Deployment
 
 See [docs/deployment.md](docs/deployment.md) for the production runbook,
-environment checklist, health-check contract, and smoke-test steps.
+environment checklist, health-check contract, AI enablement boundary, and
+smoke-test steps.
 
 ## Infrastructure
 
-The first IaC target is GCP Cloud Run managed with Terraform. See
+The production-shaped IaC target is GCP Cloud Run managed with Terraform. See
 [docs/decisions/0001-gcp-cloud-run-terraform.md](docs/decisions/0001-gcp-cloud-run-terraform.md)
-for the hosting decision, cost controls, alternatives, and rollout plan.
+for the hosting decision and
+[docs/decisions/0002-approval-gated-ai-backend.md](docs/decisions/0002-approval-gated-ai-backend.md)
+for the AI trust and infrastructure boundary.
 
 Frontend and backend app changes merged to `master` trigger small path-filtered
 deploy workflows. The changed service image is pushed to Artifact Registry and
@@ -152,19 +191,13 @@ Use a GCS bucket for Terraform state before the first real GitHub Actions apply.
 ## Architecture
 
 See [docs/architecture.md](docs/architecture.md) for the product problem,
-system design, CLI boundary, tradeoffs, and future improvements.
-
-## Launch roadmap
-
-This repo is being prepared in small, reviewable PRs:
-
-1. Public README and setup docs.
-2. Playground usability polish and sample data.
-3. Landing page links, copy, and docs route cleanup.
-4. Production deployment path for frontend, backend, and CLI binary.
-5. Recruiter-ready screenshots, architecture notes, and release checklist.
+deterministic and AI request paths, deployment boundaries, and local MCP
+surface. The [documentation index](docs/README.md) identifies the source of
+truth for each operational topic.
 
 ## Current status
 
-Jason is ready for local demo work. The next launch milestone is making the
-playground easy to evaluate from a fresh clone and safe to deploy on the web.
+The deterministic workspace is deployed, and the optional AskJason copilot is
+running under the bounded ten-session pilot described in
+[docs/ai-release-readiness.md](docs/ai-release-readiness.md). The seven-day pilot
+review and any wider release or quota increase remain explicit approval gates.

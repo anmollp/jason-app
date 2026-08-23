@@ -8,6 +8,7 @@ CodeMirror.
 
 - `/`: landing page for the product story.
 - `/playground`: interactive Formatter, Diff, Patch, and Pointer workspace.
+- `/ai`: AskJason copilot architecture, trust path, and release evidence.
 
 ## Local development
 
@@ -22,18 +23,29 @@ Open `http://localhost:3001`.
 The frontend server proxy expects the backend API to be reachable at
 `JASON_API_BASE_URL`, which defaults to `http://localhost:3000`.
 
+Set `AI_ENABLED=true` in both the frontend and backend only for an approved
+hosted rollout. The frontend flag exposes the copilot drawer; it does not enable
+the protected backend feature or supply its secrets.
+
 ## Useful scripts
 
 - `pnpm run dev`: start the development server.
 - `pnpm run build`: create a production build.
 - `pnpm run start`: serve the production build.
 - `pnpm run lint`: run ESLint.
+- `pnpm run test`: run frontend unit and proxy-policy tests.
+- `pnpm run test:e2e`: run Playwright coverage, including approval-gated copilot
+  behavior.
 
 ## Deployment note
 
 The frontend can be deployed separately from the API. Set `JASON_API_BASE_URL`
 to the backend service URL so playground requests go through the frontend
 server proxy instead of calling the backend directly from the browser.
+
+Hosted requests use `JASON_API_AUDIENCE` when the private backend requires a
+Cloud Run identity token. `NEXT_PUBLIC_API_BASE_URL` remains a compatibility
+fallback, but new deployments should use the server-only `JASON_API_BASE_URL`.
 
 ## Container image
 
