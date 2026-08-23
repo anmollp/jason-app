@@ -1,90 +1,55 @@
-<mxfile host="app.diagrams.net" modified="2026-07-10T00:00:00.000Z" agent="Codex" version="24.7.17">
-  <diagram id="jason-architecture" name="Jason Architecture">
-    <mxGraphModel dx="1280" dy="1260" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1280" pageHeight="1260" math="0" shadow="0">
+<mxfile host="app.diagrams.net" modified="2026-08-22T00:00:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="askjason-architecture" name="AskJason Architecture">
+    <mxGraphModel dx="1440" dy="1620" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1440" pageHeight="1620" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="title" value="Jason System Design" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#fafafa;fontSize=34;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="64" y="40" width="500" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="subtitle" value="Runtime architecture, JSON request flow, and production deployment contract." style="text;html=1;strokeColor=none;fillColor=none;fontColor=#a1a1aa;fontSize=14;align=left;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="64" y="82" width="760" height="30" as="geometry" />
-        </mxCell>
+        <mxCell id="title" value="AskJason System Design" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#fafafa;fontSize=36;fontStyle=1;align=left;" vertex="1" parent="1"><mxGeometry x="62" y="38" width="600" height="50" as="geometry" /></mxCell>
+        <mxCell id="subtitle" value="Deterministic JSON tools, approval-gated AI, and production trust boundaries." style="text;html=1;strokeColor=none;fillColor=none;fontColor=#a1a1aa;fontSize=14;align=left;" vertex="1" parent="1"><mxGeometry x="62" y="84" width="800" height="30" as="geometry" /></mxCell>
 
-        <mxCell id="runtime-section" value="1. Runtime Architecture" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#18181b;strokeColor=#3f3f46;fontColor=#fafafa;fontSize=24;fontStyle=1;align=left;verticalAlign=top;spacingLeft=30;spacingTop=20;" vertex="1" parent="1">
-          <mxGeometry x="48" y="135" width="1184" height="330" as="geometry" />
-        </mxCell>
-        <mxCell id="browser" value="&lt;b&gt;Browser&lt;/b&gt;&lt;br&gt;&lt;br&gt;User pastes JSON&lt;br&gt;Runs a tool" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#27272a;strokeColor=#71717a;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1">
-          <mxGeometry x="86" y="230" width="210" height="120" as="geometry" />
-        </mxCell>
-        <mxCell id="frontend" value="&lt;b&gt;Next.js Frontend&lt;/b&gt;&lt;br&gt;&lt;br&gt;Landing page&lt;br&gt;Playground shell&lt;br&gt;CodeMirror editors" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#0f2f2a;strokeColor=#34d399;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1">
-          <mxGeometry x="380" y="210" width="250" height="160" as="geometry" />
-        </mxCell>
-        <mxCell id="backend" value="&lt;b&gt;NestJS Backend&lt;/b&gt;&lt;br&gt;&lt;br&gt;Validation&lt;br&gt;Error mapping&lt;br&gt;Response summaries" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#172554;strokeColor=#60a5fa;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1">
-          <mxGeometry x="718" y="210" width="250" height="160" as="geometry" />
-        </mxCell>
-        <mxCell id="cli" value="&lt;b&gt;Rust CLI&lt;/b&gt;&lt;br&gt;&lt;br&gt;JSON engine&lt;br&gt;Reusable core" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#3b2f12;strokeColor=#fbbf24;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1">
-          <mxGeometry x="1030" y="230" width="160" height="120" as="geometry" />
-        </mxCell>
-        <mxCell id="e1" value="open /playground" style="endArrow=block;html=1;rounded=0;strokeColor=#22c55e;fontColor=#d4d4d8;fontFamily=Menlo;fontSize=13;" edge="1" parent="1" source="browser" target="frontend">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e2" value="fetch API" style="endArrow=block;html=1;rounded=0;strokeColor=#22c55e;fontColor=#d4d4d8;fontFamily=Menlo;fontSize=13;" edge="1" parent="1" source="frontend" target="backend">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e3" value="execFile" style="endArrow=block;html=1;rounded=0;strokeColor=#22c55e;fontColor=#d4d4d8;fontFamily=Menlo;fontSize=13;" edge="1" parent="1" source="backend" target="cli">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
+        <mxCell id="runtime-section" value="1. Runtime Components" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#18181b;strokeColor=#3f3f46;fontColor=#fafafa;fontSize=24;fontStyle=1;align=left;verticalAlign=top;spacingLeft=30;spacingTop=20;" vertex="1" parent="1"><mxGeometry x="48" y="130" width="1344" height="300" as="geometry" /></mxCell>
+        <mxCell id="browser" value="&lt;b&gt;Browser&lt;/b&gt;&lt;br&gt;&lt;br&gt;Workspace state&lt;br&gt;Apply / Discard" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#27272a;strokeColor=#71717a;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1"><mxGeometry x="82" y="230" width="170" height="120" as="geometry" /></mxCell>
+        <mxCell id="frontend" value="&lt;b&gt;Next.js Frontend&lt;/b&gt;&lt;br&gt;&lt;br&gt;Playground + /ai&lt;br&gt;Same-origin proxies&lt;br&gt;Cloud Run ID token" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#0f2f2a;strokeColor=#34d399;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1"><mxGeometry x="302" y="210" width="210" height="160" as="geometry" /></mxCell>
+        <mxCell id="backend" value="&lt;b&gt;NestJS Backend&lt;/b&gt;&lt;br&gt;&lt;br&gt;Validation + agent&lt;br&gt;Quota + moderation&lt;br&gt;Safe summaries" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#172554;strokeColor=#60a5fa;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1"><mxGeometry x="562" y="210" width="220" height="160" as="geometry" /></mxCell>
+        <mxCell id="cli" value="&lt;b&gt;Jason CLI&lt;/b&gt;&lt;br&gt;&lt;br&gt;JSON authority&lt;br&gt;Fixed stdin calls" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#3b2f12;strokeColor=#fbbf24;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1"><mxGeometry x="832" y="230" width="180" height="120" as="geometry" /></mxCell>
+        <mxCell id="openai" value="&lt;b&gt;OpenAI APIs&lt;/b&gt;&lt;br&gt;Moderation + Responses" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#3b1028;strokeColor=#fb7185;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1"><mxGeometry x="1062" y="200" width="270" height="78" as="geometry" /></mxCell>
+        <mxCell id="gcp-state" value="&lt;b&gt;GCP State&lt;/b&gt;&lt;br&gt;Firestore + Secret Manager" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#2e1065;strokeColor=#a78bfa;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1"><mxGeometry x="1062" y="296" width="270" height="78" as="geometry" /></mxCell>
+        <mxCell id="runtime-e1" value="" style="endArrow=block;html=1;strokeColor=#34d399;" edge="1" parent="1" source="browser" target="frontend"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="runtime-e2" value="" style="endArrow=block;html=1;strokeColor=#34d399;" edge="1" parent="1" source="frontend" target="backend"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="runtime-e3" value="fixed exec" style="endArrow=block;html=1;strokeColor=#34d399;fontColor=#d4d4d8;fontFamily=Menlo;fontSize=12;" edge="1" parent="1" source="backend" target="cli"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="runtime-e4" value="optional provider" style="endArrow=block;html=1;dashed=1;strokeColor=#34d399;fontColor=#d4d4d8;fontFamily=Menlo;fontSize=12;" edge="1" parent="1" source="backend" target="openai"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="runtime-e5" value="metadata + secrets" style="endArrow=block;html=1;dashed=1;strokeColor=#34d399;fontColor=#d4d4d8;fontFamily=Menlo;fontSize=12;" edge="1" parent="1" source="backend" target="gcp-state"><mxGeometry relative="1" as="geometry" /></mxCell>
 
-        <mxCell id="flow-section" value="2. JSON Operation Request Flow" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#18181b;strokeColor=#3f3f46;fontColor=#fafafa;fontSize=24;fontStyle=1;align=left;verticalAlign=top;spacingLeft=30;spacingTop=20;" vertex="1" parent="1">
-          <mxGeometry x="48" y="505" width="1184" height="330" as="geometry" />
-        </mxCell>
-        <mxCell id="hook" value="&lt;b&gt;Tool Hook&lt;/b&gt;&lt;br&gt;&lt;br&gt;input, output, state&lt;br&gt;sample + copy actions" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#0f2f2a;strokeColor=#34d399;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1">
-          <mxGeometry x="86" y="600" width="210" height="120" as="geometry" />
-        </mxCell>
-        <mxCell id="request" value="&lt;b&gt;API Request&lt;/b&gt;&lt;br&gt;&lt;br&gt;POST /format&lt;br&gt;POST /diff&lt;br&gt;POST /patch&lt;br&gt;POST /pointer" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#27272a;strokeColor=#71717a;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1">
-          <mxGeometry x="370" y="585" width="230" height="150" as="geometry" />
-        </mxCell>
-        <mxCell id="controller" value="&lt;b&gt;Controller&lt;/b&gt;&lt;br&gt;&lt;br&gt;validate body&lt;br&gt;call service&lt;br&gt;map errors" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#172554;strokeColor=#60a5fa;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1">
-          <mxGeometry x="675" y="585" width="230" height="150" as="geometry" />
-        </mxCell>
-        <mxCell id="command" value="&lt;b&gt;CLI Command&lt;/b&gt;&lt;br&gt;&lt;br&gt;format --stdin&lt;br&gt;diff --stdin&lt;br&gt;patch --stdin&lt;br&gt;pointer --stdin" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#3b2f12;strokeColor=#fbbf24;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1">
-          <mxGeometry x="980" y="585" width="210" height="150" as="geometry" />
-        </mxCell>
-        <mxCell id="e4" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#22c55e;" edge="1" parent="1" source="hook" target="request">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e5" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#22c55e;" edge="1" parent="1" source="request" target="controller">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e6" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#22c55e;" edge="1" parent="1" source="controller" target="command">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="response-label" value="stable JSON response returns to UI" style="text;html=1;strokeColor=none;fillColor=none;fontColor=#d4d4d8;fontFamily=Menlo;fontSize=13;align=center;" vertex="1" parent="1">
-          <mxGeometry x="450" y="770" width="360" height="30" as="geometry" />
-        </mxCell>
+        <mxCell id="det-section" value="2. Deterministic Request Path" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#18181b;strokeColor=#3f3f46;fontColor=#fafafa;fontSize=24;fontStyle=1;align=left;verticalAlign=top;spacingLeft=30;spacingTop=20;" vertex="1" parent="1"><mxGeometry x="48" y="468" width="1344" height="292" as="geometry" /></mxCell>
+        <mxCell id="workspace" value="&lt;b&gt;Tool Workspace&lt;/b&gt;&lt;br&gt;&lt;br&gt;Formatter · Diff&lt;br&gt;Patch · Pointer" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#0f2f2a;strokeColor=#34d399;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1"><mxGeometry x="82" y="570" width="240" height="118" as="geometry" /></mxCell>
+        <mxCell id="det-proxy" value="&lt;b&gt;Next.js Proxy&lt;/b&gt;&lt;br&gt;&lt;br&gt;POST /api/{tool}&lt;br&gt;Private backend auth&lt;br&gt;5 MiB document path" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#0f2f2a;strokeColor=#34d399;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1"><mxGeometry x="372" y="550" width="240" height="158" as="geometry" /></mxCell>
+        <mxCell id="det-api" value="&lt;b&gt;API Controller&lt;/b&gt;&lt;br&gt;&lt;br&gt;Validate request&lt;br&gt;Run fixed command&lt;br&gt;Normalize response" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#172554;strokeColor=#60a5fa;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1"><mxGeometry x="662" y="550" width="240" height="158" as="geometry" /></mxCell>
+        <mxCell id="det-runner" value="&lt;b&gt;Jason Runner&lt;/b&gt;&lt;br&gt;&lt;br&gt;format · diff&lt;br&gt;patch · pointer&lt;br&gt;shell: false · stdin" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#3b2f12;strokeColor=#fbbf24;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1"><mxGeometry x="952" y="550" width="260" height="158" as="geometry" /></mxCell>
+        <mxCell id="det-e1" value="" style="endArrow=block;html=1;strokeColor=#34d399;" edge="1" parent="1" source="workspace" target="det-proxy"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="det-e2" value="" style="endArrow=block;html=1;strokeColor=#34d399;" edge="1" parent="1" source="det-proxy" target="det-api"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="det-e3" value="" style="endArrow=block;html=1;strokeColor=#34d399;" edge="1" parent="1" source="det-api" target="det-runner"><mxGeometry relative="1" as="geometry" /></mxCell>
 
-        <mxCell id="deploy-section" value="3. Deployment Shape" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#18181b;strokeColor=#3f3f46;fontColor=#fafafa;fontSize=24;fontStyle=1;align=left;verticalAlign=top;spacingLeft=30;spacingTop=20;" vertex="1" parent="1">
-          <mxGeometry x="48" y="875" width="1184" height="310" as="geometry" />
-        </mxCell>
-        <mxCell id="frontend-host" value="&lt;b&gt;Frontend Host&lt;/b&gt;&lt;br&gt;&lt;br&gt;NEXT_PUBLIC_API_BASE_URL&lt;br&gt;serves Next.js app" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#2e1065;strokeColor=#a78bfa;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1">
-          <mxGeometry x="92" y="980" width="250" height="120" as="geometry" />
-        </mxCell>
-        <mxCell id="backend-host" value="&lt;b&gt;Backend Host&lt;/b&gt;&lt;br&gt;&lt;br&gt;FRONTEND_ORIGIN&lt;br&gt;GET /health" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#172554;strokeColor=#60a5fa;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1">
-          <mxGeometry x="505" y="980" width="250" height="120" as="geometry" />
-        </mxCell>
-        <mxCell id="runtime-binary" value="&lt;b&gt;Runtime Binary&lt;/b&gt;&lt;br&gt;&lt;br&gt;JASON_CLI_PATH&lt;br&gt;must be executable" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#3b2f12;strokeColor=#fbbf24;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1">
-          <mxGeometry x="900" y="980" width="250" height="120" as="geometry" />
-        </mxCell>
-        <mxCell id="e7" value="browser API calls" style="endArrow=block;html=1;rounded=0;strokeColor=#22c55e;fontColor=#d4d4d8;fontFamily=Menlo;fontSize=13;" edge="1" parent="1" source="frontend-host" target="backend-host">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e8" value="execFile" style="endArrow=block;html=1;rounded=0;strokeColor=#22c55e;fontColor=#d4d4d8;fontFamily=Menlo;fontSize=13;" edge="1" parent="1" source="backend-host" target="runtime-binary">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="risk" value="Critical production dependency: Node can build successfully while JSON tools fail if the Rust CLI is missing." style="text;html=1;strokeColor=none;fillColor=none;fontColor=#a1a1aa;fontSize=14;align=left;" vertex="1" parent="1">
-          <mxGeometry x="80" y="1138" width="980" height="30" as="geometry" />
-        </mxCell>
+        <mxCell id="ai-section" value="3. Approval-Gated AI Trust Path" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#18181b;strokeColor=#3f3f46;fontColor=#fafafa;fontSize=24;fontStyle=1;align=left;verticalAlign=top;spacingLeft=30;spacingTop=20;" vertex="1" parent="1"><mxGeometry x="48" y="798" width="1344" height="414" as="geometry" /></mxCell>
+        <mxCell id="ai-request" value="&lt;b&gt;01 Request&lt;/b&gt;&lt;br&gt;&lt;br&gt;Selected context&lt;br&gt;Bounded transport" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#27272a;strokeColor=#71717a;fontColor=#fafafa;fontSize=15;align=center;" vertex="1" parent="1"><mxGeometry x="80" y="900" width="170" height="136" as="geometry" /></mxCell>
+        <mxCell id="ai-reserve" value="&lt;b&gt;02 Reserve&lt;/b&gt;&lt;br&gt;&lt;br&gt;Identity + quota&lt;br&gt;Firestore lease" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#2e1065;strokeColor=#a78bfa;fontColor=#fafafa;fontSize=15;align=center;" vertex="1" parent="1"><mxGeometry x="282" y="900" width="170" height="136" as="geometry" /></mxCell>
+        <mxCell id="ai-moderate" value="&lt;b&gt;03 Moderate&lt;/b&gt;&lt;br&gt;&lt;br&gt;Instruction&lt;br&gt;Fail closed" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#3b1028;strokeColor=#fb7185;fontColor=#fafafa;fontSize=15;align=center;" vertex="1" parent="1"><mxGeometry x="484" y="900" width="170" height="136" as="geometry" /></mxCell>
+        <mxCell id="ai-route" value="&lt;b&gt;04 Route&lt;/b&gt;&lt;br&gt;&lt;br&gt;Responses API&lt;br&gt;4 fixed tools" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#3b1028;strokeColor=#fb7185;fontColor=#fafafa;fontSize=15;align=center;" vertex="1" parent="1"><mxGeometry x="686" y="900" width="170" height="136" as="geometry" /></mxCell>
+        <mxCell id="ai-validate" value="&lt;b&gt;05 Validate&lt;/b&gt;&lt;br&gt;&lt;br&gt;Strict schema&lt;br&gt;Jason result" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#3b2f12;strokeColor=#fbbf24;fontColor=#fafafa;fontSize=15;align=center;" vertex="1" parent="1"><mxGeometry x="888" y="900" width="170" height="136" as="geometry" /></mxCell>
+        <mxCell id="ai-propose" value="&lt;b&gt;06 Propose&lt;/b&gt;&lt;br&gt;&lt;br&gt;Safe summary&lt;br&gt;Usage accounted" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#172554;strokeColor=#60a5fa;fontColor=#fafafa;fontSize=15;align=center;" vertex="1" parent="1"><mxGeometry x="1090" y="900" width="170" height="136" as="geometry" /></mxCell>
+        <mxCell id="user-control" value="&lt;b&gt;07 User Control&lt;/b&gt; — Review proposal → Apply or Discard in the browser&lt;br&gt;No model response can mutate workspace state without this explicit local action." style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#0f2f2a;strokeColor=#34d399;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1"><mxGeometry x="330" y="1080" width="780" height="82" as="geometry" /></mxCell>
+        <mxCell id="ai-e1" value="" style="endArrow=block;html=1;strokeColor=#34d399;" edge="1" parent="1" source="ai-request" target="ai-reserve"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ai-e2" value="" style="endArrow=block;html=1;strokeColor=#34d399;" edge="1" parent="1" source="ai-reserve" target="ai-moderate"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ai-e3" value="" style="endArrow=block;html=1;strokeColor=#34d399;" edge="1" parent="1" source="ai-moderate" target="ai-route"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ai-e4" value="" style="endArrow=block;html=1;strokeColor=#34d399;" edge="1" parent="1" source="ai-route" target="ai-validate"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ai-e5" value="" style="endArrow=block;html=1;strokeColor=#34d399;" edge="1" parent="1" source="ai-validate" target="ai-propose"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="surface-section" value="4. Production and Local Surfaces" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#18181b;strokeColor=#3f3f46;fontColor=#fafafa;fontSize=24;fontStyle=1;align=left;verticalAlign=top;spacingLeft=30;spacingTop=20;" vertex="1" parent="1"><mxGeometry x="48" y="1250" width="1344" height="304" as="geometry" /></mxCell>
+        <mxCell id="public-run" value="&lt;b&gt;Public Cloud Run&lt;/b&gt;&lt;br&gt;&lt;br&gt;JASON_API_BASE_URL&lt;br&gt;JASON_API_AUDIENCE" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#0f2f2a;strokeColor=#34d399;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1"><mxGeometry x="82" y="1350" width="270" height="132" as="geometry" /></mxCell>
+        <mxCell id="private-run" value="&lt;b&gt;Private Cloud Run&lt;/b&gt;&lt;br&gt;&lt;br&gt;AI_ENABLED · quotas&lt;br&gt;JASON_CLI_PATH" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#172554;strokeColor=#60a5fa;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1"><mxGeometry x="408" y="1350" width="270" height="132" as="geometry" /></mxCell>
+        <mxCell id="private-state" value="&lt;b&gt;Private GCP State&lt;/b&gt;&lt;br&gt;&lt;br&gt;Firestore metadata&lt;br&gt;Pinned secret versions" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#2e1065;strokeColor=#a78bfa;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1"><mxGeometry x="734" y="1350" width="270" height="132" as="geometry" /></mxCell>
+        <mxCell id="local-mcp" value="&lt;b&gt;Local MCP&lt;/b&gt;&lt;br&gt;&lt;br&gt;stdio · same contracts&lt;br&gt;No hosted AI or writes" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#052e2b;strokeColor=#2dd4bf;fontColor=#fafafa;fontSize=16;align=center;" vertex="1" parent="1"><mxGeometry x="1060" y="1350" width="270" height="132" as="geometry" /></mxCell>
+        <mxCell id="surface-e1" value="authenticated proxy" style="endArrow=block;html=1;strokeColor=#34d399;fontColor=#d4d4d8;fontFamily=Menlo;fontSize=12;" edge="1" parent="1" source="public-run" target="private-run"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="surface-e2" value="metadata + secrets" style="endArrow=block;html=1;strokeColor=#34d399;fontColor=#d4d4d8;fontFamily=Menlo;fontSize=12;" edge="1" parent="1" source="private-run" target="private-state"><mxGeometry relative="1" as="geometry" /></mxCell>
       </root>
     </mxGraphModel>
   </diagram>

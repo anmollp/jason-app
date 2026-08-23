@@ -4,6 +4,9 @@ This is the evidence index and operator checklist for the AskJason AI copilot.
 It does not authorize model spend, infrastructure changes, deployment, feature
 enablement, quota changes, or release.
 
+**Last verified:** 2026-08-22 against production smoke evidence from `master`
+`c233888` and the repository state linked below.
+
 ## Current verdict
 
 **Ten-session pilot active; seven-day review in progress.** The implementation,
@@ -412,7 +415,7 @@ The release also documents its provider-neutral agent contract, strict tool
 schemas, privacy boundaries, moderation, transactional quotas, budget controls,
 evaluation method, and local client-neutral MCP server. A hash-bound paid Luna
 report now passes every automatic and semantic gate; its measured cost remains
-internal release evidence pending the production pilot.
+internal release evidence during the bounded production pilot.
 
 ## Remaining approval boundaries
 

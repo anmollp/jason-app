@@ -1,19 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1260" viewBox="0 0 1280 1260" role="img" aria-labelledby="title desc">
-  <title id="title">Jason app system architecture</title>
-  <desc id="desc">System design diagram showing browser, Next.js frontend, NestJS backend, Jason Rust CLI, request flow, and deployment configuration.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1620" viewBox="0 0 1440 1620" role="img" aria-labelledby="title desc">
+  <title id="title">AskJason system architecture</title>
+  <desc id="desc">Architecture diagram showing the browser, Next.js frontend, private NestJS backend, Jason Rust CLI, approval-gated AI trust path, Firestore, Secret Manager, OpenAI APIs, and local MCP server.</desc>
   <defs>
-    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-      <path d="M2,2 L10,6 L2,10 Z" fill="#10b981" />
+    <marker id="arrow-green" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#34d399" />
     </marker>
-    <symbol id="jasonMark" viewBox="0 0 120 120">
-      <path d="M60 18V10" stroke="#10b981" stroke-width="5" stroke-linecap="round" />
-      <circle cx="60" cy="8" r="4" fill="#10b981" />
-      <rect x="18" y="18" width="84" height="84" rx="26" fill="#18181b" stroke="#3f3f46" />
-      <rect x="27" y="27" width="66" height="66" rx="20" fill="#09090b" opacity="0.58" />
-      <circle cx="47" cy="50" r="7" fill="#10b981" />
-      <circle cx="73" cy="50" r="7" fill="#10b981" />
-      <text x="60" y="79" text-anchor="middle" font-size="25" font-weight="700" fill="#fafafa">{}</text>
-    </symbol>
+    <marker id="arrow-blue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#60a5fa" />
+    </marker>
     <style>
       .bg { fill: #09090b; }
       .section { fill: #18181b; stroke: #3f3f46; stroke-width: 2; rx: 18; }
@@ -21,134 +15,175 @@
       .frontend { fill: #0f2f2a; stroke: #34d399; }
       .backend { fill: #172554; stroke: #60a5fa; }
       .cli { fill: #3b2f12; stroke: #fbbf24; }
-      .deploy { fill: #2e1065; stroke: #a78bfa; }
-      .labelPill { fill: #09090b; stroke: #52525b; stroke-width: 1.5; rx: 13; }
-      .title { fill: #fafafa; font: 700 34px Arial, sans-serif; }
+      .provider { fill: #3b1028; stroke: #fb7185; }
+      .state { fill: #2e1065; stroke: #a78bfa; }
+      .mcp { fill: #052e2b; stroke: #2dd4bf; }
+      .title { fill: #fafafa; font: 700 36px Arial, sans-serif; }
       .sectionTitle { fill: #fafafa; font: 700 24px Arial, sans-serif; }
-      .label { fill: #fafafa; font: 700 20px Arial, sans-serif; }
+      .label { fill: #fafafa; font: 700 19px Arial, sans-serif; }
       .small { fill: #d4d4d8; font: 15px Arial, sans-serif; }
       .mono { fill: #d4d4d8; font: 14px Menlo, Consolas, monospace; }
-      .pillText { fill: #d4d4d8; font: 700 12px Menlo, Consolas, monospace; }
       .muted { fill: #a1a1aa; font: 14px Arial, sans-serif; }
-      .arrow { stroke: #10b981; stroke-width: 3; fill: none; marker-end: url(#arrow); }
-      .returnArrow { stroke: #38bdf8; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .step { fill: #34d399; font: 700 13px Menlo, Consolas, monospace; }
+      .arrow { stroke: #34d399; stroke-width: 3; fill: none; marker-end: url(#arrow-green); }
+      .returnArrow { stroke: #60a5fa; stroke-width: 3; fill: none; marker-end: url(#arrow-blue); }
+      .dash { stroke-dasharray: 8 7; }
     </style>
   </defs>
 
-  <rect class="bg" width="1280" height="1260" />
-  <use href="#jasonMark" x="64" y="28" width="72" height="72" />
-  <text class="title" x="152" y="64">Jason System Design</text>
-  <text class="muted" x="152" y="94">Runtime architecture, JSON request flow, and production deployment contract.</text>
+  <rect class="bg" width="1440" height="1620" />
+  <rect x="62" y="38" width="58" height="58" rx="18" fill="#18181b" stroke="#3f3f46" />
+  <circle cx="83" cy="63" r="5" fill="#34d399" />
+  <circle cx="101" cy="63" r="5" fill="#34d399" />
+  <text x="92" y="83" text-anchor="middle" font-size="17" font-weight="700" fill="#fafafa">{}</text>
+  <text class="title" x="140" y="70">AskJason System Design</text>
+  <text class="muted" x="140" y="96">Deterministic JSON tools, approval-gated AI, and production trust boundaries.</text>
 
-  <rect class="section" x="48" y="135" width="1184" height="330" />
-  <text class="sectionTitle" x="80" y="178">1. Runtime Architecture</text>
-  <use href="#jasonMark" x="1142" y="154" width="44" height="44" opacity="0.82" />
+  <rect class="section" x="48" y="130" width="1344" height="300" />
+  <text class="sectionTitle" x="80" y="174">1. Runtime Components</text>
 
-  <rect class="box" x="86" y="235" width="190" height="116" />
-  <text class="label" x="128" y="276">Browser</text>
-  <text class="small" x="116" y="308">User pastes JSON</text>
-  <text class="small" x="116" y="332">Runs a tool</text>
+  <rect class="box" x="82" y="230" width="170" height="120" />
+  <text class="label" x="126" y="270">Browser</text>
+  <text class="small" x="108" y="301">Workspace state</text>
+  <text class="small" x="108" y="325">Apply / Discard</text>
 
-  <rect class="box frontend" x="390" y="215" width="230" height="156" />
-  <text class="label" x="430" y="255">Next.js Frontend</text>
-  <text class="small" x="424" y="290">Landing page</text>
-  <text class="small" x="424" y="315">Playground shell</text>
-  <text class="small" x="424" y="340">CodeMirror editors</text>
+  <rect class="box frontend" x="302" y="210" width="210" height="160" />
+  <text class="label" x="340" y="250">Next.js Frontend</text>
+  <text class="small" x="330" y="282">Playground + /ai</text>
+  <text class="small" x="330" y="306">Same-origin proxies</text>
+  <text class="small" x="330" y="330">Cloud Run ID token</text>
 
-  <rect class="box backend" x="732" y="215" width="230" height="156" />
-  <text class="label" x="774" y="255">NestJS Backend</text>
-  <text class="small" x="766" y="290">Validation</text>
-  <text class="small" x="766" y="315">Error mapping</text>
-  <text class="small" x="766" y="340">Response summaries</text>
+  <rect class="box backend" x="562" y="210" width="220" height="160" />
+  <text class="label" x="602" y="250">NestJS Backend</text>
+  <text class="small" x="590" y="282">Validation + agent</text>
+  <text class="small" x="590" y="306">Quota + moderation</text>
+  <text class="small" x="590" y="330">Safe summaries</text>
 
-  <rect class="box cli" x="1070" y="235" width="136" height="116" />
-  <text class="label" x="1095" y="276">Rust CLI</text>
-  <text class="small" x="1093" y="308">JSON engine</text>
-  <text class="small" x="1093" y="332">Reusable core</text>
+  <rect class="box cli" x="832" y="230" width="180" height="120" />
+  <text class="label" x="877" y="270">Jason CLI</text>
+  <text class="small" x="858" y="301">JSON authority</text>
+  <text class="small" x="858" y="325">Fixed stdin calls</text>
 
-  <path class="arrow" d="M276 293 H378" />
-  <rect class="labelPill" x="295" y="260" width="64" height="26" />
-  <text class="pillText" x="327" y="278" text-anchor="middle">OPEN</text>
+  <rect class="box provider" x="1062" y="200" width="270" height="78" />
+  <text class="label" x="1112" y="232">OpenAI APIs</text>
+  <text class="small" x="1090" y="257">Moderation + Responses</text>
+  <rect class="box state" x="1062" y="296" width="270" height="78" />
+  <text class="label" x="1105" y="328">GCP State</text>
+  <text class="small" x="1090" y="353">Firestore + Secret Manager</text>
 
-  <path class="arrow" d="M620 293 H720" />
-  <rect class="labelPill" x="640" y="260" width="60" height="26" />
-  <text class="pillText" x="670" y="278" text-anchor="middle">FETCH</text>
+  <path class="arrow" d="M252 290 H290" />
+  <path class="arrow" d="M512 290 H550" />
+  <path class="arrow" d="M782 290 H820" />
+  <path class="arrow dash" d="M782 250 C895 180 965 190 1050 235" />
+  <path class="arrow dash" d="M782 330 C900 390 970 380 1050 338" />
 
-  <path class="arrow" d="M962 293 H1058" />
-  <rect class="labelPill" x="984" y="260" width="52" height="26" />
-  <text class="pillText" x="1010" y="278" text-anchor="middle">EXEC</text>
+  <rect class="section" x="48" y="468" width="1344" height="292" />
+  <text class="sectionTitle" x="80" y="512">2. Deterministic Request Path</text>
 
-  <rect class="section" x="48" y="505" width="1184" height="330" />
-  <text class="sectionTitle" x="80" y="548">2. JSON Operation Request Flow</text>
-  <use href="#jasonMark" x="1142" y="524" width="44" height="44" opacity="0.82" />
+  <rect class="box frontend" x="82" y="570" width="240" height="118" />
+  <text class="label" x="130" y="610">Tool Workspace</text>
+  <text class="mono" x="112" y="642">Formatter · Diff</text>
+  <text class="mono" x="112" y="666">Patch · Pointer</text>
 
-  <rect class="box frontend" x="86" y="604" width="200" height="118" />
-  <text class="label" x="128" y="645">Tool Hook</text>
-  <text class="small" x="116" y="677">Input, output, state</text>
-  <text class="small" x="116" y="701">Sample + copy actions</text>
+  <rect class="box frontend" x="372" y="550" width="240" height="158" />
+  <text class="label" x="426" y="590">Next.js Proxy</text>
+  <text class="mono" x="400" y="622">POST /api/{tool}</text>
+  <text class="small" x="400" y="650">Private backend auth</text>
+  <text class="small" x="400" y="676">5 MiB document path</text>
 
-  <rect class="box" x="390" y="585" width="220" height="156" />
-  <text class="label" x="442" y="625">API Request</text>
-  <text class="mono" x="430" y="658">POST /format</text>
-  <text class="mono" x="430" y="682">POST /diff</text>
-  <text class="mono" x="430" y="706">POST /patch</text>
-  <text class="mono" x="430" y="730">POST /pointer</text>
+  <rect class="box backend" x="662" y="550" width="240" height="158" />
+  <text class="label" x="718" y="590">API Controller</text>
+  <text class="small" x="690" y="622">Validate request</text>
+  <text class="small" x="690" y="650">Run fixed command</text>
+  <text class="small" x="690" y="676">Normalize response</text>
 
-  <rect class="box backend" x="725" y="585" width="220" height="156" />
-  <text class="label" x="778" y="625">Controller</text>
-  <text class="small" x="762" y="658">Validate body</text>
-  <text class="small" x="762" y="682">Call service</text>
-  <text class="small" x="762" y="706">Map errors</text>
+  <rect class="box cli" x="952" y="550" width="260" height="158" />
+  <text class="label" x="1022" y="590">Jason Runner</text>
+  <text class="mono" x="980" y="622">format · diff</text>
+  <text class="mono" x="980" y="650">patch · pointer</text>
+  <text class="small" x="980" y="678">shell: false · stdin</text>
 
-  <rect class="box cli" x="1050" y="585" width="160" height="156" />
-  <text class="label" x="1076" y="625">CLI Command</text>
-  <text class="mono" x="1070" y="658">format</text>
-  <text class="mono" x="1070" y="682">diff</text>
-  <text class="mono" x="1070" y="706">patch</text>
-  <text class="mono" x="1070" y="730">pointer</text>
+  <path class="arrow" d="M322 629 H360" />
+  <path class="arrow" d="M612 629 H650" />
+  <path class="arrow" d="M902 629 H940" />
+  <path class="returnArrow" d="M1212 720 C940 752 520 752 322 700" />
+  <text class="mono" x="585" y="742">stable deterministic response</text>
 
-  <path class="arrow" d="M286 663 H378" />
-  <rect class="labelPill" x="306" y="630" width="52" height="26" />
-  <text class="pillText" x="332" y="648" text-anchor="middle">RUN</text>
+  <rect class="section" x="48" y="798" width="1344" height="414" />
+  <text class="sectionTitle" x="80" y="842">3. Approval-Gated AI Trust Path</text>
 
-  <path class="arrow" d="M610 663 H713" />
-  <rect class="labelPill" x="636" y="630" width="50" height="26" />
-  <text class="pillText" x="661" y="648" text-anchor="middle">POST</text>
+  <rect class="box" x="80" y="900" width="170" height="136" />
+  <text class="step" x="102" y="928">01 REQUEST</text>
+  <text class="label" x="102" y="962">Selected context</text>
+  <text class="small" x="102" y="991">32 KiB transport</text>
+  <text class="small" x="102" y="1015">16 KiB context</text>
 
-  <path class="arrow" d="M945 663 H1038" />
-  <rect class="labelPill" x="962" y="630" width="58" height="26" />
-  <text class="pillText" x="991" y="648" text-anchor="middle">STDIN</text>
+  <rect class="box state" x="282" y="900" width="170" height="136" />
+  <text class="step" x="304" y="928">02 RESERVE</text>
+  <text class="label" x="304" y="962">Identity + quota</text>
+  <text class="small" x="304" y="991">Firestore lease</text>
+  <text class="small" x="304" y="1015">Spend reservation</text>
 
-  <path class="returnArrow" d="M1050 770 C855 812 518 812 286 738" />
-  <rect class="labelPill" x="522" y="780" width="218" height="26" />
-  <text class="pillText" x="631" y="798" text-anchor="middle">STABLE JSON RESPONSE</text>
+  <rect class="box provider" x="484" y="900" width="170" height="136" />
+  <text class="step" x="506" y="928">03 MODERATE</text>
+  <text class="label" x="506" y="962">Instruction</text>
+  <text class="small" x="506" y="991">Fail closed</text>
+  <text class="small" x="506" y="1015">No content logs</text>
 
-  <rect class="section" x="48" y="875" width="1184" height="310" />
-  <text class="sectionTitle" x="80" y="918">3. Deployment Shape</text>
-  <use href="#jasonMark" x="1142" y="894" width="44" height="44" opacity="0.82" />
+  <rect class="box provider" x="686" y="900" width="170" height="136" />
+  <text class="step" x="708" y="928">04 ROUTE</text>
+  <text class="label" x="708" y="962">Responses API</text>
+  <text class="small" x="708" y="991">4 fixed tools</text>
+  <text class="small" x="708" y="1015">store: false</text>
 
-  <rect class="box deploy" x="92" y="980" width="250" height="120" />
-  <text class="label" x="142" y="1022">Frontend Host</text>
-  <text class="mono" x="122" y="1056">NEXT_PUBLIC_API_BASE_URL</text>
-  <text class="small" x="122" y="1082">Serves Next.js app</text>
+  <rect class="box cli" x="888" y="900" width="170" height="136" />
+  <text class="step" x="910" y="928">05 VALIDATE</text>
+  <text class="label" x="910" y="962">Rust execution</text>
+  <text class="small" x="910" y="991">Strict schema</text>
+  <text class="small" x="910" y="1015">Jason-valid result</text>
 
-  <rect class="box backend" x="505" y="980" width="250" height="120" />
-  <text class="label" x="560" y="1022">Backend Host</text>
-  <text class="mono" x="535" y="1056">FRONTEND_ORIGIN</text>
-  <text class="mono" x="535" y="1080">GET /health</text>
+  <rect class="box backend" x="1090" y="900" width="170" height="136" />
+  <text class="step" x="1112" y="928">06 PROPOSE</text>
+  <text class="label" x="1112" y="962">Safe summary</text>
+  <text class="small" x="1112" y="991">Proposal only</text>
+  <text class="small" x="1112" y="1015">Usage accounted</text>
 
-  <rect class="box cli" x="900" y="980" width="250" height="120" />
-  <text class="label" x="956" y="1022">Runtime Binary</text>
-  <text class="mono" x="930" y="1056">JASON_CLI_PATH</text>
-  <text class="small" x="930" y="1082">Must be executable</text>
+  <path class="arrow" d="M250 968 H270" />
+  <path class="arrow" d="M452 968 H472" />
+  <path class="arrow" d="M654 968 H674" />
+  <path class="arrow" d="M856 968 H876" />
+  <path class="arrow" d="M1058 968 H1078" />
 
-  <path class="arrow" d="M342 1040 H493" />
-  <rect class="labelPill" x="370" y="1007" width="96" height="26" />
-  <text class="pillText" x="418" y="1025" text-anchor="middle">API CALLS</text>
+  <rect class="box frontend" x="330" y="1080" width="780" height="82" />
+  <text class="step" x="360" y="1110">07 USER CONTROL</text>
+  <text class="label" x="530" y="1110">Review proposal → Apply or Discard in the browser</text>
+  <text class="small" x="360" y="1140">No model response can mutate workspace state without this explicit local action.</text>
 
-  <path class="arrow" d="M755 1040 H888" />
-  <rect class="labelPill" x="792" y="1007" width="52" height="26" />
-  <text class="pillText" x="818" y="1025" text-anchor="middle">EXEC</text>
+  <rect class="section" x="48" y="1250" width="1344" height="304" />
+  <text class="sectionTitle" x="80" y="1294">4. Production and Local Surfaces</text>
 
-  <text class="muted" x="80" y="1160">Critical production dependency: Node can build successfully while JSON tools fail if the Rust CLI is missing.</text>
+  <rect class="box frontend" x="82" y="1350" width="270" height="132" />
+  <text class="label" x="126" y="1390">Public Cloud Run</text>
+  <text class="mono" x="112" y="1422">JASON_API_BASE_URL</text>
+  <text class="mono" x="112" y="1448">JASON_API_AUDIENCE</text>
+
+  <rect class="box backend" x="408" y="1350" width="270" height="132" />
+  <text class="label" x="452" y="1390">Private Cloud Run</text>
+  <text class="mono" x="438" y="1422">AI_ENABLED · quotas</text>
+  <text class="mono" x="438" y="1448">JASON_CLI_PATH</text>
+
+  <rect class="box state" x="734" y="1350" width="270" height="132" />
+  <text class="label" x="790" y="1390">Private GCP State</text>
+  <text class="small" x="764" y="1422">Firestore metadata</text>
+  <text class="small" x="764" y="1448">Pinned secret versions</text>
+
+  <rect class="box mcp" x="1060" y="1350" width="270" height="132" />
+  <text class="label" x="1124" y="1390">Local MCP</text>
+  <text class="small" x="1090" y="1422">stdio · same contracts</text>
+  <text class="small" x="1090" y="1448">No hosted AI or writes</text>
+
+  <path class="arrow" d="M352 1416 H396" />
+  <path class="arrow" d="M678 1416 H722" />
+  <path class="arrow dash" d="M1060 1496 C900 1540 530 1540 408 1496" />
+  <text class="muted" x="80" y="1524">Terraform owns infrastructure; path-filtered workflows update service images. Both services remain min 0 / max 1.</text>
 </svg>
