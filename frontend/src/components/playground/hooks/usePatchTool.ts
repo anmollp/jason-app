@@ -49,7 +49,12 @@ export function usePatchTool(resetCopyMessage: () => void) {
   const payloadSizeLabel = formatByteSize(payloadSizeBytes);
 
   function handlePatchDocumentChange(value: string) {
+    if (value === patchDocumentInput) {
+      return;
+    }
+
     setPatchDocumentInput(value);
+    setPatchOperations([]);
     setSelectedPatchLine(undefined);
     setSelectedPatchPath("");
     resetPatchResult();

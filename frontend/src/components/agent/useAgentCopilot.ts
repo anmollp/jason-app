@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import {
   AgentClientError,
@@ -36,6 +36,7 @@ export type AgentDisplayError = {
 };
 
 type StoredMessage = AgentConversationMessage & {
+  contextKey: string;
   tool: AgentSelectedTool;
 };
 
@@ -59,6 +60,11 @@ type UseAgentCopilotInput = {
   context: Record<string, string>;
 };
 
+type ActiveAgentRequest = {
+  controller: AbortController;
+  requestKey: string;
+};
+
 const expectedTool: Record<AgentSelectedTool, AgentToolName> = {
   formatter: "format_json",
   diff: "diff_json",
@@ -76,16 +82,21 @@ export function useAgentCopilot({
   const [storedProposal, setStoredProposal] = useState<StoredProposal>();
   const [storedError, setStoredError] = useState<StoredError>();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const activeRequest = useRef<AbortController | undefined>(undefined);
+  const activeRequest = useRef<ActiveAgentRequest | undefined>(undefined);
   const assistantBuffer = useRef("");
   const receivedProposal = useRef<AgentProposal | undefined>(undefined);
   const nextId = useRef(1);
   const contextKey = JSON.stringify(context);
+  const requestKey = `${selectedTool}:${contextKey}`;
   const contextBytes = new TextEncoder().encode(contextKey).length;
 
   const displayMessages = useMemo(
-    () => messages.filter((message) => message.tool === selectedTool),
-    [messages, selectedTool],
+    () =>
+      messages.filter(
+        (message) =>
+          message.tool === selectedTool && message.contextKey === contextKey,
+      ),
+    [contextKey, messages, selectedTool],
   );
   const displayTrace = useMemo(
     () => trace.filter((item) => item.tool === selectedTool),
@@ -99,13 +110,18 @@ export function useAgentCopilot({
   const error =
     storedError?.tool === selectedTool ? storedError.error : undefined;
 
-  useEffect(() => {
-    activeRequest.current?.abort();
-  }, [selectedTool]);
+  useLayoutEffect(() => {
+    const request = activeRequest.current;
+    if (request && request.requestKey !== requestKey) {
+      request.controller.abort();
+      activeRequest.current = undefined;
+      setIsSubmitting(false);
+    }
+  }, [requestKey]);
 
   useEffect(
     () => () => {
-      activeRequest.current?.abort();
+      activeRequest.current?.controller.abort();
     },
     [],
   );
@@ -147,20 +163,24 @@ export function useAgentCopilot({
     }
 
     const controller = new AbortController();
-    activeRequest.current?.abort();
-    activeRequest.current = controller;
+    const request = { controller, requestKey };
+    activeRequest.current?.controller.abort();
+    activeRequest.current = request;
     assistantBuffer.current = "";
     receivedProposal.current = undefined;
     setIsSubmitting(true);
     clearCurrentResult();
-    appendMessage("user", instruction);
 
     try {
       const activeSession = session ?? (await issueAgentSession(controller.signal));
       if (!session) {
         setSession(activeSession);
       }
+      if (controller.signal.aborted || activeRequest.current !== request) {
+        return;
+      }
 
+      appendMessage("user", instruction);
       for await (const event of streamAgentMessage(
         {
           sessionId: activeSession.sessionId,
@@ -180,7 +200,7 @@ export function useAgentCopilot({
         setStoredProposal(undefined);
       }
     } finally {
-      if (activeRequest.current === controller) {
+      if (activeRequest.current === request) {
         activeRequest.current = undefined;
         setIsSubmitting(false);
       }
@@ -274,7 +294,13 @@ export function useAgentCopilot({
   function appendMessage(role: AgentVisibleMessage["role"], content: string) {
     setMessages((current) => [
       ...current,
-      { id: nextId.current++, role, content, tool: selectedTool },
+      {
+        id: nextId.current++,
+        role,
+        content,
+        contextKey,
+        tool: selectedTool,
+      },
     ]);
   }
 
@@ -309,7 +335,7 @@ export function useAgentCopilot({
   }
 
   function cancel() {
-    activeRequest.current?.abort();
+    activeRequest.current?.controller.abort();
   }
 
   function clearCurrentResult() {
