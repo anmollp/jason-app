@@ -42,6 +42,100 @@ test("sends only the selected bounded context for all four tools", async ({
   expect(requests.every((request) => request.visibleMessages.length === 0)).toBe(true);
 });
 
+test("clears stale Patch operations when the document changes", async ({ page }) => {
+  const requests: AgentRequest[] = [];
+  await mockAgent(page, { requests });
+  await page.goto("/playground");
+  await page.getByRole("button", { name: "Patch", exact: true }).click();
+
+  await expect(page.getByText("6 queued", { exact: true })).toBeVisible();
+  const document = '{"fresh":{"keep":true}}';
+  await page.getByLabel("Document JSON").fill(document);
+  await expect(page.getByText("0 queued", { exact: true })).toBeVisible();
+
+  await askJason(page, "Help me patch this document.");
+  await expect(page.getByRole("heading", { name: "Proposal ready" })).toBeVisible();
+  expect(requests[0].context).toEqual({ document });
+});
+
+test("preserves freshly loaded Patch sample operations", async ({ page }) => {
+  await page.goto("/playground");
+  await page.getByRole("button", { name: "Patch", exact: true }).click();
+  await page.getByLabel("Document JSON").fill("{}");
+  await expect(page.getByText("0 queued", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Load Patch sample", exact: true }).click();
+  await expect(page.getByText("6 queued", { exact: true })).toBeVisible();
+});
+
+test("does not send stale Patch context after an edit during session issuance", async ({
+  page,
+}) => {
+  const requests: AgentRequest[] = [];
+  let releaseSession: () => void = () => undefined;
+  let markSessionStarted: () => void = () => undefined;
+  const sessionGate = new Promise<void>((resolve) => {
+    releaseSession = resolve;
+  });
+  const sessionStarted = new Promise<void>((resolve) => {
+    markSessionStarted = resolve;
+  });
+  await mockAgent(page, {
+    onSession: markSessionStarted,
+    requests,
+    sessionGate,
+  });
+  await page.goto("/playground");
+  await page.getByRole("button", { name: "Patch", exact: true }).click();
+
+  await askJason(page, "Help me patch this document.");
+  await sessionStarted;
+  const document = '{"fresh":{"keep":true}}';
+  await page.getByLabel("Document JSON").fill(document);
+  await expect(page.getByLabel("Ask Jason about the selected JSON")).toBeEnabled();
+  releaseSession();
+  expect(requests).toHaveLength(0);
+
+  await askJason(page, "Help me patch this fresh document.");
+  await expect(page.getByRole("heading", { name: "Proposal ready" })).toBeVisible();
+  expect(requests[0].context).toEqual({ document });
+  expect(requests[0].visibleMessages).toEqual([]);
+});
+
+test("cancels an in-flight Patch message when the document changes", async ({
+  page,
+}) => {
+  const requests: AgentRequest[] = [];
+  let releaseMessage: () => void = () => undefined;
+  let markMessageStarted: () => void = () => undefined;
+  const messageGate = new Promise<void>((resolve) => {
+    releaseMessage = resolve;
+  });
+  const messageStarted = new Promise<void>((resolve) => {
+    markMessageStarted = resolve;
+  });
+  await mockAgent(page, {
+    messageGate,
+    onMessage: markMessageStarted,
+    requests,
+  });
+  await page.goto("/playground");
+  await page.getByRole("button", { name: "Patch", exact: true }).click();
+
+  await askJason(page, "Help me patch this document.");
+  await messageStarted;
+  const document = '{"fresh":{"keep":true}}';
+  await page.getByLabel("Document JSON").fill(document);
+  await expect(page.getByLabel("Ask Jason about the selected JSON")).toBeEnabled();
+  releaseMessage();
+  await expect(page.getByRole("heading", { name: "Proposal ready" })).toHaveCount(0);
+
+  await askJason(page, "Help me patch this fresh document.");
+  await expect(page.getByRole("heading", { name: "Proposal ready" })).toBeVisible();
+  expect(requests[1].context).toEqual({ document });
+  expect(requests[1].visibleMessages).toEqual([]);
+});
+
 for (const tool of ["formatter", "diff", "patch", "pointer"] as const) {
   test(`${titleCase(tool)} proposals stay out of chat and require workspace approval`, async ({
     page,
@@ -319,13 +413,17 @@ async function mockAgent(
   page: Page,
   options: {
     events?: readonly Record<string, unknown>[];
+    messageGate?: Promise<void>;
+    onMessage?: () => void;
     onSession?: () => void;
     requests?: AgentRequest[];
+    sessionGate?: Promise<void>;
     sessionResponse?: { status: number; body: Record<string, unknown> };
   } = {},
 ) {
   await page.route("**/api/agent/session", async (route) => {
     options.onSession?.();
+    await options.sessionGate;
     if (options.sessionResponse) {
       await route.fulfill({
         status: options.sessionResponse.status,
@@ -349,6 +447,8 @@ async function mockAgent(
   await page.route("**/api/agent/message", async (route) => {
     const request = route.request().postDataJSON() as AgentRequest;
     options.requests?.push(request);
+    options.onMessage?.();
+    await options.messageGate;
     const events = options.events ?? successfulEvents(request.selectedTool);
     await route.fulfill({
       status: 200,
