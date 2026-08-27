@@ -164,7 +164,7 @@ for (const tool of ["formatter", "diff", "patch", "pointer"] as const) {
     await askJason(page, `Prepare the ${tool} result.`);
     await page.getByRole("button", { name: "Apply to workspace" }).click();
     await expect(page.getByLabel("Ask Jason about the selected JSON")).toBeFocused();
-    await expectWorkspaceResult(page, tool);
+    await expectWorkspaceResult(page, tool, originalWorkspace);
   });
 }
 
@@ -519,6 +519,7 @@ async function workspaceSnapshot(
 async function expectWorkspaceResult(
   page: Page,
   tool: AgentRequest["selectedTool"],
+  originalWorkspace: string,
 ) {
   switch (tool) {
     case "formatter":
@@ -530,9 +531,8 @@ async function expectWorkspaceResult(
       ).toContainText("1");
       return;
     case "patch":
-      await expect(page.getByLabel("Document JSON")).toContainText('"retries": 2');
-      await expect(page.getByLabel("Document JSON")).not.toContainText('"retries": 5');
-      await expect(page.getByText("/retries", { exact: true })).toBeVisible();
+      await expect(page.getByLabel("Document JSON")).toHaveText(originalWorkspace);
+      await expect(page.getByTitle("/retries")).toBeVisible();
       await expect(page.getByLabel("Patched Result")).toContainText('"retries": 5');
       await expect(page.getByLabel("Patched Result")).toContainText('"service": "checkout-api"');
       return;
