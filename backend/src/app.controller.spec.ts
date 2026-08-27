@@ -155,6 +155,10 @@ describe('AppController', () => {
             '[{"op":"replace","path":"/a","value":2},{"op":"add","path":"/b","value":true}]',
         }),
       ).resolves.toEqual({
+        operations: [
+          { op: 'replace', path: '/a', value: 2 },
+          { op: 'add', path: '/b', value: true },
+        ],
         output: '{\n  "a": 2,\n  "b": true\n}',
         summary: {
           added: 1,

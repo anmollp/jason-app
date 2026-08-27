@@ -315,6 +315,7 @@ function validPatchResult(callId: string) {
     tool: 'apply_json_patch' as const,
     callId,
     data: {
+      operations: [{ op: 'replace', path: '/enabled', value: true }],
       output: '{"enabled":true}',
       summary: { operations: 1, added: 0, removed: 0, replaced: 1 },
     },

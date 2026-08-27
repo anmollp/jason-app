@@ -530,8 +530,11 @@ async function expectWorkspaceResult(
       ).toContainText("1");
       return;
     case "patch":
-      await expect(page.getByLabel("Document JSON")).toContainText('"retries": 5');
-      await expect(page.getByLabel("Document JSON")).not.toContainText('"debug"');
+      await expect(page.getByLabel("Document JSON")).toContainText('"retries": 2');
+      await expect(page.getByLabel("Document JSON")).not.toContainText('"retries": 5');
+      await expect(page.getByText("/retries", { exact: true })).toBeVisible();
+      await expect(page.getByLabel("Patched Result")).toContainText('"retries": 5');
+      await expect(page.getByLabel("Patched Result")).toContainText('"service": "checkout-api"');
       return;
     case "pointer":
       await expect(page.getByLabel("Search JSON Pointer path")).toHaveValue(
@@ -580,6 +583,10 @@ function proposalData(tool: AgentRequest["selectedTool"]) {
       };
     case "patch":
       return {
+        operations: [
+          { op: "replace", path: "/retries", value: 5 },
+          { op: "remove", path: "/debug" },
+        ],
         output: '{\n  "service": "checkout-api",\n  "retries": 5\n}',
         summary: { operations: 2, added: 0, removed: 1, replaced: 1 },
       };

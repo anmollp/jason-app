@@ -170,6 +170,7 @@ export const AGENT_TOOL_DEFINITIONS: readonly ProviderNeutralToolDefinition[] =
       resultSchema: {
         type: 'object',
         properties: {
+          operations: { type: 'array', items: jsonPatchOperationSchema },
           output: { type: 'string' },
           summary: {
             type: 'object',
@@ -181,7 +182,7 @@ export const AGENT_TOOL_DEFINITIONS: readonly ProviderNeutralToolDefinition[] =
             additionalProperties: false,
           },
         },
-        required: ['output', 'summary'],
+        required: ['operations', 'output', 'summary'],
         additionalProperties: false,
       },
     },

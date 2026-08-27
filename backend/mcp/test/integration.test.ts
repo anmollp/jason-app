@@ -65,6 +65,7 @@ void describe('Jason v1.7.1 integration', { skip: !cliPath }, () => {
         },
       });
       assert.deepEqual(patched.structuredContent, {
+        operations: [{ op: 'replace', path: '/a', value: 2 }],
         output: '{\n  "a": 2\n}',
         summary: { operations: 1, added: 0, removed: 0, replaced: 1 },
       });

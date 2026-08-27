@@ -212,13 +212,17 @@ export function usePatchTool(resetCopyMessage: () => void) {
     resetPatchResult();
   }
 
-  function applyAgentProposal(result: PatchJsonResponse | string): boolean {
-    const output = typeof result === "string" ? result : result.output;
-    setPatchDocumentInput(output);
-    setPatchOperations([]);
+  function applyAgentProposal(result: PatchJsonResponse): boolean {
+    requestGeneration.current += 1;
+    setPatchOperations(result.operations);
     setSelectedPatchLine(undefined);
     setSelectedPatchPath("");
-    resetPatchResult();
+    setPatchOutput(result.output);
+    setPatchResult(result);
+    setPatchError("");
+    setPatchErrorField(undefined);
+    resetCopyMessage();
+    setPatchState("success");
     return true;
   }
 

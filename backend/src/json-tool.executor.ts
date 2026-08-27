@@ -57,6 +57,7 @@ export class JsonToolExecutor {
     const operations = parsePatchOperations(patch);
 
     return {
+      operations,
       output: await (signal
         ? this.jason.patch(document, patch, signal)
         : this.jason.patch(document, patch)),

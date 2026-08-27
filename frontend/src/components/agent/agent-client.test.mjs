@@ -145,6 +145,7 @@ test("validates proposal data for every workspace tool", () => {
     [
       "patch",
       {
+        operations: [{ op: "replace", path: "/a", value: 2 }],
         output: '{"a":2}',
         summary: { operations: 1, added: 0, removed: 0, replaced: 1 },
       },
@@ -193,6 +194,7 @@ test("validates proposal data for every workspace tool", () => {
     [
       "patch",
       {
+        operations: [{ op: "replace", path: "/a", value: 2 }],
         output: "{}",
         summary: { operations: 1, added: 0, removed: 0, replaced: 1, extra: 1 },
       },
