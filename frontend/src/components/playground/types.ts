@@ -41,6 +41,7 @@ export type DiffJsonResponse = {
 };
 
 export type PatchJsonResponse = {
+  operations: JsonPatchOperation[];
   output: string;
   summary: {
     added: number;

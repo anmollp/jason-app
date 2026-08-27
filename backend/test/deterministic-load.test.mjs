@@ -172,6 +172,7 @@ function responseFor(tool, request) {
       break;
     case 'patch':
       body = {
+        operations: [{ op: 'replace', path: '/before', value: 'after' }],
         output: request.document.replace('before', 'after'),
         summary: { operations: 1 },
       };

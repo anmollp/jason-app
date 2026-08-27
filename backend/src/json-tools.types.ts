@@ -58,6 +58,7 @@ export type PatchJsonSummary = {
 };
 
 export type PatchJsonResponse = {
+  operations: JsonPatchOperation[];
   output: string;
   summary: PatchJsonSummary;
 };

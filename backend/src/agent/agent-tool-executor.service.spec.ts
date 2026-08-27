@@ -10,6 +10,7 @@ describe('AgentToolExecutor', () => {
       summary: { changes: 1, added: 0, removed: 0, replaced: 1 },
     }),
     patchJson: jest.fn().mockResolvedValue({
+      operations: [{ op: 'replace', path: '/a', value: 2 }],
       output: '{"a":2}',
       summary: { operations: 1, added: 0, removed: 0, replaced: 1 },
     }),

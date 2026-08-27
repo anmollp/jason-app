@@ -25,6 +25,7 @@ export type AgentProposalDataMap = {
     summary: { changes: number; added: number; removed: number; replaced: number };
   };
   patch: {
+    operations: AgentJsonPatchOperation[];
     output: string;
     summary: { operations: number; added: number; removed: number; replaced: number };
   };
@@ -425,12 +426,18 @@ function parseProposal(
     case "patch": {
       const summary = parseCountSummary(data.summary, "operations");
       if (
-        !hasOnlyKeys(data, ["output", "summary"]) ||
+        !hasOnlyKeys(data, ["operations", "output", "summary"]) ||
+        !Array.isArray(data.operations) ||
+        !data.operations.every(isJsonPatchOperation) ||
         typeof data.output !== "string"
       ) {
         malformedStream();
       }
-      return { tool, data: { output: data.output, summary }, validation: "jason" };
+      return {
+        tool,
+        data: { operations: data.operations, output: data.output, summary },
+        validation: "jason",
+      };
     }
     case "pointer":
       if (
